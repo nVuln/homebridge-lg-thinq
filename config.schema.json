@@ -1,16 +1,49 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "LGThinQ",
   "pluginType": "platform",
   "singular": true,
   "schema": {
-    "type": "object",
-    "properties": {
-      "name": {
-        "title": "Name",
-        "type": "string",
-        "required": true,
-        "default": "Example Dynamic Platform"
-      }
-    }
-  }
+	"username": {
+	  "title": "Username",
+	  "type": "string",
+	  "required": true
+	},
+	"password": {
+	  "title": "Password",
+	  "type": "string",
+	  "required": true
+	},
+	"country": {
+	  "title": "Country",
+	  "type": "string",
+	  "default": "US",
+	  "required": true
+	},
+	"language": {
+	  "title": "Language",
+	  "type": "string",
+	  "default": "en-US",
+	  "required": true
+	},
+	"debug": {
+	  "title": "Enable Debug Mode?",
+	  "type": "boolean",
+	  "default": false
+	}
+  },
+  "layout": [
+	{
+	  "type": "flex",
+	  "flex-flow": "row wrap",
+	  "items": [
+		"username",
+		{
+		  "key": "password",
+		  "type": "password"
+		}
+	  ]
+	},
+	"country",
+	"language"
+  ]
 }
