@@ -1,5 +1,4 @@
 {
-  "private": true,
   "displayName": "Homebridge LG ThinQ",
   "name": "homebridge-lg-thinq",
   "version": "0.1.0",
