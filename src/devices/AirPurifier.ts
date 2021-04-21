@@ -1,5 +1,5 @@
 import {LGThinQHomebridgePlatform} from '../platform';
-import {CharacteristicValue, PlatformAccessory} from 'homebridge';
+import {CharacteristicValue, PlatformAccessory, Service} from 'homebridge';
 import {Device} from '../lib/Device';
 import {baseDevice} from '../baseDevice';
 
@@ -12,7 +12,13 @@ enum RotateSpeed {
 }
 
 export default class AirPurifier extends baseDevice {
-  public intervalTime = 3000;
+  public intervalTime = 10000;
+
+  protected serviceAirPurifier: Service;
+  protected serviceHumiditySensor: Service;
+  protected serviceAirQuanlity: Service;
+  protected serviceLight: Service;
+
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
     protected readonly accessory: PlatformAccessory,
@@ -33,15 +39,15 @@ export default class AirPurifier extends baseDevice {
 
     // get the service if it exists, otherwise create a new service
     // you can create multiple services for each accessory
-    const serviceAirPurifier = accessory.getService(AirPurifier) || accessory.addService(AirPurifier, 'Air Purifier');
+    this.serviceAirPurifier = accessory.getService(AirPurifier) || accessory.addService(AirPurifier, 'Air Purifier');
 
     /**
      * Required Characteristics: Active, CurrentAirPurifierState, TargetAirPurifierState
      */
-    serviceAirPurifier.getCharacteristic(Characteristic.Active)
+    this.serviceAirPurifier.getCharacteristic(Characteristic.Active)
       .onSet(this.setActive.bind(this));
 
-    serviceAirPurifier.getCharacteristic(Characteristic.TargetAirPurifierState)
+    this.serviceAirPurifier.getCharacteristic(Characteristic.TargetAirPurifierState)
       .onGet(() => {
         return Characteristic.TargetAirPurifierState.AUTO;
       })
@@ -50,21 +56,21 @@ export default class AirPurifier extends baseDevice {
     /**
      * Optional Characteristics: Name, RotationSpeed, SwingMode
      */
-    serviceAirPurifier.setCharacteristic(Characteristic.Name, device.name);
-    serviceAirPurifier.getCharacteristic(Characteristic.SwingMode).onSet(this.setSwingMode.bind(this));
+    this.serviceAirPurifier.setCharacteristic(Characteristic.Name, device.name);
+    this.serviceAirPurifier.getCharacteristic(Characteristic.SwingMode).onSet(this.setSwingMode.bind(this));
 
-    const serviceHumiditySensor = accessory.getService(HumiditySensor) || accessory.addService(HumiditySensor);
+    this.serviceHumiditySensor = accessory.getService(HumiditySensor) || accessory.addService(HumiditySensor);
     const humidityValue = device.data.snapshot['airState.humidity.current'] || 0;
-    serviceHumiditySensor.setCharacteristic(Characteristic.CurrentRelativeHumidity, humidityValue);
+    this.serviceHumiditySensor.setCharacteristic(Characteristic.CurrentRelativeHumidity, humidityValue);
 
-    const serviceAirQuanlity = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
-    serviceAirQuanlity.setCharacteristic(Characteristic.AirQuality, parseInt(device.data.snapshot['airState.quality.overall']));
-    serviceAirQuanlity.setCharacteristic(Characteristic.PM2_5Density, parseInt(device.data.snapshot['airState.quality.PM2']) || 0);
-    serviceAirQuanlity.setCharacteristic(Characteristic.PM10Density, parseInt(device.data.snapshot['airState.quality.PM10']) || 0);
+    this.serviceAirQuanlity = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
+    this.serviceAirQuanlity.setCharacteristic(Characteristic.AirQuality, parseInt(device.data.snapshot['airState.quality.overall']));
+    this.serviceAirQuanlity.setCharacteristic(Characteristic.PM2_5Density, parseInt(device.data.snapshot['airState.quality.PM2']) || 0);
+    this.serviceAirQuanlity.setCharacteristic(Characteristic.PM10Density, parseInt(device.data.snapshot['airState.quality.PM10']) || 0);
 
-    const serviceLight = accessory.getService(Lightbulb) || accessory.addService(Lightbulb, 'Light');
-    serviceLight.getCharacteristic(Characteristic.On).onSet(this.setLight.bind(this));
-    serviceAirPurifier.addLinkedService(serviceLight);
+    this.serviceLight = new Lightbulb('Light');
+    this.serviceLight.getCharacteristic(Characteristic.On).onSet(this.setLight.bind(this));
+    this.serviceAirPurifier.addLinkedService(this.serviceLight);
 
     this.updateAccessoryCharacteristic(device);
   }
@@ -121,41 +127,31 @@ export default class AirPurifier extends baseDevice {
   public updateAccessoryCharacteristic(device: Device) {
     super.updateAccessoryCharacteristic(device);
     const {
-      Service: {
-        AirPurifier,
-        AirQualitySensor,
-        HumiditySensor,
-        Lightbulb,
-      },
       Characteristic,
     } = this.platform;
 
-    const serviceAirPurifier = this.accessory.getService(AirPurifier);
     const active = device.data.snapshot['airState.operation'] as boolean;
-    serviceAirPurifier?.updateCharacteristic(Characteristic.Active, active ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE);
+    this.serviceAirPurifier.updateCharacteristic(Characteristic.Active, active?Characteristic.Active.ACTIVE:Characteristic.Active.INACTIVE);
 
     const currentState = active ? Characteristic.CurrentAirPurifierState.PURIFYING_AIR : Characteristic.CurrentAirPurifierState.INACTIVE;
-    serviceAirPurifier?.updateCharacteristic(Characteristic.CurrentAirPurifierState, currentState);
+    this.serviceAirPurifier.updateCharacteristic(Characteristic.CurrentAirPurifierState, currentState);
 
     /*const values = [RotateSpeed.AUTO, RotateSpeed.LOW, RotateSpeed.MEDIUM, RotateSpeed.HIGH, RotateSpeed.EXTRA];
     const rotateSpeed = values.indexOf(device.data.snapshot['airState.windStrength'] || RotateSpeed.AUTO);
     serviceAirPurifier?.updateCharacteristic(Characteristic.RotationSpeed, rotateSpeed);*/
 
-    const rotate = device.data.snapshot['airState.circulate.rotate'] || 0;
+    const rotate = (device.data.snapshot['airState.circulate.rotate'] || 0) as boolean;
     const swingMode = rotate ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED;
-    serviceAirPurifier?.updateCharacteristic(Characteristic.SwingMode, swingMode);
+    this.serviceAirPurifier.updateCharacteristic(Characteristic.SwingMode, swingMode);
 
-    const serviceAirQuanlity = this.accessory.getService(AirQualitySensor);
-    serviceAirQuanlity?.updateCharacteristic(Characteristic.AirQuality, parseInt(device.data.snapshot['airState.quality.overall']));
-    serviceAirQuanlity?.updateCharacteristic(Characteristic.PM2_5Density, parseInt(device.data.snapshot['airState.quality.PM2']) || 0);
-    serviceAirQuanlity?.updateCharacteristic(Characteristic.PM10Density, parseInt(device.data.snapshot['airState.quality.PM10']) || 0);
+    this.serviceAirQuanlity.updateCharacteristic(Characteristic.AirQuality, parseInt(device.data.snapshot['airState.quality.overall']));
+    this.serviceAirQuanlity.updateCharacteristic(Characteristic.PM2_5Density, parseInt(device.data.snapshot['airState.quality.PM2']) || 0);
+    this.serviceAirQuanlity.updateCharacteristic(Characteristic.PM10Density, parseInt(device.data.snapshot['airState.quality.PM10']) || 0);
 
-    const serviceLight = this.accessory.getService(Lightbulb);
-    serviceLight?.updateCharacteristic(Characteristic.On, !!device.data.snapshot['airState.lightingState.signal']);
-    serviceLight?.setHiddenService(!active);
+    this.serviceLight.updateCharacteristic(Characteristic.On, active && (device.data.snapshot['airState.lightingState.signal'] as boolean));
+    this.serviceLight.setHiddenService(!active);
 
     const humidityValue = device.data.snapshot['airState.humidity.current'] || 0;
-    const serviceHumiditySensor = this.accessory.getService(HumiditySensor);
-    serviceHumiditySensor?.setCharacteristic(Characteristic.CurrentRelativeHumidity, humidityValue);
+    this.serviceHumiditySensor.setCharacteristic(Characteristic.CurrentRelativeHumidity, humidityValue);
   }
 }

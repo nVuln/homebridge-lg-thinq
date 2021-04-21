@@ -242,7 +242,7 @@ export class API {
       'Authorization': 'Bearer ' + this.session?.accessToken,
       'X-Lge-Svccode': 'SVC202',
       'X-Application-Key': constants.APPLICATION_KEY,
-      'lgemp-x-app-key': constants.OAUTH_CLIENT_KEY,
+      'lgemp-x-app-key': constants.CLIENT_ID,
       'X-Device-Type': 'M01',
       'X-Device-Platform': 'ADR',
       'x-lge-oauth-date': timestamp,
