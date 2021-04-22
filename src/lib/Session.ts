@@ -6,12 +6,12 @@ export class Session {
     private _refreshToken: string,
     private expiresIn: number,
   ) {
-    this.newToken(_accessToken, _refreshToken, expiresIn);
+    this._refreshToken = _refreshToken;
+    this.newToken(_accessToken, expiresIn);
   }
 
-  public newToken(accessToken, refreshToken, expiresIn): void {
+  public newToken(accessToken, expiresIn): void {
     this._accessToken = accessToken;
-    this._refreshToken = refreshToken;
     this.expiresIn = expiresIn;
   }
 

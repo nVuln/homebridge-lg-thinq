@@ -12,8 +12,6 @@ enum RotateSpeed {
 }
 
 export default class AirPurifier extends baseDevice {
-  public intervalTime = 10000;
-
   protected serviceAirPurifier: Service;
   protected serviceHumiditySensor: Service;
   protected serviceAirQuanlity: Service;
@@ -75,10 +73,6 @@ export default class AirPurifier extends baseDevice {
     this.updateAccessoryCharacteristic(device);
   }
 
-  /**
-   * Handle "SET" requests from HomeKit
-   * These are sent when the user changes the state of an accessory, for example, turning on a Light bulb.
-   */
   async setActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
     const isOn = value as boolean ? 1 : 0;

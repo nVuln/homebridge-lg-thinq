@@ -8,6 +8,7 @@ import axios, { AxiosInstance } from 'axios';
 import {Session} from './Session';
 import {AuthenticationError} from '../errors/AuthenticationError';
 import {TokenError} from '../errors/TokenError';
+import {Gateway} from './Gateway';
 
 const client = axios.create();
 
@@ -18,15 +19,9 @@ function resolveUrl(from, to) {
   return url.href;
 }
 
-export interface Auth {
-  accessToken: string;
-  refreshToken: string;
-  userNumber: string;
-}
-
 export class API {
-  protected _gateway;
   protected _homes;
+  protected gateway: Gateway | undefined;
   protected session: Session | undefined;
   protected userNumber!: string;
 
@@ -56,22 +51,20 @@ export class API {
     };
 
     const hash = crypto.createHash('sha512');
-    hash.update(this.password);
-
     const data = {
-      'user_auth2': hash.digest('hex'),
+      'user_auth2': hash.update(this.password).digest('hex'),
       'itg_terms_use_flag': 'Y',
       'svc_list': 'SVC202,SVC710', // SVC202=LG SmartHome, SVC710=EMP OAuth
     };
 
-    const loginUrl = resolveUrl(this._gateway.empTermsUri + '/', 'emp/v2.0/account/session/') + encodeURIComponent(this.username);
+    const loginUrl = resolveUrl(this.gateway?.emp_base_url, 'emp/v2.0/account/session/' + encodeURIComponent(this.username));
     const res = await requestClient.post(loginUrl, qs.stringify(data), { headers }).then(res => res.data).catch(err => {
       throw new AuthenticationError(err.response.data.error.message);
     });
 
     // get secret key for emp signature
-    const secretKey = await requestClient.get(resolveUrl(this._gateway.empSpxUri + '/', 'searchKey?key_name=OAUTH_SECRETKEY&sever_type=OP'))
-      .then(res => res.data).then(data => data.returnData);
+    const empSearchKeyUrl = resolveUrl(this.gateway?.login_base_url, 'searchKey?key_name=OAUTH_SECRETKEY&sever_type=OP');
+    const secretKey = await requestClient.get(empSearchKeyUrl).then(res => res.data).then(data => data.returnData);
 
     const timestamp = DateTime.utc().toRFC2822();
     const empData = {
@@ -107,27 +100,25 @@ export class API {
     return new Session(token.access_token, token.refresh_token, token.expires_in);
   }
 
-  public async getLoginUrl(callback_url?: string) {
-    callback_url = callback_url || (this._gateway.empSpxUri + '/login/iabClose');
-
+  public async getLoginUrl() {
     const params = {
       country: this.country,
       language: this.language,
       client_id: constants.CLIENT_ID,
       svc_list: constants.SVC_CODE,
       svc_integrated: 'Y',
-      redirect_uri: callback_url,
+      redirect_uri: this.gateway?.login_base_url + 'login/iabClose',
       show_thirdparty_login: 'LGE,MYLG',
       division: 'ha:T20',
-      callback_url: callback_url,
+      callback_url: this.gateway?.login_base_url + 'login/iabClose',
     };
 
-    return resolveUrl(this._gateway.empSpxUri + '/', 'login/signIn' + qs.stringify(params, { addQueryPrefix: true }));
+    return resolveUrl(this.gateway?.login_base_url, 'login/signIn' + qs.stringify(params, { addQueryPrefix: true }));
   }
 
   public async getDeviceInfo(device_id: string) {
     const headers = this.defaultHeaders;
-    const deviceUrl = resolveUrl(this._gateway.thinq2Uri + '/', 'service/devices/' + device_id);
+    const deviceUrl = resolveUrl(this.gateway?.api_base_url, 'service/devices/' + device_id);
 
     return requestClient.get(deviceUrl, { headers }).then(res => res.data.result);
   }
@@ -139,7 +130,7 @@ export class API {
 
     // get all devices in home
     for (let i = 0; i < homes.length; i++) {
-      const homeUrl = resolveUrl(this._gateway.thinq2Uri + '/', 'service/homes/' + homes[i].homeId);
+      const homeUrl = resolveUrl(this.gateway?.api_base_url, 'service/homes/' + homes[i].homeId);
       const resp = await requestClient.get(homeUrl, { headers }).then(res => res.data);
 
       devices.push(...resp.result.devices);
@@ -163,7 +154,7 @@ export class API {
   public async getListHomes() {
     if (!this._homes) {
       const headers = this.defaultHeaders;
-      const homesUrl = resolveUrl(this._gateway.thinq2Uri + '/', 'service/homes');
+      const homesUrl = resolveUrl(this.gateway?.api_base_url, 'service/homes');
       this._homes = await requestClient.get(homesUrl, { headers }).then(res => res.data).then(data => data.result.item);
     }
 
@@ -172,17 +163,12 @@ export class API {
 
   public async sendCommandToDevice(device_id: string, values: Record<string, any>) {
     const headers = this.defaultHeaders;
-    const controlUrl = resolveUrl(this._gateway.thinq2Uri + '/', 'service/devices/'+device_id+'/control-sync');
+    const controlUrl = resolveUrl(this.gateway?.api_base_url, 'service/devices/'+device_id+'/control-sync');
     return requestClient.post(controlUrl, {
       'ctrlKey': 'basicCtrl',
       'command': 'Set',
       ...values,
     }, { headers }).then(resp => resp.data);
-  }
-
-  public async gateway() {
-    const headers = this.defaultHeaders;
-    return await requestClient.get(constants.GATEWAY_URL, { headers }).then(res => res.data.result);
   }
 
   public signature(message, secret) {
@@ -191,8 +177,9 @@ export class API {
 
   public async ready() {
     // get gateway first
-    if (!this._gateway) {
-      this._gateway = await this.gateway();
+    if (!this.gateway) {
+      const gateway = await requestClient.get(constants.GATEWAY_URL, { headers: this.defaultHeaders }).then(res => res.data.result);
+      this.gateway = new Gateway(gateway);
     }
 
     if (!this.session?.hasToken()) {
@@ -209,7 +196,7 @@ export class API {
   }
 
   public async refreshNewToken() {
-    const tokenUrl = resolveUrl(constants.OAUTH_BASE_URL + '/', 'oauth2/token');
+    const tokenUrl = resolveUrl(this.oauth_base_url(), 'oauth2/token');
     const data = {
       grant_type: 'refresh_token',
       refresh_token: this.session?.refreshToken,
@@ -221,7 +208,7 @@ export class API {
     const signature = this.signature(`${requestUrl}\n${timestamp}`, constants.OAUTH_SECRET_KEY);
 
     const headers = {
-      'lgemp-x-app-key': constants.OAUTH_CLIENT_KEY,
+      'lgemp-x-app-key': constants.CLIENT_ID,
       'lgemp-x-signature': signature,
       'lgemp-x-date': timestamp,
       'Accept': 'application/json',
@@ -229,11 +216,11 @@ export class API {
     };
     const resp = await requestClient.post(tokenUrl, qs.stringify(data), { headers }).then(resp => resp.data);
 
-    this.session?.newToken(resp.access_token, this.session?.refreshToken, resp.expiredIn);
+    this.session?.newToken(resp.access_token, resp.expiredIn);
   }
 
   protected async getUserNumber() {
-    const profileUrl = resolveUrl(constants.OAUTH_BASE_URL + '/', 'users/profile');
+    const profileUrl = resolveUrl(this.oauth_base_url(), 'users/profile');
     const timestamp = DateTime.utc().toRFC2822();
     const signature = this.signature(`/users/profile\n${timestamp}`, constants.OAUTH_SECRET_KEY);
 
@@ -291,5 +278,9 @@ export class API {
       'x-message-id': random_string(22),
       ...headers,
     };
+  }
+
+  private oauth_base_url() {
+    return `https://${this.country.toLowerCase()}.lgeapi.com/`;
   }
 }

@@ -3,7 +3,7 @@ import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { LGThinQPlatformAccessory } from './platformAccessory';
 import {ThinQ} from './lib/ThinQ';
-import {baseDevice} from './baseDevice';
+import {EventEmitter} from 'events';
 
 /**
  * HomebridgePlatform
@@ -18,11 +18,17 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
   public readonly accessories: PlatformAccessory[] = [];
 
   public readonly ThinQ: ThinQ | undefined;
+  public readonly events: EventEmitter;
+  private readonly debugMode: boolean = false;
+  private readonly intervalTime = 5000; // 5 second
+
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
+    this.events = new EventEmitter();
+    this.debugMode = config.debug as boolean;
     if (!config.country || !config.language || !config.username || !config.password) {
       this.log.error('Missing required config parameter.');
       return;
@@ -89,15 +95,23 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
       }
 
-      this.monitorDevice(lgThinQDevice, device.id);
+      this.events.on(device.id, lgThinQDevice.updateAccessoryCharacteristic.bind(lgThinQDevice));
     }
+
+    this.startMonitor();
   }
 
-  protected monitorDevice(lgThinQDevice: baseDevice, device_id: string) {
+  protected startMonitor() {
     setInterval(() => {
-      this.ThinQ?.device(device_id).then(device => {
-        lgThinQDevice.updateAccessoryCharacteristic(device);
+      this.ThinQ?.devices().then((devices) => {
+        for (const device of devices) {
+          if (this.debugMode) {
+            this.log.debug('monitor: ', device.toString());
+          }
+
+          this.events.emit(device.id, device);
+        }
       });
-    }, lgThinQDevice.intervalTime || 1000);
+    }, this.intervalTime);
   }
 }

@@ -8,8 +8,6 @@ export const API_CLIENT_ID = '0396d48364f9a25824a3121758b512686f0ead3a5a4349b5b7
 
 export const APPLICATION_KEY = '6V1V8H2BN5P9ZQGOI5DAQ92YZBDO3EK9'; // for spx login
 
-export const OAUTH_BASE_URL = 'https://kr.lgeapi.com/';
-
 export enum DeviceType {
   REFRIGERATOR = 101,
   KIMCHI_REFRIGERATOR = 102,

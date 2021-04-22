@@ -3,7 +3,6 @@ import {PlatformAccessory} from 'homebridge';
 import {Device} from './lib/Device';
 
 export class baseDevice {
-  public intervalTime = 1000; // 1s
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
     protected readonly accessory: PlatformAccessory,
@@ -21,6 +20,5 @@ export class baseDevice {
 
   public updateAccessoryCharacteristic(device: Device) {
     this.accessory.context.device = device;
-    this.platform.log.debug('monitor: ', device.toString());
   }
 }

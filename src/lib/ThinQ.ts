@@ -19,7 +19,7 @@ export class ThinQ {
       await this.api.refreshNewToken();
       return await this.api.getListDevices();
     });
-    return listDevices.map((device) => new Device(device));
+    return listDevices.map(device => new Device(device));
   }
 
   public async device(id: string) {

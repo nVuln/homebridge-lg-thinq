@@ -4,7 +4,6 @@ import {Device} from '../lib/Device';
 import {baseDevice} from '../baseDevice';
 
 export default class Refrigerator extends baseDevice {
-  public intervalTime = 10000; // every 10 second
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
     protected readonly accessory: PlatformAccessory,
