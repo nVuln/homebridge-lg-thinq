@@ -68,7 +68,7 @@ export default class AirPurifier extends baseDevice {
 
     this.serviceLight = new Lightbulb('Light');
     this.serviceLight.getCharacteristic(Characteristic.On).onSet(this.setLight.bind(this));
-    this.serviceAirPurifier.addLinkedService(this.serviceLight);
+    this.serviceLight.addLinkedService(this.serviceAirPurifier);
 
     this.updateAccessoryCharacteristic(device);
   }

@@ -27,25 +27,25 @@ export default class Refrigerator extends baseDevice {
     serviceFreezer.getCharacteristic(Characteristic.TargetTemperature)
       .onSet(this.setFreezerTemperature.bind(this))
       .setProps({ minValue: -24, maxValue: -14, minStep: 1 });
-    serviceLabel.addLinkedService(serviceFreezer);
+    serviceFreezer.addLinkedService(serviceLabel);
 
     const serviceFridge = this.createThermostat('Fridge');
     serviceFridge.getCharacteristic(Characteristic.TargetTemperature)
       .onSet(this.setFridgeTemperature.bind(this))
       .setProps({ minValue: 1, maxValue: 7, minStep: 1 });
-    serviceLabel.addLinkedService(serviceFridge);
+    serviceFridge.addLinkedService(serviceLabel);
 
     // Door open state
-    const serviceDoorOpened = accessory.getService(ContactSensor) || accessory.addService(ContactSensor, 'Refrigerator Opened');
+    const serviceDoorOpened = accessory.getService(ContactSensor) || accessory.addService(ContactSensor, 'Refrigerator Door Closed');
     const contactSensorValue = device.data.snapshot?.refState?.atLeastOneDoorOpen === 'CLOSE' ?
       Characteristic.ContactSensorState.CONTACT_DETECTED : Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
     serviceDoorOpened.setCharacteristic(Characteristic.ContactSensorState, contactSensorValue);
-    serviceLabel.addLinkedService(serviceDoorOpened);
+    serviceDoorOpened.addLinkedService(serviceLabel);
 
     // Express Mode
     const serviceExpressMode = accessory.getService(Switch) || accessory.addService(Switch, 'Express Mode');
     serviceExpressMode.getCharacteristic(Characteristic.On).onSet(this.setExpressMode.bind(this));
-    serviceLabel.addLinkedService(serviceExpressMode);
+    serviceExpressMode.addLinkedService(serviceLabel);
 
     this.updateAccessoryCharacteristic(device);
   }
