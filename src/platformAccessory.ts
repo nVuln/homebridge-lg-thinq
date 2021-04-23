@@ -2,6 +2,7 @@ import { Categories } from 'homebridge';
 import {Device} from './lib/Device';
 import AirPurifier from './devices/AirPurifier';
 import Refrigerator from './devices/Refrigerator';
+import WasherDryer from './devices/WasherDryer';
 
 /**
  * Platform Accessory
@@ -13,6 +14,7 @@ export class LGThinQPlatformAccessory {
     switch (device.type) {
       case 'AIR_PURIFIER': return AirPurifier;
       case 'REFRIGERATOR': return Refrigerator;
+      case 'WASHER': return WasherDryer;
     }
 
     return null;

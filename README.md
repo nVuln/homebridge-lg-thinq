@@ -18,4 +18,4 @@ A plugin for interacting with the "LG ThinQ" system, which can control new LG sm
 | --- | --- | --- | --- |
 | Refrigerator | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | Air Purifier | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| Washer | :warning: coming soon | :warning: | :warning: |
+| Washer Dryer | :warning: working | :warning: needs testing | :warning: |

@@ -31,6 +31,10 @@ export class Device {
     return this.data.modemInfo?.appVersion;
   }
 
+  public get snapshot() {
+    return this.data.snapshot;
+  }
+
   public toString() {
     return `${this.id}: ${this.name} (${this.type} ${this.model})`;
   }
