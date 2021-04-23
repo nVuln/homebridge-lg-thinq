@@ -24,11 +24,6 @@
 	  "type": "string",
 	  "default": "en-US",
 	  "required": true
-	},
-	"debug": {
-	  "title": "Enable Debug Mode?",
-	  "type": "boolean",
-	  "default": false
 	}
   },
   "layout": [
@@ -44,7 +39,6 @@
 	  ]
 	},
 	"country",
-	"language",
-	"debug"
+	"language"
   ]
 }

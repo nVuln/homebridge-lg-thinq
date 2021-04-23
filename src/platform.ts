@@ -19,7 +19,6 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
 
   public readonly ThinQ: ThinQ | undefined;
   public readonly events: EventEmitter;
-  private readonly debugMode: boolean = false;
   private readonly intervalTime = 5000; // 5 second
 
   constructor(
@@ -28,7 +27,6 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
     public readonly api: API,
   ) {
     this.events = new EventEmitter();
-    this.debugMode = config.debug as boolean;
     if (!config.country || !config.language || !config.username || !config.password) {
       this.log.error('Missing required config parameter.');
       return;
@@ -67,6 +65,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
     const devices = await this.ThinQ.devices();
 
     for (const device of devices) {
+      this.log.debug('Found device: ', device.toString());
       const existingAccessory = this.accessories.find(accessory => accessory.UUID === device.id);
 
       const accessoryType = LGThinQPlatformAccessory.make(device);
@@ -106,10 +105,6 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
     setInterval(() => {
       this.ThinQ?.devices().then((devices) => {
         for (const device of devices) {
-          if (this.debugMode) {
-            this.log.debug('monitor: ', device.toString());
-          }
-
           this.events.emit(device.id, device);
         }
       });
