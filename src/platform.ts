@@ -72,7 +72,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       const accessoryType = LGThinQPlatformAccessory.make(device);
       if (accessoryType === null) {
         this.log.debug('Device not supported: ' + device.toString());
-        this.log.debug('device data: ', JSON.stringify(device));
+        this.log.debug('data: ', JSON.stringify(device));
         continue;
       }
 

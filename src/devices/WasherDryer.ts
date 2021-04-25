@@ -26,7 +26,7 @@ export default class WasherDryer extends baseDevice {
 
     const device: Device = accessory.context.device;
 
-    if (typeof device.snapshot.washerDryer !== 'object') {
+    if (typeof device.snapshot?.washerDryer !== 'object') {
       this.platform.log.debug('washerDryer data not exists: ', JSON.stringify(device));
       return;
     }
