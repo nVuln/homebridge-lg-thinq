@@ -24,6 +24,7 @@ export class API {
   protected gateway: Gateway | undefined;
   protected session: Session | undefined;
   protected userNumber!: string;
+  protected lgeapi_url!: string;
 
   constructor(
     protected country: string,
@@ -59,7 +60,12 @@ export class API {
 
     const loginUrl = resolveUrl(this.gateway?.emp_base_url, 'emp/v2.0/account/session/' + encodeURIComponent(this.username));
     const res = await requestClient.post(loginUrl, qs.stringify(data), { headers }).then(res => res.data).catch(err => {
-      throw new AuthenticationError(err.response.data.error.message);
+      const {code, message} = err.response.data.error;
+      if (code === 'MS.001.03') {
+        throw new AuthenticationError('Double-check your country in configuration');
+      }
+
+      throw new AuthenticationError(message);
     });
 
     // get secret key for emp signature
@@ -96,6 +102,8 @@ export class API {
     if (token.status !== 1) {
       throw new TokenError(token.message);
     }
+
+    this.lgeapi_url = token.oauth2_backend_url || `https://${this.country.toLowerCase()}.lgeapi.com/`;
 
     return new Session(token.access_token, token.refresh_token, token.expires_in);
   }
@@ -196,7 +204,7 @@ export class API {
   }
 
   public async refreshNewToken() {
-    const tokenUrl = resolveUrl(this.oauth_base_url(), 'oauth2/token');
+    const tokenUrl = resolveUrl(this.lgeapi_url, 'oauth2/token');
     const data = {
       grant_type: 'refresh_token',
       refresh_token: this.session?.refreshToken,
@@ -220,7 +228,7 @@ export class API {
   }
 
   protected async getUserNumber() {
-    const profileUrl = resolveUrl(this.oauth_base_url(), 'users/profile');
+    const profileUrl = resolveUrl(this.lgeapi_url, 'users/profile');
     const timestamp = DateTime.utc().toRFC2822();
     const signature = this.signature(`/users/profile\n${timestamp}`, constants.OAUTH_SECRET_KEY);
 
@@ -278,9 +286,5 @@ export class API {
       'x-message-id': random_string(22),
       ...headers,
     };
-  }
-
-  private oauth_base_url() {
-    return `https://${this.country.toLowerCase()}.lgeapi.com/`;
   }
 }
