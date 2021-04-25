@@ -61,6 +61,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       this.log.info('ThinQ API is not ready. please check configuration and try again.');
       return;
     }
+    const accessoriesToRemoveUUID = this.accessories.map(accessory => accessory.UUID);
 
     const devices = await this.ThinQ.devices();
 
@@ -78,6 +79,8 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       let lgThinQDevice;
 
       if (existingAccessory) {
+        accessoriesToRemoveUUID.splice(accessoriesToRemoveUUID.indexOf(device.id), 1);
+
         this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
         existingAccessory.context.device = device;
         lgThinQDevice = new accessoryType(this, existingAccessory);
@@ -97,6 +100,9 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
 
       this.events.on(device.id, lgThinQDevice.updateAccessoryCharacteristic.bind(lgThinQDevice));
     }
+
+    const accessoriesToRemove = this.accessories.filter(accessory => accessoriesToRemoveUUID.includes(accessory.UUID));
+    this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, accessoriesToRemove);
 
     this.startMonitor();
   }
