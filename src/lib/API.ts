@@ -126,7 +126,7 @@ export class API {
 
   public async getDeviceInfo(device_id: string) {
     const headers = this.defaultHeaders;
-    const deviceUrl = resolveUrl(this.gateway?.api_base_url, 'service/devices/' + device_id);
+    const deviceUrl = resolveUrl(this.gateway?.thinq2_url, 'service/devices/' + device_id);
 
     return requestClient.get(deviceUrl, { headers }).then(res => res.data.result);
   }
@@ -138,7 +138,7 @@ export class API {
 
     // get all devices in home
     for (let i = 0; i < homes.length; i++) {
-      const homeUrl = resolveUrl(this.gateway?.api_base_url, 'service/homes/' + homes[i].homeId);
+      const homeUrl = resolveUrl(this.gateway?.thinq2_url, 'service/homes/' + homes[i].homeId);
       const resp = await requestClient.get(homeUrl, { headers }).then(res => res.data);
 
       // filter thinq2 device only
@@ -158,7 +158,7 @@ export class API {
   public async getListHomes() {
     if (!this._homes) {
       const headers = this.defaultHeaders;
-      const homesUrl = resolveUrl(this.gateway?.api_base_url, 'service/homes');
+      const homesUrl = resolveUrl(this.gateway?.thinq2_url, 'service/homes');
       this._homes = await requestClient.get(homesUrl, { headers }).then(res => res.data).then(data => data.result.item);
     }
 
@@ -167,7 +167,7 @@ export class API {
 
   public async sendCommandToDevice(device_id: string, values: Record<string, any>) {
     const headers = this.defaultHeaders;
-    const controlUrl = resolveUrl(this.gateway?.api_base_url, 'service/devices/'+device_id+'/control-sync');
+    const controlUrl = resolveUrl(this.gateway?.thinq2_url, 'service/devices/'+device_id+'/control-sync');
     return requestClient.post(controlUrl, {
       'ctrlKey': 'basicCtrl',
       'command': 'Set',
