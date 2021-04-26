@@ -141,17 +141,13 @@ export class API {
       const homeUrl = resolveUrl(this.gateway?.api_base_url, 'service/homes/' + homes[i].homeId);
       const resp = await requestClient.get(homeUrl, { headers }).then(res => res.data);
 
-      devices.push(...resp.result.devices);
+      // filter thinq2 device only
+      const thinq2devices = resp.result.devices.filter(device => {
+        return device.platformType === 'thinq2';
+      });
+      devices.push(...thinq2devices);
     }
-    /*
-    for (let i = 0; i < devices.length; i++) {
-      let device = devices[i];
-      const Info = await this.getDeviceModelInfo(device);
-      device = {...device, Info: Info};
 
-      devices[i] = device;
-    }
-*/
     return devices;
   }
 

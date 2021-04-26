@@ -3,6 +3,7 @@ import {Device} from './lib/Device';
 import AirPurifier from './devices/AirPurifier';
 import Refrigerator from './devices/Refrigerator';
 import WasherDryer from './devices/WasherDryer';
+import Dishwasher from './devices/Dishwasher';
 
 /**
  * Platform Accessory
@@ -15,6 +16,7 @@ export class LGThinQPlatformAccessory {
       case 'AIR_PURIFIER': return AirPurifier;
       case 'REFRIGERATOR': return Refrigerator;
       case 'WASHER': return WasherDryer;
+      case 'DISHWASHER': return Dishwasher;
     }
 
     return null;
