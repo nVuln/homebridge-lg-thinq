@@ -3,6 +3,7 @@ import {PlatformAccessory} from 'homebridge';
 import {Device} from './lib/Device';
 
 export class baseDevice {
+  public intervalTime = 10000;
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
     protected readonly accessory: PlatformAccessory,

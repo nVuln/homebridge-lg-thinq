@@ -3,7 +3,7 @@ export class Session {
 
   constructor(
     private _accessToken: string,
-    private _refreshToken: string,
+    private readonly _refreshToken: string,
     private expiresIn: number,
   ) {
     this._refreshToken = _refreshToken;
