@@ -1,6 +1,6 @@
 import {baseDevice} from '../baseDevice';
 import {LGThinQHomebridgePlatform} from '../platform';
-import {PlatformAccessory} from 'homebridge';
+import {CharacteristicValue, PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
 
 export default class Dehumidifier extends baseDevice {
@@ -24,10 +24,36 @@ export default class Dehumidifier extends baseDevice {
 
     this.serviceDehumidifier = accessory.getService(HumidifierDehumidifier) || accessory.addService(HumidifierDehumidifier);
     this.serviceDehumidifier.setCharacteristic(Characteristic.Name, device.name);
-    this.serviceDehumidifier.setCharacteristic(Characteristic.TargetHumidifierDehumidifierState, 0); // AUTO
+    this.serviceDehumidifier.getCharacteristic(Characteristic.TargetHumidifierDehumidifierState)
+      .setProps({
+        minValue: 0,
+        maxValue: 1,
+        validValues: [0, 1],
+      });
+    this.serviceDehumidifier.updateCharacteristic(Characteristic.TargetHumidifierDehumidifierState, 0);
+
+    this.serviceDehumidifier.getCharacteristic(Characteristic.RelativeHumidityHumidifierThreshold)
+      .onSet(this.setHumidityThreshold.bind(this))
+      .setProps({
+        minValue: 0,
+        maxValue: 100,
+        minStep: 1,
+      });
 
     this.serviceTemperatureSensor = accessory.getService(TemperatureSensor) || accessory.addService(TemperatureSensor);
     this.serviceTemperatureSensor.addLinkedService(this.serviceDehumidifier);
+
+    this.updateAccessoryCharacteristic(device);
+  }
+
+  async setHumidityThreshold(value: CharacteristicValue) {
+    const device: Device = this.accessory.context.device;
+    this.platform.ThinQ?.deviceControl(device.id, {
+      dataKey: 'airState.humidity.desired',
+      dataValue: value as number,
+    });
+    device.data.snapshot['airState.humidity.desired'] = value;
+    this.updateAccessoryCharacteristic(device);
   }
 
   public updateAccessoryCharacteristic(device: Device) {
@@ -39,6 +65,7 @@ export default class Dehumidifier extends baseDevice {
     const Status = new DehumidifierStatus(device.snapshot);
     this.serviceDehumidifier.updateCharacteristic(Characteristic.Active, Status.isPowerOn ? 1 : 0);
     this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentRelativeHumidity, Status.humidityCurrent);
+    this.serviceDehumidifier.updateCharacteristic(Characteristic.RelativeHumidityHumidifierThreshold, Status.humidityTarget);
 
     if (Status.isPowerOn) {
       this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentHumidifierDehumidifierState, Status.isHumidifying ? 2 : 3);
