@@ -4,6 +4,7 @@ import AirPurifier from './devices/AirPurifier';
 import Refrigerator from './devices/Refrigerator';
 import WasherDryer from './devices/WasherDryer';
 import Dishwasher from './devices/Dishwasher';
+import Dehumidifier from './devices/Dehumidifier';
 
 /**
  * Platform Accessory
@@ -18,6 +19,7 @@ export class LGThinQPlatformAccessory {
       case 'WASHER': return WasherDryer;
       case 'DRYER': return WasherDryer;
       case 'DISHWASHER': return Dishwasher;
+      case 'DEHUMIDIFIER': return Dehumidifier;
     }
 
     return null;
@@ -26,6 +28,7 @@ export class LGThinQPlatformAccessory {
   public static category(device: Device) {
     switch (device.type) {
       case 'AIR_PURIFIER': return Categories.AIR_PURIFIER;
+      case 'DEHUMIDIFIER': return Categories.AIR_DEHUMIDIFIER;
       default: return Categories.OTHER;
     }
   }

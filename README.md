@@ -49,8 +49,9 @@ npm i -g homebridge-lg-thinq
 | --- | --- | --- | --- |
 | Refrigerator | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | Air Purifier | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| Washer | :heavy_check_mark: | :warning: needs testing | :warning: |
+| Washer & Dryer | :heavy_check_mark: | :warning: needs testing | :warning: |
 | Dishwasher | :heavy_check_mark: | :warning: needs testing | :warning: |
+| Dehumidifier | :heavy_check_mark: | :warning: needs testing | :warning: |
 
 ## Support
 
