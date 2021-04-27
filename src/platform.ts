@@ -3,7 +3,7 @@ import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { LGThinQPlatformAccessory } from './platformAccessory';
 import {ThinQ} from './lib/ThinQ';
-import {baseDevice} from './baseDevice';
+import {EventEmitter} from 'events';
 
 /**
  * HomebridgePlatform
@@ -18,12 +18,15 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
   public readonly accessories: PlatformAccessory[] = [];
 
   public readonly ThinQ: ThinQ | undefined;
+  public readonly events: EventEmitter;
+  private readonly intervalTime = 5000; // 5 second
 
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
+    this.events = new EventEmitter();
     if (!config.country || !config.language || !config.username || !config.password) {
       this.log.error('Missing required config parameter.');
       return;
@@ -95,23 +98,27 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
       }
 
-      this.monitorAccessory(device.id, lgThinQDevice);
+      this.events.on(device.id, lgThinQDevice.updateAccessoryCharacteristic.bind(lgThinQDevice));
     }
 
     const accessoriesToRemove = this.accessories.filter(accessory => accessoriesToRemoveUUID.includes(accessory.UUID));
-    if (accessoriesToRemove) {
+    if (accessoriesToRemove.length) {
       this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, accessoriesToRemove);
       accessoriesToRemove.map(accessory => {
         this.log.info('Removing accessory:', accessory.context.device.name);
       });
     }
+
+    this.startMonitor();
   }
 
-  protected monitorAccessory(id, lgThinQDevice: baseDevice) {
+  protected startMonitor() {
     setInterval(() => {
-      this.ThinQ?.device(id).then((device) => {
-        lgThinQDevice.updateAccessoryCharacteristic(device);
+      this.ThinQ?.devices().then((devices) => {
+        for (const device of devices) {
+          this.events.emit(device.id, device);
+        }
       });
-    }, lgThinQDevice.intervalTime);
+    }, this.intervalTime);
   }
 }
