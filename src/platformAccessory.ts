@@ -16,6 +16,7 @@ export class LGThinQPlatformAccessory {
       case 'AIR_PURIFIER': return AirPurifier;
       case 'REFRIGERATOR': return Refrigerator;
       case 'WASHER': return WasherDryer;
+      case 'DRYER': return WasherDryer;
       case 'DISHWASHER': return Dishwasher;
     }
 

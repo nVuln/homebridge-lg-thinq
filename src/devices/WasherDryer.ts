@@ -4,10 +4,10 @@ import {PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
 
 export default class WasherDryer extends baseDevice {
-  protected serviceWasher;
+  protected serviceWasherDryer;
   protected serviceDoorLocked;
   protected serviceChildLocked;
-  protected serviceWashingTemperature;
+  protected serviceTemperature;
 
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
@@ -31,24 +31,24 @@ export default class WasherDryer extends baseDevice {
       return;
     }
 
-    this.serviceWasher = accessory.getService(Valve) || accessory.addService(Valve, 'Washer');
-    this.serviceWasher.setCharacteristic(Characteristic.Name, device.name);
-    this.serviceWasher.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.WATER_FAUCET);
-    this.serviceWasher.getCharacteristic(Characteristic.RemainingDuration).setProps({
+    this.serviceWasherDryer = accessory.getService(Valve) || accessory.addService(Valve, device.name);
+    this.serviceWasherDryer.setCharacteristic(Characteristic.Name, device.name);
+    this.serviceWasherDryer.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.WATER_FAUCET);
+    this.serviceWasherDryer.getCharacteristic(Characteristic.RemainingDuration).setProps({
       maxValue: 86400, // 1 day
     });
 
     this.serviceDoorLocked = accessory.getService('Door Lock') || accessory.addService(Switch, 'Door Lock', 'Door Lock');
     this.serviceDoorLocked.setCharacteristic(Characteristic.Name, 'Door Lock');
-    this.serviceDoorLocked.addLinkedService(this.serviceWasher);
+    this.serviceDoorLocked.addLinkedService(this.serviceWasherDryer);
 
     this.serviceChildLocked = accessory.getService('Child Lock') || accessory.addService(Switch, 'Child Lock', 'Child Lock');
     this.serviceChildLocked.setCharacteristic(Characteristic.Name, 'Child Lock');
-    this.serviceChildLocked.addLinkedService(this.serviceWasher);
+    this.serviceChildLocked.addLinkedService(this.serviceWasherDryer);
 
-    this.serviceWashingTemperature = accessory.getService(TemperatureSensor)
-      || accessory.addService(TemperatureSensor, 'Washing Temperature');
-    this.serviceWashingTemperature.addLinkedService(this.serviceWasher);
+    this.serviceTemperature = accessory.getService(TemperatureSensor)
+      || accessory.addService(TemperatureSensor, 'Temperature');
+    this.serviceTemperature.addLinkedService(this.serviceWasherDryer);
 
     this.updateAccessoryCharacteristic(device);
   }
@@ -58,9 +58,9 @@ export default class WasherDryer extends baseDevice {
 
     const {Characteristic} = this.platform;
     const Status = new WasherDryerStatus(device.snapshot?.washerDryer);
-    this.serviceWasher.updateCharacteristic(Characteristic.Active, Status.isPowerOn ? 1 : 0);
-    this.serviceWasher.updateCharacteristic(Characteristic.InUse, (Status.isWasherRunning || Status.isDryerRunning) ? 1 : 0);
-    this.serviceWasher.updateCharacteristic(Characteristic.RemainingDuration, Status.remainDuration);
+    this.serviceWasherDryer.updateCharacteristic(Characteristic.Active, Status.isPowerOn ? 1 : 0);
+    this.serviceWasherDryer.updateCharacteristic(Characteristic.InUse, Status.isRunning ? 1 : 0);
+    this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, Status.remainDuration);
 
     this.serviceDoorLocked.updateCharacteristic(Characteristic.On, Status.isDoorLocked as boolean);
     this.serviceDoorLocked.setHiddenService(!Status.isPowerOn);
@@ -68,8 +68,8 @@ export default class WasherDryer extends baseDevice {
     this.serviceChildLocked.updateCharacteristic(Characteristic.On, Status.isChildLocked as boolean);
     this.serviceChildLocked.setHiddenService(!Status.isPowerOn);
 
-    this.serviceWashingTemperature.updateCharacteristic(Characteristic.CurrentTemperature, Status.washingTemperature);
-    this.serviceWashingTemperature.setHiddenService(!Status.isPowerOn);
+    this.serviceTemperature.updateCharacteristic(Characteristic.CurrentTemperature, Status.washingTemperature);
+    this.serviceTemperature.setHiddenService(!Status.isPowerOn);
   }
 }
 
@@ -80,12 +80,8 @@ export class WasherDryerStatus {
     return this.data?.state !== 'POWEROFF';
   }
 
-  public get isWasherRunning() {
-    return this.isPowerOn && this.data?.state === 'RUNNING';
-  }
-
-  public get isDryerRunning() {
-    return this.isPowerOn && this.data?.state === 'DRYING';
+  public get isRunning() {
+    return this.isPowerOn && ['RUNNING', 'DRYING', 'COOLING'].includes(this.data?.state);
   }
 
   public get isDoorLocked() {
