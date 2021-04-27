@@ -57,26 +57,53 @@ export default class WasherDryer extends baseDevice {
     super.updateAccessoryCharacteristic(device);
 
     const {Characteristic} = this.platform;
-    const isPowerOn = device.snapshot.washerDryer?.state !== 'POWEROFF';
-    const isWasherRunning = isPowerOn && device.snapshot.washerDryer?.state === 'RUNNING';
-    const isDryerRunning = isPowerOn && device.snapshot.washerDryer?.state === 'DRYING';
-    this.serviceWasher.updateCharacteristic(Characteristic.Active, isPowerOn ? 1 : 0);
-    this.serviceWasher.updateCharacteristic(Characteristic.InUse, (isWasherRunning || isDryerRunning) ? 1 : 0);
+    const Status = new WasherDryerStatus(device.snapshot?.washerDryer);
+    this.serviceWasher.updateCharacteristic(Characteristic.Active, Status.isPowerOn ? 1 : 0);
+    this.serviceWasher.updateCharacteristic(Characteristic.InUse, (Status.isWasherRunning || Status.isDryerRunning) ? 1 : 0);
+    this.serviceWasher.updateCharacteristic(Characteristic.RemainingDuration, Status.remainDuration);
 
-    const remainTimeInMinute = device.snapshot.washerDryer?.remainTimeHour * 60 + device.snapshot.washerDryer?.remainTimeMinute;
-    this.serviceWasher.updateCharacteristic(Characteristic.RemainingDuration, remainTimeInMinute * 60);
+    this.serviceDoorLocked.updateCharacteristic(Characteristic.On, Status.isDoorLocked as boolean);
+    this.serviceDoorLocked.setHiddenService(!Status.isPowerOn);
 
-    const isDoorLocked = device.snapshot.washerDryer?.doorLock === 'DOOR_LOCK_ON';
-    this.serviceDoorLocked.updateCharacteristic(Characteristic.On, isDoorLocked as boolean);
-    this.serviceDoorLocked.setHiddenService(!isPowerOn);
+    this.serviceChildLocked.updateCharacteristic(Characteristic.On, Status.isChildLocked as boolean);
+    this.serviceChildLocked.setHiddenService(!Status.isPowerOn);
 
-    const isChildLocked = device.snapshot.washerDryer?.childLock === 'CHILDLOCK_ON';
-    this.serviceChildLocked.updateCharacteristic(Characteristic.On, isChildLocked as boolean);
-    this.serviceChildLocked.setHiddenService(!isPowerOn);
+    this.serviceWashingTemperature.updateCharacteristic(Characteristic.CurrentTemperature, Status.washingTemperature);
+    this.serviceWashingTemperature.setHiddenService(!Status.isPowerOn);
+  }
+}
 
-    let temp = device.snapshot.washerDryer?.temp.match(/[A-Z_]+_([0-9]+)/);
+export class WasherDryerStatus {
+  constructor(protected data) {}
+
+  public get isPowerOn() {
+    return this.data?.state !== 'POWEROFF';
+  }
+
+  public get isWasherRunning() {
+    return this.isPowerOn && this.data?.state === 'RUNNING';
+  }
+
+  public get isDryerRunning() {
+    return this.isPowerOn && this.data?.state === 'DRYING';
+  }
+
+  public get isDoorLocked() {
+    return this.data?.doorLock === 'DOOR_LOCK_ON';
+  }
+
+  public get isChildLocked() {
+    return this.data?.isChildLocked === 'CHILDLOCK_ON';
+  }
+
+  public get washingTemperature() {
+    let temp = this.data?.temp?.match(/[A-Z_]+_([0-9]+)/);
     temp = temp && temp.length ? temp[1] : 0;
-    this.serviceWashingTemperature.updateCharacteristic(Characteristic.CurrentTemperature, temp as number);
-    this.serviceWashingTemperature.setHiddenService(!isPowerOn);
+    return temp as number;
+  }
+
+  public get remainDuration() {
+    const remainTimeInMinute = this.data?.remainTimeHour * 60 + this.data?.remainTimeMinute;
+    return remainTimeInMinute * 60;
   }
 }

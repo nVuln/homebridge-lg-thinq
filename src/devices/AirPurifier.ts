@@ -124,28 +124,51 @@ export default class AirPurifier extends baseDevice {
       Characteristic,
     } = this.platform;
 
-    const active = device.data.snapshot['airState.operation'] as boolean;
-    this.serviceAirPurifier.updateCharacteristic(Characteristic.Active, active?Characteristic.Active.ACTIVE:Characteristic.Active.INACTIVE);
-
-    const currentState = active ? Characteristic.CurrentAirPurifierState.PURIFYING_AIR : Characteristic.CurrentAirPurifierState.INACTIVE;
-    this.serviceAirPurifier.updateCharacteristic(Characteristic.CurrentAirPurifierState, currentState);
+    const Status = new AirPurifierStatus(device.snapshot);
+    this.serviceAirPurifier.updateCharacteristic(Characteristic.Active, Status.isPowerOn ? 1 : 0);
+    this.serviceAirPurifier.updateCharacteristic(Characteristic.CurrentAirPurifierState, Status.isPowerOn ? 2 : 0);
 
     /*const values = [RotateSpeed.AUTO, RotateSpeed.LOW, RotateSpeed.MEDIUM, RotateSpeed.HIGH, RotateSpeed.EXTRA];
     const rotateSpeed = values.indexOf(device.data.snapshot['airState.windStrength'] || RotateSpeed.AUTO);
     serviceAirPurifier?.updateCharacteristic(Characteristic.RotationSpeed, rotateSpeed);*/
 
-    const rotate = (device.data.snapshot['airState.circulate.rotate'] || 0) as boolean;
-    const swingMode = rotate ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED;
-    this.serviceAirPurifier.updateCharacteristic(Characteristic.SwingMode, swingMode);
+    this.serviceAirPurifier.updateCharacteristic(Characteristic.SwingMode, Status.isSwing ? 1 : 0);
 
-    this.serviceAirQuanlity.updateCharacteristic(Characteristic.AirQuality, parseInt(device.data.snapshot['airState.quality.overall']));
-    this.serviceAirQuanlity.updateCharacteristic(Characteristic.PM2_5Density, parseInt(device.data.snapshot['airState.quality.PM2']) || 0);
-    this.serviceAirQuanlity.updateCharacteristic(Characteristic.PM10Density, parseInt(device.data.snapshot['airState.quality.PM10']) || 0);
+    this.serviceAirQuanlity.updateCharacteristic(Characteristic.AirQuality, Status.airQuality.overall);
+    this.serviceAirQuanlity.updateCharacteristic(Characteristic.PM2_5Density, Status.airQuality.PM2);
+    this.serviceAirQuanlity.updateCharacteristic(Characteristic.PM10Density, Status.airQuality.PM10);
 
-    this.serviceLight.updateCharacteristic(Characteristic.On, active && (device.data.snapshot['airState.lightingState.signal'] as boolean));
-    this.serviceLight.setHiddenService(!active);
+    this.serviceLight.updateCharacteristic(Characteristic.On, Status.isLightOn);
+    this.serviceLight.setHiddenService(!Status.isPowerOn);
 
-    const humidityValue = device.data.snapshot['airState.humidity.current'] || 0;
-    this.serviceHumiditySensor.setCharacteristic(Characteristic.CurrentRelativeHumidity, humidityValue);
+    this.serviceHumiditySensor.setCharacteristic(Characteristic.CurrentRelativeHumidity, Status.humidityValue);
+  }
+}
+
+export class AirPurifierStatus {
+  constructor(protected data) {}
+
+  public get isPowerOn() {
+    return this.data['airState.operation'] as boolean;
+  }
+
+  public get isLightOn() {
+    return this.isPowerOn && this.data['airState.lightingState.signal'] as boolean;
+  }
+
+  public get isSwing() {
+    return (this.data['airState.circulate.rotate'] || 0) as boolean;
+  }
+
+  public get humidityValue() {
+    return this.data['airState.humidity.current'] || 0;
+  }
+
+  public get airQuality() {
+    return {
+      overall: parseInt(this.data['airState.quality.overall']),
+      PM2: parseInt(this.data['airState.quality.PM2'] || 0),
+      PM10: parseInt(this.data['airState.quality.PM10'] || 0),
+    };
   }
 }

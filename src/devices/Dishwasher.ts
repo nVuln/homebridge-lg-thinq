@@ -35,12 +35,27 @@ export default class Dishwasher extends baseDevice {
     super.updateAccessoryCharacteristic(device);
 
     const {Characteristic} = this.platform;
-    const isPowerOn = !['POWEROFF', 'POWERFAIL'].includes(device.snapshot.dishwasher?.state);
-    const isRunning = device.snapshot.dishwasher?.state === 'RUNNING';
-    this.serviceDishwasher.updateCharacteristic(Characteristic.Active, isPowerOn ? 1 : 0);
-    this.serviceDishwasher.updateCharacteristic(Characteristic.InUse, isRunning ? 1 : 0);
+    const Status = new DishwasherStatus(device.snapshot?.dishwasher);
 
-    const remainTimeInMinute = device.snapshot.dishwasher?.remainTimeHour * 60 + device.snapshot.dishwasher?.remainTimeMinute;
-    this.serviceDishwasher.updateCharacteristic(Characteristic.RemainingDuration, remainTimeInMinute * 60);
+    this.serviceDishwasher.updateCharacteristic(Characteristic.Active, Status.isPowerOn ? 1 : 0);
+    this.serviceDishwasher.updateCharacteristic(Characteristic.InUse, Status.isRunning ? 1 : 0);
+    this.serviceDishwasher.updateCharacteristic(Characteristic.RemainingDuration, Status.remainDuration);
+  }
+}
+
+export class DishwasherStatus {
+  constructor(protected data) {}
+
+  public get isPowerOn() {
+    return !['POWEROFF', 'POWERFAIL'].includes(this.data?.state);
+  }
+
+  public get isRunning() {
+    return this.data?.state === 'RUNNING';
+  }
+
+  public get remainDuration() {
+    const remainTimeInMinute = this.data?.remainTimeHour * 60 + this.data?.remainTimeMinute;
+    return remainTimeInMinute * 60;
   }
 }
