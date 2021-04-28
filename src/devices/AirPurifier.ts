@@ -13,7 +13,6 @@ enum RotateSpeed {
 
 export default class AirPurifier extends baseDevice {
   protected serviceAirPurifier: Service;
-  protected serviceHumiditySensor: Service;
   protected serviceAirQuanlity: Service;
   protected serviceLight: Service;
 
@@ -27,7 +26,6 @@ export default class AirPurifier extends baseDevice {
       Service: {
         AirPurifier,
         AirQualitySensor,
-        HumiditySensor,
         Lightbulb,
       },
       Characteristic,
@@ -56,10 +54,6 @@ export default class AirPurifier extends baseDevice {
      */
     this.serviceAirPurifier.setCharacteristic(Characteristic.Name, device.name);
     this.serviceAirPurifier.getCharacteristic(Characteristic.SwingMode).onSet(this.setSwingMode.bind(this));
-
-    this.serviceHumiditySensor = accessory.getService(HumiditySensor) || accessory.addService(HumiditySensor);
-    const humidityValue = device.data.snapshot['airState.humidity.current'] || 0;
-    this.serviceHumiditySensor.setCharacteristic(Characteristic.CurrentRelativeHumidity, humidityValue);
 
     this.serviceAirQuanlity = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
     this.serviceAirQuanlity.setCharacteristic(Characteristic.AirQuality, parseInt(device.data.snapshot['airState.quality.overall']));
@@ -140,8 +134,6 @@ export default class AirPurifier extends baseDevice {
 
     this.serviceLight.updateCharacteristic(Characteristic.On, Status.isLightOn);
     this.serviceLight.setHiddenService(!Status.isPowerOn);
-
-    this.serviceHumiditySensor.setCharacteristic(Characteristic.CurrentRelativeHumidity, Status.humidityValue);
   }
 }
 
@@ -158,10 +150,6 @@ export class AirPurifierStatus {
 
   public get isSwing() {
     return (this.data['airState.circulate.rotate'] || 0) as boolean;
-  }
-
-  public get humidityValue() {
-    return this.data['airState.humidity.current'] || 0;
   }
 
   public get airQuality() {

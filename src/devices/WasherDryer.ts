@@ -5,8 +5,6 @@ import {Device} from '../lib/Device';
 
 export default class WasherDryer extends baseDevice {
   protected serviceWasherDryer;
-  protected serviceDoorLocked;
-  protected serviceChildLocked;
   protected serviceTemperature;
 
   constructor(
@@ -17,7 +15,6 @@ export default class WasherDryer extends baseDevice {
 
     const {
       Service: {
-        Switch,
         TemperatureSensor,
         Valve,
       },
@@ -38,13 +35,13 @@ export default class WasherDryer extends baseDevice {
       maxValue: 86400, // 1 day
     });
 
-    this.serviceDoorLocked = accessory.getService('Door Lock') || accessory.addService(Switch, 'Door Lock', 'Door Lock');
+    /*this.serviceDoorLocked = accessory.getService('Door Lock') || accessory.addService(Switch, 'Door Lock', 'Door Lock');
     this.serviceDoorLocked.setCharacteristic(Characteristic.Name, 'Door Lock');
     this.serviceDoorLocked.addLinkedService(this.serviceWasherDryer);
 
     this.serviceChildLocked = accessory.getService('Child Lock') || accessory.addService(Switch, 'Child Lock', 'Child Lock');
     this.serviceChildLocked.setCharacteristic(Characteristic.Name, 'Child Lock');
-    this.serviceChildLocked.addLinkedService(this.serviceWasherDryer);
+    this.serviceChildLocked.addLinkedService(this.serviceWasherDryer);*/
 
     this.serviceTemperature = accessory.getService(TemperatureSensor)
       || accessory.addService(TemperatureSensor, 'Temperature');
@@ -62,11 +59,11 @@ export default class WasherDryer extends baseDevice {
     this.serviceWasherDryer.updateCharacteristic(Characteristic.InUse, Status.isRunning ? 1 : 0);
     this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, Status.remainDuration);
 
-    this.serviceDoorLocked.updateCharacteristic(Characteristic.On, Status.isDoorLocked as boolean);
+    /*this.serviceDoorLocked.updateCharacteristic(Characteristic.On, Status.isDoorLocked as boolean);
     this.serviceDoorLocked.setHiddenService(!Status.isPowerOn);
 
     this.serviceChildLocked.updateCharacteristic(Characteristic.On, Status.isChildLocked as boolean);
-    this.serviceChildLocked.setHiddenService(!Status.isPowerOn);
+    this.serviceChildLocked.setHiddenService(!Status.isPowerOn);*/
 
     this.serviceTemperature.updateCharacteristic(Characteristic.CurrentTemperature, Status.washingTemperature);
     this.serviceTemperature.setHiddenService(!Status.isPowerOn);
