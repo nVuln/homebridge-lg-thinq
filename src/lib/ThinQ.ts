@@ -17,8 +17,12 @@ export class ThinQ {
     await this.api.ready();
     const listDevices = await this.api.getListDevices().catch(async () => {
       await this.api.refreshNewToken();
-      return await this.api.getListDevices();
+      return await this.api.getListDevices().catch(err => {
+        this.log.error(err);
+        return [];
+      });
     });
+
     return listDevices.map(device => new Device(device));
   }
 
@@ -26,8 +30,11 @@ export class ThinQ {
     await this.api.ready();
     const device = await this.api.getDeviceInfo(id).catch(async () => {
       await this.api.refreshNewToken();
-      return await this.api.getDeviceInfo(id);
+      return await this.api.getDeviceInfo(id).catch(err => {
+        this.log.error(err);
+      });
     });
+
     return new Device(device);
   }
 

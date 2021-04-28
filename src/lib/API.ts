@@ -84,7 +84,9 @@ export class API {
       this.gateway = new Gateway(gateway);
     }
 
-    this.auth = new Auth(this.gateway);
+    if (!this.auth) {
+      this.auth = new Auth(this.gateway);
+    }
 
     if (!this.session?.hasToken()) {
       this.session = await this.auth.login(this.username, this.password);
@@ -100,8 +102,8 @@ export class API {
   }
 
   public async refreshNewToken() {
-    if (!this.session) {
-      return;
+    if (!this.session || !this.auth) {
+      throw Error('API session not ready, try it again.');
     }
 
     await this.auth.refreshNewToken(this.session);

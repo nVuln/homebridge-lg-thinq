@@ -9,11 +9,13 @@ import {AuthenticationError} from '../errors/AuthenticationError';
 import {TokenError} from '../errors/TokenError';
 
 export default class Auth {
-  public lgeapi_url!: string;
+  public lgeapi_url: string;
 
   public constructor(
     protected gateway: Gateway,
-  ) {}
+  ) {
+    this.lgeapi_url = `https://${this.gateway.country_code.toLowerCase()}.lgeapi.com/`;
+  }
 
   public async login(username: string, password: string) {
     const loginForm = await requestClient.get(await this.getLoginUrl()).then(res => res.data);
@@ -85,7 +87,7 @@ export default class Auth {
       throw new TokenError(token.message);
     }
 
-    this.lgeapi_url = (token.oauth2_backend_url || `https://${this.gateway.country_code.toLowerCase()}.lgeapi.com`) + '/';
+    this.lgeapi_url = token.oauth2_backend_url || this.lgeapi_url;
 
     return new Session(token.access_token, token.refresh_token, token.expires_in);
   }
