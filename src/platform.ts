@@ -103,10 +103,12 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
 
     const accessoriesToRemove = this.accessories.filter(accessory => accessoriesToRemoveUUID.includes(accessory.UUID));
     if (accessoriesToRemove.length) {
-      this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, accessoriesToRemove);
       accessoriesToRemove.map(accessory => {
         this.log.info('Removing accessory:', accessory.context.device.name);
+        this.accessories.splice(this.accessories.indexOf(accessory), 1);
       });
+
+      this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, accessoriesToRemove);
     }
 
     this.startMonitor();
