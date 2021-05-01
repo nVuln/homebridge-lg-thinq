@@ -15,7 +15,6 @@ export default class Dehumidifier extends baseDevice {
     const {
       Service: {
         HumidifierDehumidifier,
-        TemperatureSensor,
       },
       Characteristic,
     } = this.platform;
@@ -25,10 +24,11 @@ export default class Dehumidifier extends baseDevice {
     this.serviceDehumidifier = accessory.getService(HumidifierDehumidifier) || accessory.addService(HumidifierDehumidifier);
     this.serviceDehumidifier.setCharacteristic(Characteristic.Name, device.name);
     this.serviceDehumidifier.getCharacteristic(Characteristic.TargetHumidifierDehumidifierState)
+      .onSet(this.setTargetState.bind(this))
       .setProps({
-        minValue: 0,
-        maxValue: 1,
-        validValues: [0, 1],
+        minValue: 2,
+        maxValue: 2,
+        validValues: [2],
       });
     this.serviceDehumidifier.updateCharacteristic(Characteristic.TargetHumidifierDehumidifierState, 0);
 
@@ -40,10 +40,17 @@ export default class Dehumidifier extends baseDevice {
         minStep: 1,
       });
 
-    this.serviceTemperatureSensor = accessory.getService(TemperatureSensor) || accessory.addService(TemperatureSensor);
-    this.serviceTemperatureSensor.addLinkedService(this.serviceDehumidifier);
-
     this.updateAccessoryCharacteristic(device);
+  }
+
+  async setTargetState(value: CharacteristicValue) {
+    this.platform.log.debug('Set Dehumidifier Target State ->', value);
+    const device: Device = this.accessory.context.device;
+    const isOn = [0, 1].includes(value as number);
+    this.platform.ThinQ?.deviceControl(device.id, {
+      dataKey: 'airState.operation',
+      dataValue: isOn,
+    });
   }
 
   async setHumidityThreshold(value: CharacteristicValue) {
@@ -72,8 +79,6 @@ export default class Dehumidifier extends baseDevice {
     } else {
       this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentHumidifierDehumidifierState, 0);
     }
-
-    this.serviceTemperatureSensor.updateCharacteristic(Characteristic.CurrentTemperature, Status.temperatureCurrent);
   }
 }
 
@@ -94,9 +99,5 @@ export class DehumidifierStatus {
 
   public get humidityTarget() {
     return this.data['airState.humidity.desired'] || 0;
-  }
-
-  public get temperatureCurrent() {
-    return this.data['airState.tempState.current'] as number;
   }
 }
