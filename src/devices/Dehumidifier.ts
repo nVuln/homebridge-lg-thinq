@@ -5,7 +5,6 @@ import {Device} from '../lib/Device';
 
 export default class Dehumidifier extends baseDevice {
   protected serviceDehumidifier;
-  protected serviceTemperatureSensor;
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
     protected readonly accessory: PlatformAccessory,
@@ -23,14 +22,17 @@ export default class Dehumidifier extends baseDevice {
 
     this.serviceDehumidifier = accessory.getService(HumidifierDehumidifier) || accessory.addService(HumidifierDehumidifier);
     this.serviceDehumidifier.setCharacteristic(Characteristic.Name, device.name);
-    this.serviceDehumidifier.getCharacteristic(Characteristic.TargetHumidifierDehumidifierState)
-      .onSet(this.setTargetState.bind(this))
+    this.serviceDehumidifier.getCharacteristic(Characteristic.Active)
+      .onSet(this.setActive.bind(this));
+    this.serviceDehumidifier.getCharacteristic(Characteristic.CurrentHumidifierDehumidifierState)
       .setProps({
-        minValue: 2,
-        maxValue: 2,
-        validValues: [2],
+        validValues: [0, 3],
       });
-    this.serviceDehumidifier.updateCharacteristic(Characteristic.TargetHumidifierDehumidifierState, 0);
+    this.serviceDehumidifier.getCharacteristic(Characteristic.TargetHumidifierDehumidifierState)
+      .setProps({
+        validValues: [2],
+      })
+      .setValue(Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER);
 
     this.serviceDehumidifier.getCharacteristic(Characteristic.RelativeHumidityHumidifierThreshold)
       .onSet(this.setHumidityThreshold.bind(this))
@@ -43,14 +45,16 @@ export default class Dehumidifier extends baseDevice {
     this.updateAccessoryCharacteristic(device);
   }
 
-  async setTargetState(value: CharacteristicValue) {
-    this.platform.log.debug('Set Dehumidifier Target State ->', value);
+  async setActive(value: CharacteristicValue) {
+    this.platform.log.debug('Set Dehumidifier Active State ->', value);
     const device: Device = this.accessory.context.device;
-    const isOn = [0, 1].includes(value as number);
+    const isOn = value as boolean;
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.operation',
       dataValue: isOn,
     });
+    device.data.snapshot['airState.operation'] = isOn ? 1 : 0;
+    this.updateAccessoryCharacteristic(device);
   }
 
   async setHumidityThreshold(value: CharacteristicValue) {
@@ -73,12 +77,7 @@ export default class Dehumidifier extends baseDevice {
     this.serviceDehumidifier.updateCharacteristic(Characteristic.Active, Status.isPowerOn ? 1 : 0);
     this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentRelativeHumidity, Status.humidityCurrent);
     this.serviceDehumidifier.updateCharacteristic(Characteristic.RelativeHumidityHumidifierThreshold, Status.humidityTarget);
-
-    if (Status.isPowerOn) {
-      this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentHumidifierDehumidifierState, Status.isHumidifying ? 2 : 3);
-    } else {
-      this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentHumidifierDehumidifierState, 0);
-    }
+    this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentHumidifierDehumidifierState, Status.isPowerOn ? 3 : 0);
   }
 }
 
@@ -87,10 +86,6 @@ export class DehumidifierStatus {
 
   public get isPowerOn() {
     return this.data['airState.operation'] as boolean;
-  }
-
-  public get isHumidifying() {
-    return this.humidityCurrent < this.humidityTarget;
   }
 
   public get humidityCurrent() {
