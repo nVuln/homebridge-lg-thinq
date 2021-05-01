@@ -34,7 +34,7 @@ export default class Dehumidifier extends baseDevice {
       })
       .setValue(Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER);
 
-    this.serviceDehumidifier.getCharacteristic(Characteristic.RelativeHumidityHumidifierThreshold)
+    this.serviceDehumidifier.getCharacteristic(Characteristic.RelativeHumidityDehumidifierThreshold)
       .onSet(this.setHumidityThreshold.bind(this))
       .setProps({
         minValue: 0,
@@ -76,7 +76,7 @@ export default class Dehumidifier extends baseDevice {
     const Status = new DehumidifierStatus(device.snapshot);
     this.serviceDehumidifier.updateCharacteristic(Characteristic.Active, Status.isPowerOn ? 1 : 0);
     this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentRelativeHumidity, Status.humidityCurrent);
-    this.serviceDehumidifier.updateCharacteristic(Characteristic.RelativeHumidityHumidifierThreshold, Status.humidityTarget);
+    this.serviceDehumidifier.updateCharacteristic(Characteristic.RelativeHumidityDehumidifierThreshold, Status.humidityTarget);
     this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentHumidifierDehumidifierState, Status.isPowerOn ? 3 : 0);
   }
 }
