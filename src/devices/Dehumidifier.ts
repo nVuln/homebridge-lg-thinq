@@ -5,6 +5,7 @@ import {Device} from '../lib/Device';
 
 export default class Dehumidifier extends baseDevice {
   protected serviceDehumidifier;
+  protected serviceHumiditySensor;
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
     protected readonly accessory: PlatformAccessory,
@@ -14,6 +15,7 @@ export default class Dehumidifier extends baseDevice {
     const {
       Service: {
         HumidifierDehumidifier,
+        HumiditySensor,
       },
       Characteristic,
     } = this.platform;
@@ -41,6 +43,9 @@ export default class Dehumidifier extends baseDevice {
         maxValue: 100,
         minStep: 1,
       });
+
+    this.serviceHumiditySensor = accessory.getService(HumiditySensor) || accessory.addService(HumiditySensor);
+    this.serviceHumiditySensor.addLinkedService(this.serviceDehumidifier);
 
     this.updateAccessoryCharacteristic(device);
   }
@@ -78,6 +83,9 @@ export default class Dehumidifier extends baseDevice {
     this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentRelativeHumidity, Status.humidityCurrent);
     this.serviceDehumidifier.updateCharacteristic(Characteristic.RelativeHumidityDehumidifierThreshold, Status.humidityTarget);
     this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentHumidifierDehumidifierState, Status.isPowerOn ? 3 : 0);
+
+    this.serviceHumiditySensor.updateCharacteristic(Characteristic.CurrentRelativeHumidity, Status.humidityCurrent);
+    this.serviceHumiditySensor.updateCharacteristic(Characteristic.StatusActive, Status.isPowerOn);
   }
 }
 

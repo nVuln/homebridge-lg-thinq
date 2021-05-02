@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.1.16
+
+### Other Changes
+
+* **Dehumidifier:** added HumiditySensor
+
 ## v0.1.15
 
 ### Bug fixes
