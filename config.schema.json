@@ -24,6 +24,11 @@
 	  "type": "string",
 	  "default": "en-US",
 	  "required": true
+	},
+	"thinq1": {
+	  "title": "Enable ThinQ1 Support?",
+	  "type": "boolean",
+	  "default": false
 	}
   },
   "layout": [
@@ -39,6 +44,7 @@
 	  ]
 	},
 	"country",
-	"language"
+	"language",
+	"thinq1"
   ]
 }

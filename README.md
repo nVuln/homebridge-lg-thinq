@@ -34,6 +34,7 @@ npm i -g homebridge-lg-thinq
   "password": "*************",
   "country": "US",
   "language": "en-US",
+  "thinq1": false,
   "platform": "LGThinQ"
 }
 ```
@@ -42,16 +43,16 @@ npm i -g homebridge-lg-thinq
 - `password` Required. The password for the account that is registered in the LG ThinQ Mobile App.
 - `country` Required. Your account [country alpha-2 code](https://www.countrycode.org/), e.g., US for the USA.
 - `language` Required. Your account language code, e.g., en-US, vi-VN.
-
+- `thinq` Optional. Enable thinq1 device support
 ## Implementation Status
 
-| *Device* | *Implementation* | *Status* | *Control* |
-| --- | --- | --- | --- |
-| Refrigerator | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| Air Purifier | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| Washer & Dryer | :heavy_check_mark: | :warning: needs testing | :warning: |
-| Dishwasher | :heavy_check_mark: | :warning: needs testing | :warning: |
-| Dehumidifier | :heavy_check_mark: | :warning: needs testing | :warning: |
+| *Device* | *Implementation* | *Status* | *Control* | *ThinQ 2* | *ThinQ 1* |
+| --- | --- | --- | --- | --- | --- |
+| Refrigerator | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :prohibited: |
+| Air Purifier | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :prohibited: |
+| Washer & Dryer | :heavy_check_mark: | :warning: needs testing | :warning: | :heavy_check_mark: | :warning: need testing |
+| Dishwasher | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :prohibited: |
+| Dehumidifier | :heavy_check_mark: | :warning: needs testing | :warning: | :heavy_check_mark: | :prohibited: |
 
 ## Support
 

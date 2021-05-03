@@ -11,6 +11,9 @@ import {TokenError} from '../errors/TokenError';
 export default class Auth {
   public lgeapi_url: string;
 
+  // prepare thinq v1
+  public jsessionId!: string;
+
   public constructor(
     protected gateway: Gateway,
   ) {
@@ -18,6 +21,7 @@ export default class Auth {
   }
 
   public async login(username: string, password: string) {
+    // get signature and timestamp in login form
     const loginForm = await requestClient.get(await this.getLoginUrl()).then(res => res.data);
     const headers = {
       'Accept': 'application/json',
@@ -42,6 +46,7 @@ export default class Auth {
       'svc_list': 'SVC202,SVC710', // SVC202=LG SmartHome, SVC710=EMP OAuth
     };
 
+    // try login with username and hashed password
     const loginUrl = this.gateway.emp_base_url + 'emp/v2.0/account/session/' + encodeURIComponent(username);
     const res = await requestClient.post(loginUrl, qs.stringify(data), { headers }).then(res => res.data).catch(err => {
       const {code, message} = err.response.data.error;
@@ -52,7 +57,7 @@ export default class Auth {
       throw new AuthenticationError(message);
     });
 
-    // get secret key for emp signature
+    // dynamic get secret key for emp signature
     const empSearchKeyUrl = this.gateway.login_base_url + 'searchKey?key_name=OAUTH_SECRETKEY&sever_type=OP';
     const secretKey = await requestClient.get(empSearchKeyUrl).then(res => res.data).then(data => data.returnData);
 
@@ -78,6 +83,7 @@ export default class Auth {
       'Accept-Encoding': 'gzip, deflate, br',
       'Accept-Language': 'en-US,en;q=0.9',
     };
+    // create emp session and get access token
     const token = await requestClient.post('https://emp-oauth.lgecloud.com/emp/oauth2/token/empsession', qs.stringify(empData), {
       headers: empHeaders,
     }).then(res => res.data).catch(err => {
@@ -88,6 +94,24 @@ export default class Auth {
     }
 
     this.lgeapi_url = token.oauth2_backend_url || this.lgeapi_url;
+
+    // login to old gateway also - thinq v1
+    const memberLoginUrl = this.gateway.thinq1_url + 'member/login';
+    const memberLoginHeaders = {
+      'x-thinq-application-key': 'wideq',
+      'x-thinq-security-key': 'nuts_securitykey',
+      'Accept': 'application/json',
+      'x-thinq-token': token.access_token,
+    };
+    const memberLoginData = {
+      countryCode: this.gateway.country_code,
+      langCode: this.gateway.language_code,
+      loginType: 'EMP',
+      token: token.access_token,
+    };
+    this.jsessionId = await requestClient.post(memberLoginUrl, { lgedmRoot: memberLoginData }, {
+      headers: memberLoginHeaders,
+    }).then(res => res.data).then(data => data.lgedmRoot.jsessionId);
 
     return new Session(token.access_token, token.refresh_token, token.expires_in);
   }

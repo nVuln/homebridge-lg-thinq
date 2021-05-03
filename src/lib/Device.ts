@@ -35,6 +35,10 @@ export class Device {
     return this.data.snapshot;
   }
 
+  public get platform() {
+    return this.data.platformType;
+  }
+
   public toString() {
     return `${this.id}: ${this.name} (${this.type} ${this.model})`;
   }

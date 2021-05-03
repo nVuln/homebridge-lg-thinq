@@ -4,6 +4,7 @@ import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { Helper } from './helper';
 import {ThinQ} from './lib/ThinQ';
 import {EventEmitter} from 'events';
+import {PlatformType} from "./lib/constants";
 
 /**
  * HomebridgePlatform
@@ -21,6 +22,9 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
   public readonly events: EventEmitter;
   private readonly intervalTime = 5000; // 5 second
 
+  // enable thinq1 support
+  private readonly enable_thinq1 = false;
+
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
@@ -31,6 +35,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       this.log.error('Missing required config parameter.');
       return;
     }
+    this.enable_thinq1 = config.thinq1;
 
     this.ThinQ = new ThinQ(this, config, log);
 
@@ -65,7 +70,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
 
     const devices = await this.ThinQ.devices();
 
-    for (const device of devices) {
+    for (let device of devices) {
       this.log.debug('Found device: ', device.toString());
       const existingAccessory = this.accessories.find(accessory => accessory.UUID === device.id);
 
@@ -74,6 +79,19 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
         this.log.debug('Device not supported: ' + device.toString());
         this.log.debug('data: ', JSON.stringify(device));
         continue;
+      }
+
+      if (this.enable_thinq1) {
+        await this.ThinQ.startMonitor(device);
+        const deviceWithSnapshot = await this.ThinQ.pollMonitor(device);
+
+        // skip enable_thinq1 device
+        if (deviceWithSnapshot.platform === PlatformType.ThinQ1) {
+          await this.ThinQ.stopMonitor(device);
+          continue;
+        }
+
+        device = deviceWithSnapshot;
       }
 
       let lgThinQDevice;
@@ -115,9 +133,17 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
   }
 
   protected startMonitor() {
+    if (!this.ThinQ) {
+      return;
+    }
+
+    const ThinQ = this.ThinQ;
     setInterval(() => {
-      this.ThinQ?.devices().then((devices) => {
-        for (const device of devices) {
+      ThinQ.devices().then(async (devices) => {
+        for (let device of devices) {
+          if (this.enable_thinq1) {
+            device = await ThinQ.pollMonitor(device);
+          }
           this.events.emit(device.id, device);
         }
       });

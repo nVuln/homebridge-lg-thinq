@@ -6,6 +6,9 @@ import {Gateway} from './Gateway';
 
 import {requestClient} from './request';
 import Auth from './Auth';
+import {WorkId} from './ThinQ';
+import {TokenError} from '../errors/TokenError';
+import {MonitorError} from '../errors/MonitorError';
 
 function resolveUrl(from, to) {
   const url = new URL(to, from);
@@ -77,6 +80,54 @@ export class API {
     }, { headers }).then(resp => resp.data);
   }
 
+  public async sendMonitorCommand(deviceId: string, cmdOpt: string, workId: WorkId) {
+    const headers = this.monitorHeaders;
+    const data = {
+      cmd: 'Mon',
+      cmdOpt,
+      deviceId,
+      workId,
+    };
+    return await requestClient.post('rti/rtiMon', { lgedmRoot: data }, { headers })
+      .then(res => res.data.lgedmRoot)
+      .then(data => {
+        if ('returnCd' in data) {
+          const code = data.returnCd as string;
+          if (code !== '0000') {
+            throw new TokenError();
+          }
+        }
+
+        return data.workId;
+      });
+  }
+
+  public async getMonitorResult(device_id, work_id) {
+    const headers = this.monitorHeaders;
+    const workList = [{ deviceId: device_id, workId: work_id }];
+    return await requestClient.post('rti/rtiResult', { lgedmRoot: { workList } }, { headers })
+      .then(resp => resp.data.lgedmRoot)
+      .then(data => {
+        if ('returnCd' in data) {
+          const code = data.returnCd as string;
+          if (code !== '0000') {
+            throw new TokenError();
+          }
+        }
+
+        const workList = data.workList;
+        if (workList.returnCode !== '0000') {
+          throw new MonitorError();
+        }
+
+        if (!('returnData' in workList)) {
+          return null;
+        }
+
+        return Buffer.from(workList.returnData, 'base64');
+      });
+  }
+
   public async ready() {
     // get gateway first
     if (!this.gateway) {
@@ -109,6 +160,16 @@ export class API {
     await this.auth.refreshNewToken(this.session);
   }
 
+  protected get monitorHeaders() {
+    return {
+      'Accept': 'application/json',
+      'x-thinq-token': this.session?.accessToken,
+      'x-thinq-jsessionId': this.auth.jsessionId,
+      'x-thinq-application-key': 'wideq',
+      'x-thinq-security-key': 'nuts_securitykey',
+    };
+  }
+
   protected get defaultHeaders() {
     function random_string(length: number) {
       const result: string[] = [];
@@ -124,6 +185,7 @@ export class API {
     if (this.session?.accessToken) {
       headers['x-emp-token'] = this.session.accessToken;
     }
+
     if (this.userNumber) {
       headers['x-user-no'] = this.userNumber;
     }
