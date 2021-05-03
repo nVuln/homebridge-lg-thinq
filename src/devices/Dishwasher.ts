@@ -2,9 +2,11 @@ import {baseDevice} from '../baseDevice';
 import {LGThinQHomebridgePlatform} from '../platform';
 import {PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
+import {WasherDryerStatus} from "./WasherDryer";
 
 export default class Dishwasher extends baseDevice {
   protected serviceDishwasher;
+  public stopTime;
 
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
@@ -35,27 +37,20 @@ export default class Dishwasher extends baseDevice {
     super.updateAccessoryCharacteristic(device);
 
     const {Characteristic} = this.platform;
-    const Status = new DishwasherStatus(device.snapshot?.dishwasher);
 
-    this.serviceDishwasher.updateCharacteristic(Characteristic.Active, Status.isPowerOn ? 1 : 0);
-    this.serviceDishwasher.updateCharacteristic(Characteristic.InUse, Status.isRunning ? 1 : 0);
-    this.serviceDishwasher.updateCharacteristic(Characteristic.RemainingDuration, Status.remainDuration);
+    this.serviceDishwasher.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
+    this.serviceDishwasher.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
+    this.serviceDishwasher.updateCharacteristic(Characteristic.InUse, this.Status.isRunning ? 1 : 0);
+  }
+
+  public get Status() {
+    return new DishwasherStatus(this.accessory.context.device.snapshot?.dishwasher, this);
   }
 }
 
-export class DishwasherStatus {
-  constructor(protected data) {}
-
-  public get isPowerOn() {
-    return !['POWEROFF', 'POWERFAIL'].includes(this.data?.state);
-  }
-
+// shared some status in washer
+export class DishwasherStatus extends WasherDryerStatus {
   public get isRunning() {
     return this.data?.state === 'RUNNING';
-  }
-
-  public get remainDuration() {
-    const remainTimeInMinute = this.data?.remainTimeHour * 60 + this.data?.remainTimeMinute;
-    return remainTimeInMinute * 60;
   }
 }

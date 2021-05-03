@@ -6,6 +6,7 @@ import {Device} from '../lib/Device';
 export default class WasherDryer extends baseDevice {
   protected serviceWasherDryer;
   protected serviceTemperature;
+  public stopTime;
 
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
@@ -54,10 +55,9 @@ export default class WasherDryer extends baseDevice {
     super.updateAccessoryCharacteristic(device);
 
     const {Characteristic} = this.platform;
-    const Status = new WasherDryerStatus(device.snapshot?.washerDryer);
-    this.serviceWasherDryer.updateCharacteristic(Characteristic.Active, Status.isPowerOn ? 1 : 0);
-    this.serviceWasherDryer.updateCharacteristic(Characteristic.InUse, Status.isRunning ? 1 : 0);
-    this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, Status.remainDuration);
+    this.serviceWasherDryer.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
+    this.serviceWasherDryer.updateCharacteristic(Characteristic.InUse, this.Status.isRunning ? 1 : 0);
+    this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
 
     /*this.serviceDoorLocked.updateCharacteristic(Characteristic.On, Status.isDoorLocked as boolean);
     this.serviceDoorLocked.setHiddenService(!Status.isPowerOn);
@@ -65,28 +65,24 @@ export default class WasherDryer extends baseDevice {
     this.serviceChildLocked.updateCharacteristic(Characteristic.On, Status.isChildLocked as boolean);
     this.serviceChildLocked.setHiddenService(!Status.isPowerOn);*/
 
-    this.serviceTemperature.updateCharacteristic(Characteristic.CurrentTemperature, Status.washingTemperature);
-    this.serviceTemperature.setHiddenService(!Status.isPowerOn);
+    this.serviceTemperature.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.washingTemperature);
+    this.serviceTemperature.setHiddenService(!this.Status.isPowerOn);
+  }
+
+  public get Status() {
+    return new WasherDryerStatus(this.accessory.context.device.snapshot?.washerDryer, this);
   }
 }
 
 export class WasherDryerStatus {
-  constructor(protected data) {}
+  constructor(protected data, protected accessory) {}
 
   public get isPowerOn() {
-    return this.data?.state !== 'POWEROFF';
+    return !['POWEROFF', 'POWERFAIL'].includes(this.data?.state);
   }
 
   public get isRunning() {
     return this.isPowerOn && ['RUNNING', 'DRYING', 'COOLING'].includes(this.data?.state);
-  }
-
-  public get isDoorLocked() {
-    return this.data?.doorLock === 'DOOR_LOCK_ON';
-  }
-
-  public get isChildLocked() {
-    return this.data?.isChildLocked === 'CHILDLOCK_ON';
   }
 
   public get washingTemperature() {
@@ -96,7 +92,17 @@ export class WasherDryerStatus {
   }
 
   public get remainDuration() {
-    const remainTimeInMinute = this.data?.remainTimeHour * 60 + this.data?.remainTimeMinute;
-    return remainTimeInMinute * 60;
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    if (!this.isRunning || !this.isPowerOn || (this.accessory.stopTime && this.accessory.stopTime < currentTimestamp)) {
+      this.accessory.stopTime = 0;
+      return 0;
+    }
+
+    if (!this.accessory.stopTime) {
+      const remainTimeInMinute = this.data?.remainTimeHour * 60 + this.data?.remainTimeMinute;
+      this.accessory.stopTime = currentTimestamp + remainTimeInMinute * 60;
+    }
+
+    return this.accessory.stopTime - currentTimestamp;
   }
 }

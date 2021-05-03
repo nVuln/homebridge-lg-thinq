@@ -41,6 +41,9 @@ export default class AirPurifier extends baseDevice {
      * Required Characteristics: Active, CurrentAirPurifierState, TargetAirPurifierState
      */
     this.serviceAirPurifier.getCharacteristic(Characteristic.Active)
+      .onGet(() => {
+        return this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE;
+      })
       .onSet(this.setActive.bind(this));
 
     this.serviceAirPurifier.getCharacteristic(Characteristic.TargetAirPurifierState)
@@ -118,22 +121,25 @@ export default class AirPurifier extends baseDevice {
       Characteristic,
     } = this.platform;
 
-    const Status = new AirPurifierStatus(device.snapshot);
-    this.serviceAirPurifier.updateCharacteristic(Characteristic.Active, Status.isPowerOn ? 1 : 0);
-    this.serviceAirPurifier.updateCharacteristic(Characteristic.CurrentAirPurifierState, Status.isPowerOn ? 2 : 0);
+    this.serviceAirPurifier.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
+    this.serviceAirPurifier.updateCharacteristic(Characteristic.CurrentAirPurifierState, this.Status.isPowerOn ? 2 : 0);
 
     /*const values = [RotateSpeed.AUTO, RotateSpeed.LOW, RotateSpeed.MEDIUM, RotateSpeed.HIGH, RotateSpeed.EXTRA];
     const rotateSpeed = values.indexOf(device.data.snapshot['airState.windStrength'] || RotateSpeed.AUTO);
     serviceAirPurifier?.updateCharacteristic(Characteristic.RotationSpeed, rotateSpeed);*/
 
-    this.serviceAirPurifier.updateCharacteristic(Characteristic.SwingMode, Status.isSwing ? 1 : 0);
+    this.serviceAirPurifier.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwing ? 1 : 0);
 
-    this.serviceAirQuanlity.updateCharacteristic(Characteristic.AirQuality, Status.airQuality.overall);
-    this.serviceAirQuanlity.updateCharacteristic(Characteristic.PM2_5Density, Status.airQuality.PM2);
-    this.serviceAirQuanlity.updateCharacteristic(Characteristic.PM10Density, Status.airQuality.PM10);
+    this.serviceAirQuanlity.updateCharacteristic(Characteristic.AirQuality, this.Status.airQuality.overall);
+    this.serviceAirQuanlity.updateCharacteristic(Characteristic.PM2_5Density, this.Status.airQuality.PM2);
+    this.serviceAirQuanlity.updateCharacteristic(Characteristic.PM10Density, this.Status.airQuality.PM10);
 
-    this.serviceLight.updateCharacteristic(Characteristic.On, Status.isLightOn);
-    this.serviceLight.setHiddenService(!Status.isPowerOn);
+    this.serviceLight.updateCharacteristic(Characteristic.On, this.Status.isLightOn);
+    this.serviceLight.setHiddenService(!this.Status.isPowerOn);
+  }
+
+  public get Status() {
+    return new AirPurifierStatus(this.accessory.context.device.snapshot);
   }
 }
 
