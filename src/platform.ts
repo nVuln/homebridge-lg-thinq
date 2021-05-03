@@ -1,7 +1,7 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-import { LGThinQPlatformAccessory } from './platformAccessory';
+import { Helper } from './helper';
 import {ThinQ} from './lib/ThinQ';
 import {EventEmitter} from 'events';
 
@@ -69,7 +69,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       this.log.debug('Found device: ', device.toString());
       const existingAccessory = this.accessories.find(accessory => accessory.UUID === device.id);
 
-      const accessoryType = LGThinQPlatformAccessory.make(device);
+      const accessoryType = Helper.make(device);
       if (accessoryType === null) {
         this.log.debug('Device not supported: ' + device.toString());
         this.log.debug('data: ', JSON.stringify(device));
@@ -87,7 +87,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       } else {
         this.log.info('Adding new accessory:', device.name);
 
-        const category = LGThinQPlatformAccessory.category(device);
+        const category = Helper.category(device);
         // create a new accessory
         const accessory = new this.api.platformAccessory(device.name, device.id, category);
         accessory.context.device = device;
