@@ -4,7 +4,7 @@ import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { Helper } from './helper';
 import {ThinQ} from './lib/ThinQ';
 import {EventEmitter} from 'events';
-import {PlatformType} from "./lib/constants";
+import {PlatformType} from './lib/constants';
 
 /**
  * HomebridgePlatform
