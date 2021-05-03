@@ -36,14 +36,6 @@ export default class WasherDryer extends baseDevice {
       maxValue: 86400, // 1 day
     });
 
-    /*this.serviceDoorLocked = accessory.getService('Door Lock') || accessory.addService(Switch, 'Door Lock', 'Door Lock');
-    this.serviceDoorLocked.setCharacteristic(Characteristic.Name, 'Door Lock');
-    this.serviceDoorLocked.addLinkedService(this.serviceWasherDryer);
-
-    this.serviceChildLocked = accessory.getService('Child Lock') || accessory.addService(Switch, 'Child Lock', 'Child Lock');
-    this.serviceChildLocked.setCharacteristic(Characteristic.Name, 'Child Lock');
-    this.serviceChildLocked.addLinkedService(this.serviceWasherDryer);*/
-
     this.serviceTemperature = accessory.getService(TemperatureSensor)
       || accessory.addService(TemperatureSensor, 'Temperature');
     this.serviceTemperature.addLinkedService(this.serviceWasherDryer);
@@ -58,12 +50,6 @@ export default class WasherDryer extends baseDevice {
     this.serviceWasherDryer.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
     this.serviceWasherDryer.updateCharacteristic(Characteristic.InUse, this.Status.isRunning ? 1 : 0);
     this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
-
-    /*this.serviceDoorLocked.updateCharacteristic(Characteristic.On, Status.isDoorLocked as boolean);
-    this.serviceDoorLocked.setHiddenService(!Status.isPowerOn);
-
-    this.serviceChildLocked.updateCharacteristic(Characteristic.On, Status.isChildLocked as boolean);
-    this.serviceChildLocked.setHiddenService(!Status.isPowerOn);*/
 
     this.serviceTemperature.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.washingTemperature);
     this.serviceTemperature.setHiddenService(!this.Status.isPowerOn);
