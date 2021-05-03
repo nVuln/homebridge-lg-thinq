@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.2.0
+
+### Other Changes
+
+* thinq1 backward compatible
+
 ## v0.1.16
 
 ### Other Changes
