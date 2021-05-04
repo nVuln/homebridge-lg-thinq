@@ -13,7 +13,7 @@
 
 A Homebridge plugin for controlling/monitoring LG ThinQ device via their ThinQ platform.
 
-:warning: This library only works with v2 of the LG ThinQ API. If your device not showing up even debug mode, try using v1 plugin [homebridge-wideq](https://github.com/NorDroN/homebridge-wideq)
+⚠️ This library only works with v2 of the LG ThinQ API. If your device not showing up even debug mode, try using v1 plugin [homebridge-wideq](https://github.com/NorDroN/homebridge-wideq)
 
 A plugin for interacting with the "LG ThinQ" system, which can control new LG smart device. API used in this plugin is not official, I reversed from their "LG ThinQ" mobile app.
 
@@ -25,7 +25,7 @@ npm i -g homebridge-lg-thinq
 
 # Configuration
 
-> :check: The preferred and always up-to-date way to configure this plugin is through the config UI.  
+> ✔️ The preferred and always up-to-date way to configure this plugin is through the config UI.  
 > For details check [their documentation](https://github.com/oznu/homebridge-config-ui-x#readme).
 
 ```json
@@ -46,13 +46,13 @@ npm i -g homebridge-lg-thinq
 - `thinq` Optional. Enable thinq1 device support
 ## Implementation Status
 
-| *Device* | *Implementation* | *Status* | *Control* | *ThinQ 2* | *ThinQ 1* |
+| *Device* | *Implementation* | *Status* | *Control* | *Thinq2* | *Thinq1* |
 | --- | --- | --- | --- | --- | --- |
-| Refrigerator | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :prohibited: |
-| Air Purifier | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :prohibited: |
-| Washer & Dryer | :heavy_check_mark: | :warning: needs testing | :warning: | :heavy_check_mark: | :warning: need testing |
-| Dishwasher | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :prohibited: |
-| Dehumidifier | :heavy_check_mark: | :warning: needs testing | :warning: | :heavy_check_mark: | :prohibited: |
+| Refrigerator | ✔️ | ✔️ | ✔️ | ✔️ | 🚫 |
+| Air Purifier | ✔️ | ✔️ | ✔️ | ✔️ | 🚫 |
+| Washer & Dryer | ✔️ | ⚠️ needs testing | ⚠️ | ✔️ | ⚠️ need testing |
+| Dishwasher | ✔️ | ✔️ | ✔️ | ✔️ | 🚫 |
+| Dehumidifier | ✔️ | ⚠️ needs testing | ⚠️ | ✔️ | 🚫 |
 
 ## Support
 

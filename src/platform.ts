@@ -92,6 +92,8 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
         }
 
         device = deviceWithSnapshot;
+      } else if (device.platform === PlatformType.ThinQ1) {
+        continue;
       }
 
       let lgThinQDevice;

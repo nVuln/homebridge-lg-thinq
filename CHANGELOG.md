@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.2.1
+
+### Other Changes
+
+* skip thinq1 device if not enable
+
 ## v0.2.0
 
 ### Other Changes
