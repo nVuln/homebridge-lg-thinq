@@ -5,8 +5,9 @@ import {Device} from '../lib/Device';
 
 export default class WasherDryer extends baseDevice {
   protected serviceWasherDryer;
-  protected serviceTemperature;
-  public stopTime;
+  protected serviceEventFinished;
+  public isRunning = false;
+  public stopTime = 0;
 
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
@@ -16,18 +17,13 @@ export default class WasherDryer extends baseDevice {
 
     const {
       Service: {
-        TemperatureSensor,
+        StatelessProgrammableSwitch,
         Valve,
       },
       Characteristic,
     } = this.platform;
 
     const device: Device = accessory.context.device;
-
-    if (typeof device.snapshot?.washerDryer !== 'object') {
-      this.platform.log.debug('washerDryer data not exists: ', JSON.stringify(device));
-      return;
-    }
 
     this.serviceWasherDryer = accessory.getService(Valve) || accessory.addService(Valve, device.name);
     this.serviceWasherDryer.setCharacteristic(Characteristic.Name, device.name);
@@ -36,9 +32,14 @@ export default class WasherDryer extends baseDevice {
       maxValue: 86400, // 1 day
     });
 
-    this.serviceTemperature = accessory.getService(TemperatureSensor)
-      || accessory.addService(TemperatureSensor, 'Temperature');
-    this.serviceTemperature.addLinkedService(this.serviceWasherDryer);
+    this.serviceEventFinished = accessory.getService(StatelessProgrammableSwitch)
+      || accessory.addService(StatelessProgrammableSwitch, 'Washer Finished');
+    this.serviceEventFinished.getCharacteristic(Characteristic.ProgrammableSwitchEvent)
+      .setProps({
+        minValue: Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS,
+        maxValue: Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS,
+        validValues: [Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS],
+      });
 
     this.updateAccessoryCharacteristic(device);
   }
@@ -46,13 +47,22 @@ export default class WasherDryer extends baseDevice {
   public updateAccessoryCharacteristic(device: Device) {
     super.updateAccessoryCharacteristic(device);
 
+    if (!this.isRunning && this.Status.isRunning && this.stopTime) {
+      this.once('washer.finished', () => {
+        const SINGLE = Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS;
+        this.serviceEventFinished.updateCharacteristic(Characteristic.ProgrammableSwitchEvent, SINGLE);
+      });
+    }
+
+    if (this.isRunning && !this.Status.isRunning && this.stopTime) {
+      this.emit('washer.finished');
+    }
+
+    this.isRunning = this.Status.isRunning;
     const {Characteristic} = this.platform;
     this.serviceWasherDryer.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
     this.serviceWasherDryer.updateCharacteristic(Characteristic.InUse, this.Status.isRunning ? 1 : 0);
     this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
-
-    this.serviceTemperature.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.washingTemperature);
-    this.serviceTemperature.setHiddenService(!this.Status.isPowerOn);
   }
 
   public get Status() {
@@ -69,12 +79,6 @@ export class WasherDryerStatus {
 
   public get isRunning() {
     return this.isPowerOn && ['RUNNING', 'DRYING', 'COOLING'].includes(this.data?.state);
-  }
-
-  public get washingTemperature() {
-    let temp = this.data?.temp?.match(/[A-Z_]+_([0-9]+)/);
-    temp = temp && temp.length ? temp[1] : 0;
-    return temp as number;
   }
 
   public get remainDuration() {

@@ -1,12 +1,15 @@
 import {LGThinQHomebridgePlatform} from './platform';
 import {PlatformAccessory} from 'homebridge';
 import {Device} from './lib/Device';
+import {EventEmitter} from 'events';
 
-export class baseDevice {
+export class baseDevice extends EventEmitter {
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
     protected readonly accessory: PlatformAccessory,
   ) {
+    super();
+
     const device = accessory.context.device;
     const {AccessoryInformation} = this.platform.Service;
     const serviceAccessoryInformation = accessory.getService(AccessoryInformation) || accessory.addService(AccessoryInformation);
