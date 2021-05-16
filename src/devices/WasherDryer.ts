@@ -32,14 +32,16 @@ export default class WasherDryer extends baseDevice {
       maxValue: 86400, // 1 day
     });
 
-    this.serviceEventFinished = accessory.getService(StatelessProgrammableSwitch)
-      || accessory.addService(StatelessProgrammableSwitch, 'Washer Finished');
-    this.serviceEventFinished.getCharacteristic(Characteristic.ProgrammableSwitchEvent)
-      .setProps({
-        minValue: Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS,
-        maxValue: Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS,
-        validValues: [Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS],
-      });
+    if (this.platform.config.washer_trigger as boolean) {
+      this.serviceEventFinished = accessory.getService(StatelessProgrammableSwitch)
+        || accessory.addService(StatelessProgrammableSwitch, 'Washer Finished');
+      this.serviceEventFinished.getCharacteristic(Characteristic.ProgrammableSwitchEvent)
+        .setProps({
+          minValue: Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS,
+          maxValue: Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS,
+          validValues: [Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS],
+        });
+    }
 
     this.updateAccessoryCharacteristic(device);
   }
@@ -47,15 +49,17 @@ export default class WasherDryer extends baseDevice {
   public updateAccessoryCharacteristic(device: Device) {
     super.updateAccessoryCharacteristic(device);
 
-    if (!this.isRunning && this.Status.isRunning && this.stopTime) {
-      this.once('washer.finished', () => {
-        const SINGLE = Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS;
-        this.serviceEventFinished.updateCharacteristic(Characteristic.ProgrammableSwitchEvent, SINGLE);
-      });
-    }
+    if (this.platform.config.washer_trigger as boolean) {
+      if (!this.isRunning && this.Status.isRunning && this.stopTime) {
+        this.once('washer.finished', () => {
+          const SINGLE = Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS;
+          this.serviceEventFinished.updateCharacteristic(Characteristic.ProgrammableSwitchEvent, SINGLE);
+        });
+      }
 
-    if (this.isRunning && !this.Status.isRunning && this.stopTime) {
-      this.emit('washer.finished');
+      if (this.isRunning && !this.Status.isRunning && this.stopTime) {
+        this.emit('washer.finished');
+      }
     }
 
     this.isRunning = this.Status.isRunning;

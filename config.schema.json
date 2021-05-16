@@ -29,6 +29,11 @@
 	  "title": "Enable ThinQ1 Support?",
 	  "type": "boolean",
 	  "default": false
+	},
+	"washer_trigger": {
+	  "title": "Enable washer program finished trigger?",
+	  "type": "boolean",
+	  "default": false
 	}
   },
   "layout": [
@@ -45,6 +50,7 @@
 	},
 	"country",
 	"language",
-	"thinq1"
+	"thinq1",
+	"washer_trigger"
   ]
 }
