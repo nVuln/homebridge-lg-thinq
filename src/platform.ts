@@ -23,7 +23,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
   private readonly intervalTime = 5000; // 5 second
 
   // enable thinq1 support
-  private readonly enable_thinq1 = false;
+  private readonly enable_thinq1: boolean = false;
 
   constructor(
     public readonly log: Logger,
@@ -35,7 +35,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       this.log.error('Missing required config parameter.');
       return;
     }
-    this.enable_thinq1 = config.thinq1;
+    this.enable_thinq1 = config.thinq1 as boolean;
 
     this.ThinQ = new ThinQ(this, config, log);
 
@@ -70,29 +70,24 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
 
     const devices = await this.ThinQ.devices();
 
-    for (let device of devices) {
-      this.log.debug('Found device: ', device.toString());
-      const existingAccessory = this.accessories.find(accessory => accessory.UUID === device.id);
-
-      const accessoryType = Helper.make(device);
-      if (accessoryType === null) {
-        this.log.debug('Device not supported: ' + device.toString());
-        this.log.debug('data: ', JSON.stringify(device));
+    for (const device of devices) {
+      if (!this.enable_thinq1 && device.platform === PlatformType.ThinQ1) {
+        this.log.debug('Thinq1 device is skipped: ', device.toString());
         continue;
       }
 
-      if (this.enable_thinq1) {
-        await this.ThinQ.startMonitor(device);
-        const deviceWithSnapshot = await this.ThinQ.pollMonitor(device);
+      this.log.debug('Found device: ', device.toString());
+      this.log.debug('data: ', JSON.stringify(device.data));
 
-        // skip enable_thinq1 device
-        if (deviceWithSnapshot.platform === PlatformType.ThinQ1) {
-          await this.ThinQ.stopMonitor(device);
-          continue;
-        }
+      const existingAccessory = this.accessories.find(accessory => accessory.UUID === device.id);
 
-        device = deviceWithSnapshot;
-      } else if (device.platform === PlatformType.ThinQ1) {
+      await this.ThinQ.startMonitor(device);
+      const deviceWithSnapshot = await this.ThinQ.pollMonitor(device);
+
+      const accessoryType = Helper.make(deviceWithSnapshot);
+      if (accessoryType === null) {
+        this.log.debug('Device not supported: ' + device.toString());
+        await this.ThinQ.stopMonitor(device);
         continue;
       }
 
@@ -102,7 +97,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
         accessoriesToRemoveUUID.splice(accessoriesToRemoveUUID.indexOf(device.id), 1);
 
         this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
-        existingAccessory.context.device = device;
+        existingAccessory.context.device = deviceWithSnapshot;
         lgThinQDevice = new accessoryType(this, existingAccessory);
       } else {
         this.log.info('Adding new accessory:', device.name);
@@ -110,7 +105,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
         const category = Helper.category(device);
         // create a new accessory
         const accessory = new this.api.platformAccessory(device.name, device.id, category);
-        accessory.context.device = device;
+        accessory.context.device = deviceWithSnapshot;
 
         lgThinQDevice = new accessoryType(this, accessory);
 
@@ -124,7 +119,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
     const accessoriesToRemove = this.accessories.filter(accessory => accessoriesToRemoveUUID.includes(accessory.UUID));
     if (accessoriesToRemove.length) {
       accessoriesToRemove.map(accessory => {
-        this.log.info('Removing accessory:', accessory.context.device.name);
+        this.log.info('Removing accessory:', accessory.displayName);
         this.accessories.splice(this.accessories.indexOf(accessory), 1);
       });
 

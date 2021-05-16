@@ -9,6 +9,7 @@ import Auth from './Auth';
 import {WorkId} from './ThinQ';
 import {TokenError} from '../errors/TokenError';
 import {MonitorError} from '../errors/MonitorError';
+import {NotConnectedError} from '../errors/NotConnectedError';
 
 function resolveUrl(from, to) {
   const url = new URL(to, from);
@@ -46,11 +47,7 @@ export class API {
       const homeUrl = resolveUrl(this.gateway?.thinq2_url, 'service/homes/' + homes[i].homeId);
       const resp = await requestClient.get(homeUrl, { headers }).then(res => res.data);
 
-      // filter thinq2 device only
-      const thinq2devices = resp.result.devices.filter(device => {
-        return device.platformType === 'thinq2';
-      });
-      devices.push(...thinq2devices);
+      devices.push(...resp.result.devices);
     }
 
     return devices;
@@ -88,36 +85,40 @@ export class API {
       deviceId,
       workId,
     };
-    return await requestClient.post('rti/rtiMon', { lgedmRoot: data }, { headers })
+    return await requestClient.post(this.gateway?.thinq1_url + 'rti/rtiMon', { lgedmRoot: data }, { headers })
       .then(res => res.data.lgedmRoot)
       .then(data => {
         if ('returnCd' in data) {
           const code = data.returnCd as string;
-          if (code !== '0000') {
-            throw new TokenError();
+          if (code === '0106') {
+            throw new NotConnectedError(data.returnMsg || '');
+          } else if (code !== '0000') {
+            throw new TokenError(code + ' - ' + data.returnMsg || '');
           }
         }
 
-        return data.workId;
+        return data;
       });
   }
 
   public async getMonitorResult(device_id, work_id) {
     const headers = this.monitorHeaders;
     const workList = [{ deviceId: device_id, workId: work_id }];
-    return await requestClient.post('rti/rtiResult', { lgedmRoot: { workList } }, { headers })
+    return await requestClient.post(this.gateway?.thinq1_url + 'rti/rtiResult', { lgedmRoot: { workList } }, { headers })
       .then(resp => resp.data.lgedmRoot)
       .then(data => {
         if ('returnCd' in data) {
           const code = data.returnCd as string;
-          if (code !== '0000') {
-            throw new TokenError();
+          if (code === '0106') {
+            throw new NotConnectedError(data.returnMsg || '');
+          } else if (code !== '0000') {
+            throw new TokenError(code + ' - ' + data.returnMsg || '');
           }
         }
 
         const workList = data.workList;
         if (workList.returnCode !== '0000') {
-          throw new MonitorError();
+          throw new MonitorError(data);
         }
 
         if (!('returnData' in workList)) {

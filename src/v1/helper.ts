@@ -4,6 +4,9 @@ import {ChildLock, RemoteStart, SoilWash, WasherState} from './constants';
 import {DeviceModel} from '../lib/DeviceModel';
 
 export default class Helper {
+  /**
+   * transform device from thinq1 to thinq2 compatible (with snapshot data)
+   */
   public static transform(device: Device, deviceModel: DeviceModel, monitorData) {
     if (device.type === PlatformType.ThinQ2) {
       return device;
@@ -16,6 +19,9 @@ export default class Helper {
           washerDryer: Helper.washerDryerSnapshot(deviceModel, monitorData),
         };
         break;
+      default:
+        // return original device data if not supported
+        return device;
     }
 
     // mark device as thinq2 compatible
@@ -27,21 +33,25 @@ export default class Helper {
   private static washerDryerSnapshot(deviceModel: DeviceModel, monitorData) {
     const decodedMonitor = deviceModel.decodeMonitor(monitorData);
     return {
-      state: WasherState[loopupEnum(deviceModel, decodedMonitor, 'State')],
-      preState: WasherState[loopupEnum(deviceModel, decodedMonitor, 'PreState')],
-      remoteStart: RemoteStart[loopupEnum(deviceModel, decodedMonitor, 'RemoteStart')],
-      initialBit: decodedMonitor['InitialBit'] as boolean ? 'INITIAL_BIT_ON' : 'INITIAL_BIT_OFF',
-      childLock: ChildLock[loopupEnum(deviceModel, decodedMonitor, 'ChildLock')],
-      TCLCount: decodedMonitor['TCLCount'] as number,
-      reserveTimeHour: decodedMonitor['Reserve_Time_H'] as number,
-      reserveTimeMinute: decodedMonitor['Reserve_Time_M'] as number,
-      remainTimeHour: decodedMonitor['Remain_Time_H'] as number,
-      remainTimeMinute: decodedMonitor['Remain_Time_M'] as number,
-      initialTimeHour: decodedMonitor['Initial_Time_H'] as number,
-      initialTimeMinute: decodedMonitor['Initial_Time_M'] as number,
-      soilWash: SoilWash[loopupEnum(deviceModel, decodedMonitor, 'Soil')],
+      state: lookupEnumIndex(WasherState, loopupEnum(deviceModel, decodedMonitor, 'State')) || 'POWEROFF',
+      preState: lookupEnumIndex(WasherState, loopupEnum(deviceModel, decodedMonitor, 'PreState')) || 'POWEROFF',
+      remoteStart: lookupEnumIndex(RemoteStart, loopupEnum(deviceModel, decodedMonitor, 'RemoteStart')) || 'REMOTE_START_OFF',
+      initialBit: (decodedMonitor['InitialBit'] || false) as boolean ? 'INITIAL_BIT_ON' : 'INITIAL_BIT_OFF',
+      childLock: lookupEnumIndex(ChildLock, loopupEnum(deviceModel, decodedMonitor, 'ChildLock')) || 'CHILDLOCK_OFF',
+      TCLCount: (decodedMonitor['TCLCount'] || 0) as number,
+      reserveTimeHour: (decodedMonitor['Reserve_Time_H'] || 0) as number,
+      reserveTimeMinute: (decodedMonitor['Reserve_Time_M'] || 0) as number,
+      remainTimeHour: (decodedMonitor['Remain_Time_H'] || 0) as number,
+      remainTimeMinute: (decodedMonitor['Remain_Time_M'] || 0) as number,
+      initialTimeHour: (decodedMonitor['Initial_Time_H'] || 0) as number,
+      initialTimeMinute: (decodedMonitor['Initial_Time_M'] || 0) as number,
+      soilWash: lookupEnumIndex(SoilWash, loopupEnum(deviceModel, decodedMonitor, 'Soil')) || 'NO_SOILWASH',
     };
   }
+}
+
+export function lookupEnumIndex(enumType, value) {
+  return Object.keys(enumType)[Object.values(enumType).indexOf(<any> value)];
 }
 
 export function loopupEnum(deviceModel: DeviceModel, decodedMonitor, key) {
