@@ -29,17 +29,19 @@ export default class Refrigerator extends baseDevice {
     this.serviceLabel = accessory.getService(ServiceLabel) || accessory.addService(ServiceLabel, 'Refrigerator');
     this.serviceLabel.setCharacteristic(Characteristic.ServiceLabelNamespace, Characteristic.ServiceLabelNamespace.DOTS);
 
-    this.serviceFreezer = this.createThermostat('Freezer');
-    this.serviceFreezer.getCharacteristic(Characteristic.TargetTemperature)
-      .onSet(this.setFreezerTemperature.bind(this))
-      .setProps({ minValue: -24, maxValue: -14, minStep: 1 });
-    this.serviceFreezer.addLinkedService(this.serviceLabel);
-
     this.serviceFridge = this.createThermostat('Fridge');
     this.serviceFridge.getCharacteristic(Characteristic.TargetTemperature)
       .onSet(this.setFridgeTemperature.bind(this))
       .setProps({ minValue: 1, maxValue: 7, minStep: 1 });
+    this.serviceFridge.updateCharacteristic(Characteristic.ServiceLabelIndex, 1);
     this.serviceFridge.addLinkedService(this.serviceLabel);
+
+    this.serviceFreezer = this.createThermostat('Freezer');
+    this.serviceFreezer.getCharacteristic(Characteristic.TargetTemperature)
+      .onSet(this.setFreezerTemperature.bind(this))
+      .setProps({ minValue: -24, maxValue: -14, minStep: 1 });
+    this.serviceFreezer.updateCharacteristic(Characteristic.ServiceLabelIndex, 2);
+    this.serviceFreezer.addLinkedService(this.serviceLabel);
 
     // Door open state
     this.serviceDoorOpened = accessory.getService(ContactSensor) || accessory.addService(ContactSensor, 'Refrigerator Door Closed');
