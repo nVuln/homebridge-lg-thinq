@@ -1,7 +1,7 @@
 {
   "displayName": "Homebridge LG ThinQ",
   "name": "homebridge-lg-thinq",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A Homebridge plugin for controlling/monitoring LG ThinQ device via LG ThinQ platform.",
   "license": "Apache-2.0",
   "publishConfig": {
