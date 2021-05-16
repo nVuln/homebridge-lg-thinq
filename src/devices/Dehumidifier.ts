@@ -3,6 +3,11 @@ import {LGThinQHomebridgePlatform} from '../platform';
 import {CharacteristicValue, PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
 
+enum RotateSpeed {
+  LOW = 2,
+  HIGH = 6,
+}
+
 export default class Dehumidifier extends baseDevice {
   protected serviceDehumidifier;
   protected serviceHumiditySensor;
@@ -21,6 +26,7 @@ export default class Dehumidifier extends baseDevice {
     } = this.platform;
 
     const device: Device = accessory.context.device;
+    this.platform.log.debug('Dehumidifier data: ', JSON.stringify(device.data));
 
     this.serviceDehumidifier = accessory.getService(HumidifierDehumidifier) || accessory.addService(HumidifierDehumidifier);
     this.serviceDehumidifier.setCharacteristic(Characteristic.Name, device.name);
@@ -28,7 +34,7 @@ export default class Dehumidifier extends baseDevice {
       .onSet(this.setActive.bind(this));
     this.serviceDehumidifier.getCharacteristic(Characteristic.CurrentHumidifierDehumidifierState)
       .setProps({
-        validValues: [0, 3],
+        validValues: [0, 1, 3],
       });
     this.serviceDehumidifier.getCharacteristic(Characteristic.TargetHumidifierDehumidifierState)
       .setProps({
@@ -42,6 +48,13 @@ export default class Dehumidifier extends baseDevice {
         minValue: 0,
         maxValue: 100,
         minStep: 1,
+      });
+
+    this.serviceDehumidifier.getCharacteristic(Characteristic.RotationSpeed)
+      .onSet(this.setSpeed.bind(this))
+      .setProps({
+        minValue: 0,
+        maxValue: Object.values(RotateSpeed).length - 1,
       });
 
     this.serviceHumiditySensor = accessory.getService(HumiditySensor) || accessory.addService(HumiditySensor);
@@ -72,6 +85,17 @@ export default class Dehumidifier extends baseDevice {
     this.updateAccessoryCharacteristic(device);
   }
 
+  async setSpeed(value: CharacteristicValue) {
+    const device: Device = this.accessory.context.device;
+    const values = Object.values(RotateSpeed);
+    this.platform.ThinQ?.deviceControl(device.id, {
+      dataKey: 'airState.windStrength',
+      dataValue: values[value as number] || RotateSpeed.HIGH,
+    });
+    device.data.snapshot['airState.windStrength'] = value;
+    this.updateAccessoryCharacteristic(device);
+  }
+
   public updateAccessoryCharacteristic(device: Device) {
     super.updateAccessoryCharacteristic(device);
     const {
@@ -82,7 +106,12 @@ export default class Dehumidifier extends baseDevice {
     this.serviceDehumidifier.updateCharacteristic(Characteristic.Active, Status.isPowerOn ? 1 : 0);
     this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentRelativeHumidity, Status.humidityCurrent);
     this.serviceDehumidifier.updateCharacteristic(Characteristic.RelativeHumidityDehumidifierThreshold, Status.humidityTarget);
-    this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentHumidifierDehumidifierState, Status.isPowerOn ? 3 : 0);
+    const {INACTIVE, IDLE, DEHUMIDIFYING} = Characteristic.CurrentHumidifierDehumidifierState;
+    const currentState = Status.isDehumidifying ? DEHUMIDIFYING : (Status.isPowerOn ? IDLE : INACTIVE);
+    this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentHumidifierDehumidifierState, currentState);
+
+    const rotateSpeed = Object.values(RotateSpeed).indexOf(Status.windStrength || RotateSpeed.LOW);
+    this.serviceDehumidifier.updateCharacteristic(Characteristic.RotationSpeed, rotateSpeed);
 
     this.serviceHumiditySensor.updateCharacteristic(Characteristic.CurrentRelativeHumidity, Status.humidityCurrent);
     this.serviceHumiditySensor.updateCharacteristic(Characteristic.StatusActive, Status.isPowerOn);
@@ -94,6 +123,18 @@ export class DehumidifierStatus {
 
   public get isPowerOn() {
     return this.data['airState.operation'] as boolean;
+  }
+
+  public get opMode() {
+    return this.data['airState.opMode'] as number;
+  }
+
+  public get windStrength() {
+    return this.data['airState.windStrength'] as number;
+  }
+
+  public get isDehumidifying() {
+    return this.isPowerOn && [17, 18, 19].includes(this.opMode);
   }
 
   public get humidityCurrent() {

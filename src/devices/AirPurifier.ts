@@ -57,6 +57,13 @@ export default class AirPurifier extends baseDevice {
      */
     this.serviceAirPurifier.setCharacteristic(Characteristic.Name, device.name);
     this.serviceAirPurifier.getCharacteristic(Characteristic.SwingMode).onSet(this.setSwingMode.bind(this));
+    this.serviceAirPurifier.getCharacteristic(Characteristic.RotationSpeed)
+      .onSet(this.setRotationSpeed.bind(this))
+      .setProps({
+        minValue: 0,
+        maxValue: Object.values(RotateSpeed).length - 1,
+        minStep: 1,
+      });
 
     this.serviceAirQuanlity = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
     this.serviceAirQuanlity.setCharacteristic(Characteristic.AirQuality, parseInt(device.data.snapshot['airState.quality.overall']));
@@ -86,7 +93,7 @@ export default class AirPurifier extends baseDevice {
   async setRotationSpeed(value: CharacteristicValue) {
     this.platform.log.debug('Set Rotation Speed ->', value);
     const device: Device = this.accessory.context.device;
-    const values = [RotateSpeed.AUTO, RotateSpeed.LOW, RotateSpeed.MEDIUM, RotateSpeed.HIGH, RotateSpeed.EXTRA];
+    const values = Object.values(RotateSpeed);
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.windStrength',
       dataValue: values[value as number] || RotateSpeed.AUTO,
@@ -124,9 +131,8 @@ export default class AirPurifier extends baseDevice {
     this.serviceAirPurifier.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
     this.serviceAirPurifier.updateCharacteristic(Characteristic.CurrentAirPurifierState, this.Status.isPowerOn ? 2 : 0);
 
-    /*const values = [RotateSpeed.AUTO, RotateSpeed.LOW, RotateSpeed.MEDIUM, RotateSpeed.HIGH, RotateSpeed.EXTRA];
-    const rotateSpeed = values.indexOf(device.data.snapshot['airState.windStrength'] || RotateSpeed.AUTO);
-    serviceAirPurifier?.updateCharacteristic(Characteristic.RotationSpeed, rotateSpeed);*/
+    const rotateSpeed = Object.values(RotateSpeed).indexOf(this.Status.windStrength || RotateSpeed.AUTO);
+    this.serviceAirPurifier.updateCharacteristic(Characteristic.RotationSpeed, rotateSpeed);
 
     this.serviceAirPurifier.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwing ? 1 : 0);
 
@@ -156,6 +162,10 @@ export class AirPurifierStatus {
 
   public get isSwing() {
     return (this.data['airState.circulate.rotate'] || 0) as boolean;
+  }
+
+  public get windStrength() {
+    return this.data['airState.windStrength'];
   }
 
   public get airQuality() {
