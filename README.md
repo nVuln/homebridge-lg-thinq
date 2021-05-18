@@ -43,7 +43,7 @@ npm i -g homebridge-lg-thinq
 - `password` Required. The password for the account that is registered in the LG ThinQ Mobile App.
 - `country` Required. Your account [country alpha-2 code](https://www.countrycode.org/), e.g., US for the USA.
 - `language` Required. Your account language code, e.g., en-US, vi-VN.
-- `thinq` Optional. Enable thinq1 device support
+- `thinq1` Optional. Enable thinq1 device support
 ## Implementation Status
 
 | *Device* | *Implementation* | *Status* | *Control* | *Thinq2* | *Thinq1* |
