@@ -82,7 +82,8 @@ export class WasherDryerStatus {
   }
 
   public get isRunning() {
-    return this.isPowerOn && ['RUNNING', 'DRYING', 'COOLING'].includes(this.data?.state);
+    return this.isPowerOn &&
+      ['DETECTING', 'RUNNING', 'RINSING', 'SPINNING', 'DRYING', 'COOLING', 'WASH_REFRESHING', 'STEAMSOFTENING'].includes(this.data?.state);
   }
 
   public get remainDuration() {
