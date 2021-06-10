@@ -26,6 +26,8 @@ export default class WasherDryer extends baseDevice {
     const device: Device = accessory.context.device;
 
     this.serviceWasherDryer = accessory.getService(Valve) || accessory.addService(Valve, device.name);
+    this.serviceWasherDryer.getCharacteristic(Characteristic.Active).
+      onSet(this.setActive.bind(this));
     this.serviceWasherDryer.setCharacteristic(Characteristic.Name, device.name);
     this.serviceWasherDryer.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.WATER_FAUCET);
     this.serviceWasherDryer.getCharacteristic(Characteristic.RemainingDuration).setProps({
@@ -44,6 +46,10 @@ export default class WasherDryer extends baseDevice {
     }
 
     this.updateAccessoryCharacteristic(device);
+  }
+
+  public setActive() {
+    throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.NOT_ALLOWED_IN_CURRENT_STATE);
   }
 
   public updateAccessoryCharacteristic(device: Device) {

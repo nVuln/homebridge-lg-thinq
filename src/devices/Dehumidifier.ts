@@ -51,11 +51,7 @@ export default class Dehumidifier extends baseDevice {
       });
 
     this.serviceDehumidifier.getCharacteristic(Characteristic.RotationSpeed)
-      .onSet(this.setSpeed.bind(this))
-      .setProps({
-        minValue: 0,
-        maxValue: Object.values(RotateSpeed).length - 1,
-      });
+      .onSet(this.setSpeed.bind(this));
 
     this.serviceHumiditySensor = accessory.getService(HumiditySensor) || accessory.addService(HumiditySensor);
     this.serviceHumiditySensor.addLinkedService(this.serviceDehumidifier);
@@ -90,7 +86,7 @@ export default class Dehumidifier extends baseDevice {
     const values = Object.values(RotateSpeed);
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.windStrength',
-      dataValue: values[value as number] || RotateSpeed.HIGH,
+      dataValue: values[Math.floor((value as number) / 50)] || RotateSpeed.HIGH, // 0-50 = LOW, 50-100 = HIGH
     });
     device.data.snapshot['airState.windStrength'] = value;
     this.updateAccessoryCharacteristic(device);

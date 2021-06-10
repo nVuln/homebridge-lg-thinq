@@ -24,28 +24,37 @@ export class ThinQ {
 
   public async devices() {
     await this.api.ready();
-    const listDevices = await this.api.getListDevices().catch(async () => {
-      await this.api.refreshNewToken();
+    let listDevices;
+    try {
+      listDevices = await this.api.getListDevices();
+    } catch (err) {
       try {
-        return await this.api.getListDevices();
+        listDevices = await this.api.getListDevices();
       } catch (err) {
         this.log.error(err);
-      }
 
-      return [];
-    });
+        return [];
+      }
+    }
 
     return listDevices.map(device => new Device(device));
   }
 
   public async device(id: string) {
     await this.api.ready();
-    const device = await this.api.getDeviceInfo(id).catch(async () => {
+    let device: Device;
+    try {
+      device = await this.api.getDeviceInfo(id);
+    } catch (err) {
       await this.api.refreshNewToken();
-      return await this.api.getDeviceInfo(id).catch(err => {
+      try {
+        device = await this.api.getDeviceInfo(id);
+      } catch (err) {
         this.log.error(err);
-      });
-    });
+
+        throw err;
+      }
+    }
 
     return new Device(device);
   }

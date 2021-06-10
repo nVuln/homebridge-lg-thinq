@@ -58,17 +58,9 @@ export default class AirPurifier extends baseDevice {
     this.serviceAirPurifier.setCharacteristic(Characteristic.Name, device.name);
     this.serviceAirPurifier.getCharacteristic(Characteristic.SwingMode).onSet(this.setSwingMode.bind(this));
     this.serviceAirPurifier.getCharacteristic(Characteristic.RotationSpeed)
-      .onSet(this.setRotationSpeed.bind(this))
-      .setProps({
-        minValue: 0,
-        maxValue: Object.values(RotateSpeed).length - 1,
-        minStep: 1,
-      });
+      .onSet(this.setRotationSpeed.bind(this));
 
     this.serviceAirQuanlity = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
-    this.serviceAirQuanlity.setCharacteristic(Characteristic.AirQuality, parseInt(device.data.snapshot['airState.quality.overall']));
-    this.serviceAirQuanlity.setCharacteristic(Characteristic.PM2_5Density, parseInt(device.data.snapshot['airState.quality.PM2']) || 0);
-    this.serviceAirQuanlity.setCharacteristic(Characteristic.PM10Density, parseInt(device.data.snapshot['airState.quality.PM10']) || 0);
 
     this.serviceLight = new Lightbulb('Light');
     this.serviceLight.getCharacteristic(Characteristic.On).onSet(this.setLight.bind(this));
@@ -96,7 +88,7 @@ export default class AirPurifier extends baseDevice {
     const values = Object.values(RotateSpeed);
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.windStrength',
-      dataValue: values[value as number] || RotateSpeed.AUTO,
+      dataValue: values[Math.floor((value as number) / 20)] || RotateSpeed.AUTO, // convert from percent to level, 100% = high, 0% = auto
     });
   }
 
@@ -130,10 +122,6 @@ export default class AirPurifier extends baseDevice {
 
     this.serviceAirPurifier.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
     this.serviceAirPurifier.updateCharacteristic(Characteristic.CurrentAirPurifierState, this.Status.isPowerOn ? 2 : 0);
-
-    const rotateSpeed = Object.values(RotateSpeed).indexOf(this.Status.windStrength || RotateSpeed.AUTO);
-    this.serviceAirPurifier.updateCharacteristic(Characteristic.RotationSpeed, rotateSpeed);
-
     this.serviceAirPurifier.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwing ? 1 : 0);
 
     this.serviceAirQuanlity.updateCharacteristic(Characteristic.AirQuality, this.Status.airQuality.overall);
@@ -164,15 +152,11 @@ export class AirPurifierStatus {
     return (this.data['airState.circulate.rotate'] || 0) as boolean;
   }
 
-  public get windStrength() {
-    return this.data['airState.windStrength'];
-  }
-
   public get airQuality() {
     return {
       overall: parseInt(this.data['airState.quality.overall']),
-      PM2: parseInt(this.data['airState.quality.PM2'] || 0),
-      PM10: parseInt(this.data['airState.quality.PM10'] || 0),
+      PM2: parseInt(this.data['airState.quality.PM2'] || '0'),
+      PM10: parseInt(this.data['airState.quality.PM10'] || '0'),
     };
   }
 }

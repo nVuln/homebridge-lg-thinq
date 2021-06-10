@@ -1,5 +1,12 @@
 # Change Log
 
+## v0.2.5
+
+### Bug fixes
+* fix rotation speed air purifier & dehumidifier
+* catch error on api call
+* throw error when turn on washer (due LG remote start default is OFF)
+
 ## v0.2.1
 
 ### Other Changes
