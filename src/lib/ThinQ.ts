@@ -28,6 +28,7 @@ export class ThinQ {
     try {
       listDevices = await this.api.getListDevices();
     } catch (err) {
+      await this.api.refreshNewToken();
       try {
         listDevices = await this.api.getListDevices();
       } catch (err) {

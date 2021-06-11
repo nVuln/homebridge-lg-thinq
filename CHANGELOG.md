@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.2.6
+
+### Bug fixes
+
+* refresh new token retry 1 times if got error
+
 ## v0.2.5
 
 ### Bug fixes
