@@ -28,11 +28,20 @@ export class ThinQ {
     try {
       listDevices = await this.api.getListDevices();
     } catch (err) {
-      await this.api.refreshNewToken();
+      // EAI_AGAIN mean dns timeout, should skip it and try later
+      if (err.code === 'EAI_AGAIN') {
+        return [];
+      }
+
+      // retry it 1 times
       try {
+        await this.api.refreshNewToken();
         listDevices = await this.api.getListDevices();
       } catch (err) {
-        this.log.error(err);
+        // write log if error not is DNS timeout
+        if (err.code !== 'EAI_AGAIN') {
+          this.log.error(err);
+        }
 
         return [];
       }

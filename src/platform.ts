@@ -134,6 +134,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       return;
     }
 
+    this.log.info('Start polling device data.');
     const ThinQ = this.ThinQ;
     setInterval(() => {
       ThinQ.devices().then(async (devices) => {
