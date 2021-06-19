@@ -1,5 +1,15 @@
 # Change Log
 
+## v0.2.7
+
+### Bug fixes
+
+* fix some bug in airpurifier, refrigerator
+
+### Other changes
+
+* added washer door lock status in thinq2 device (thinq1 not support)
+
 ## v0.2.6
 
 ### Bug fixes
