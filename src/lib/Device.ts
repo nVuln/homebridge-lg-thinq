@@ -32,7 +32,7 @@ export class Device {
   }
 
   public get snapshot() {
-    return this.data.snapshot;
+    return this.data.snapshot || null;
   }
 
   public get platform() {

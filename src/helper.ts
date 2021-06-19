@@ -5,7 +5,6 @@ import Refrigerator from './devices/Refrigerator';
 import WasherDryer from './devices/WasherDryer';
 import Dishwasher from './devices/Dishwasher';
 import Dehumidifier from './devices/Dehumidifier';
-import {PlatformType} from './lib/constants';
 
 /**
  * Platform Accessory
@@ -14,7 +13,7 @@ import {PlatformType} from './lib/constants';
  */
 export class Helper {
   public static make(device: Device) {
-    if (device.platform === PlatformType.ThinQ1) {
+    if (device.snapshot === null) {
       return null;
     }
 

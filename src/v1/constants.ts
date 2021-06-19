@@ -33,3 +33,8 @@ export enum SoilWash {
   SOILWASH_TIMESAVE = '@WM_FL24_TITAN_SOIL_NORMAL_W',
   SOILWASH_NORMAL = '@WM_FL24_TITAN_SOIL_HEAVY_W'
 }
+
+export enum OnOff {
+  OFF = '@CP_OFF_EN_W',
+  ON = '@CP_ON_EN_W',
+}

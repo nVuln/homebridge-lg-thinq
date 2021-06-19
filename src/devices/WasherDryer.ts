@@ -2,10 +2,14 @@ import {baseDevice} from '../baseDevice';
 import {LGThinQHomebridgePlatform} from '../platform';
 import {PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
+import {PlatformType} from '../lib/constants';
 
 export default class WasherDryer extends baseDevice {
   protected serviceWasherDryer;
   protected serviceEventFinished;
+  protected serviceLabel;
+  protected serviceDoorLock;
+
   public isRunning = false;
   public stopTime = 0;
 
@@ -18,12 +22,16 @@ export default class WasherDryer extends baseDevice {
     const {
       Service: {
         StatelessProgrammableSwitch,
+        ServiceLabel,
+        LockMechanism,
         Valve,
       },
       Characteristic,
     } = this.platform;
 
     const device: Device = accessory.context.device;
+
+    this.serviceLabel = accessory.getService(ServiceLabel) || accessory.addService(ServiceLabel, device.name);
 
     this.serviceWasherDryer = accessory.getService(Valve) || accessory.addService(Valve, device.name);
     this.serviceWasherDryer.getCharacteristic(Characteristic.Active).
@@ -33,6 +41,23 @@ export default class WasherDryer extends baseDevice {
     this.serviceWasherDryer.getCharacteristic(Characteristic.RemainingDuration).setProps({
       maxValue: 86400, // 1 day
     });
+    this.serviceWasherDryer.updateCharacteristic(Characteristic.ServiceLabelIndex, 1);
+    this.serviceWasherDryer.addLinkedService(this.serviceLabel);
+
+    // onlu thinq2 support door lock status
+    if (device.platform === PlatformType.ThinQ2) {
+      this.serviceDoorLock = accessory.getService(LockMechanism) || accessory.addService(LockMechanism, 'Door Lock');
+      this.serviceDoorLock.getCharacteristic(Characteristic.LockCurrentState)
+        .onSet(this.setActive.bind(this))
+        .setProps({
+          minValue: Characteristic.LockCurrentState.UNSECURED,
+          maxValue: Characteristic.LockCurrentState.SECURED,
+        });
+      this.serviceDoorLock.getCharacteristic(Characteristic.LockTargetState)
+        .onSet(this.setActive.bind(this));
+      this.serviceDoorLock.updateCharacteristic(Characteristic.ServiceLabelIndex, 2);
+      this.serviceDoorLock.addLinkedService(this.serviceLabel);
+    }
 
     if (this.platform.config.washer_trigger as boolean) {
       this.serviceEventFinished = accessory.getService(StatelessProgrammableSwitch)
@@ -43,6 +68,13 @@ export default class WasherDryer extends baseDevice {
           maxValue: Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS,
           validValues: [Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS],
         });
+      this.serviceEventFinished.updateCharacteristic(Characteristic.ServiceLabelIndex, 3);
+      this.serviceEventFinished.addLinkedService(this.serviceLabel);
+    } else {
+      const serviceEvent = accessory.getService(StatelessProgrammableSwitch);
+      if (serviceEvent) {
+        accessory.removeService(serviceEvent);
+      }
     }
 
     this.updateAccessoryCharacteristic(device);
@@ -73,6 +105,10 @@ export default class WasherDryer extends baseDevice {
     this.serviceWasherDryer.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
     this.serviceWasherDryer.updateCharacteristic(Characteristic.InUse, this.Status.isRunning ? 1 : 0);
     this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
+
+    if (this.serviceDoorLock) {
+      this.serviceDoorLock.updateCharacteristic(Characteristic.LockCurrentState, this.Status.isDoorLocked ? 1 : 0);
+    }
   }
 
   public get Status() {
@@ -90,6 +126,10 @@ export class WasherDryerStatus {
   public get isRunning() {
     return this.isPowerOn &&
       ['DETECTING', 'RUNNING', 'RINSING', 'SPINNING', 'DRYING', 'COOLING', 'WASH_REFRESHING', 'STEAMSOFTENING'].includes(this.data?.state);
+  }
+
+  public get isDoorLocked() {
+    return this.data.doorLock === 'DOOR_LOCK_ON';
   }
 
   public get remainDuration() {
