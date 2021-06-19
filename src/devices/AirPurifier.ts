@@ -57,8 +57,7 @@ export default class AirPurifier extends baseDevice {
      */
     this.serviceAirPurifier.setCharacteristic(Characteristic.Name, device.name);
     this.serviceAirPurifier.getCharacteristic(Characteristic.SwingMode).onSet(this.setSwingMode.bind(this));
-    this.serviceAirPurifier.getCharacteristic(Characteristic.RotationSpeed)
-      .onSet(this.setRotationSpeed.bind(this));
+    this.serviceAirPurifier.getCharacteristic(Characteristic.RotationSpeed).onSet(this.setRotationSpeed.bind(this));
 
     this.serviceAirQuanlity = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
 
@@ -74,7 +73,7 @@ export default class AirPurifier extends baseDevice {
     const isOn = value as boolean ? 1 : 0;
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.operation',
-      dataValue: isOn,
+      dataValue: isOn as number,
     });
   }
 
@@ -83,6 +82,10 @@ export default class AirPurifier extends baseDevice {
   }
 
   async setRotationSpeed(value: CharacteristicValue) {
+    if (!this.Status.isPowerOn) {
+      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.NOT_ALLOWED_IN_CURRENT_STATE);
+    }
+
     this.platform.log.debug('Set Rotation Speed ->', value);
     const device: Device = this.accessory.context.device;
     const values = Object.values(RotateSpeed);
@@ -93,6 +96,10 @@ export default class AirPurifier extends baseDevice {
   }
 
   async setSwingMode(value: CharacteristicValue) {
+    if (!this.Status.isPowerOn) {
+      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.NOT_ALLOWED_IN_CURRENT_STATE);
+    }
+
     const device: Device = this.accessory.context.device;
     const isSwing = value as boolean ? 1 : 0;
     this.platform.ThinQ?.deviceControl(device.id, {
@@ -104,6 +111,10 @@ export default class AirPurifier extends baseDevice {
   }
 
   async setLight(value: CharacteristicValue) {
+    if (!this.Status.isPowerOn) {
+      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.NOT_ALLOWED_IN_CURRENT_STATE);
+    }
+
     const device: Device = this.accessory.context.device;
     const isLightOn = value as boolean ? 1 : 0;
     this.platform.ThinQ?.deviceControl(device.id, {
@@ -129,7 +140,6 @@ export default class AirPurifier extends baseDevice {
     this.serviceAirQuanlity.updateCharacteristic(Characteristic.PM10Density, this.Status.airQuality.PM10);
 
     this.serviceLight.updateCharacteristic(Characteristic.On, this.Status.isLightOn);
-    this.serviceLight.setHiddenService(!this.Status.isPowerOn);
   }
 
   public get Status() {

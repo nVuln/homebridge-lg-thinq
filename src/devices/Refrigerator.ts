@@ -26,7 +26,7 @@ export default class Refrigerator extends baseDevice {
     } = this.platform;
     const device: Device = accessory.context.device;
 
-    this.serviceLabel = accessory.getService(ServiceLabel) || accessory.addService(ServiceLabel, 'Refrigerator');
+    this.serviceLabel = accessory.getService(ServiceLabel) || accessory.addService(ServiceLabel, device.name);
     this.serviceLabel.setCharacteristic(Characteristic.ServiceLabelNamespace, Characteristic.ServiceLabelNamespace.DOTS);
 
     this.serviceFridge = this.createThermostat('Fridge');
