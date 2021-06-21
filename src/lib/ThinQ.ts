@@ -28,8 +28,8 @@ export class ThinQ {
     try {
       listDevices = await this.api.getListDevices();
     } catch (err) {
-      // EAI_AGAIN mean dns timeout, should skip it and try later
-      if (err.code === 'EAI_AGAIN') {
+      // network issue, no response
+      if (!err.response) {
         return [];
       }
 
@@ -38,8 +38,8 @@ export class ThinQ {
         await this.api.refreshNewToken();
         listDevices = await this.api.getListDevices();
       } catch (err) {
-        // write log if error not is DNS timeout
-        if (err.code !== 'EAI_AGAIN') {
+        // write log if error not is network issue
+        if (!err.response) {
           this.log.error(err);
         }
 
@@ -48,25 +48,6 @@ export class ThinQ {
     }
 
     return listDevices.map(device => new Device(device));
-  }
-
-  public async device(id: string) {
-    await this.api.ready();
-    let device: Device;
-    try {
-      device = await this.api.getDeviceInfo(id);
-    } catch (err) {
-      await this.api.refreshNewToken();
-      try {
-        device = await this.api.getDeviceInfo(id);
-      } catch (err) {
-        this.log.error(err);
-
-        throw err;
-      }
-    }
-
-    return new Device(device);
   }
 
   public async startMonitor(device: Device) {
@@ -139,7 +120,7 @@ export class ThinQ {
     try {
       return await this.api.sendCommandToDevice(id, values);
     } catch (err) {
-      this.platform.log.error(err);
+      this.log.error(err);
       throw err;
     }
   }

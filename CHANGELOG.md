@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.2.8
+
+### Bug fixes
+
+* fix washer door lock target status
+
 ## v0.2.7
 
 ### Bug fixes

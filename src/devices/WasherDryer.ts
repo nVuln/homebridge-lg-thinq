@@ -108,6 +108,7 @@ export default class WasherDryer extends baseDevice {
 
     if (this.serviceDoorLock) {
       this.serviceDoorLock.updateCharacteristic(Characteristic.LockCurrentState, this.Status.isDoorLocked ? 1 : 0);
+      this.serviceDoorLock.updateCharacteristic(Characteristic.LockTargetState, this.Status.isDoorLocked ? 1 : 0);
     }
   }
 
