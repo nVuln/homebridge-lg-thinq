@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.2.9
+
+### Other changes
+
+* added new device type: washer (221), wash tower (222)
+
 ## v0.2.8
 
 ### Bug fixes

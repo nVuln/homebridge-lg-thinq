@@ -20,7 +20,10 @@ export class Helper {
     switch (device.type) {
       case 'AIR_PURIFIER': return AirPurifier;
       case 'REFRIGERATOR': return Refrigerator;
-      case 'WASHER': return WasherDryer;
+      case 'WASHER':
+      case 'WASHER_2':
+      case 'WASH_TOWER':
+        return WasherDryer;
       case 'DRYER': return WasherDryer;
       case 'DISHWASHER': return Dishwasher;
       case 'DEHUMIDIFIER': return Dehumidifier;

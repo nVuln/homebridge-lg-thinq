@@ -45,7 +45,7 @@ export default class WasherDryer extends baseDevice {
     this.serviceWasherDryer.addLinkedService(this.serviceLabel);
 
     // onlu thinq2 support door lock status
-    if (device.platform === PlatformType.ThinQ2) {
+    if (device.platform === PlatformType.ThinQ2 && this.Status.isDoorLocked !== null) {
       this.serviceDoorLock = accessory.getService(LockMechanism) || accessory.addService(LockMechanism, 'Door Lock');
       this.serviceDoorLock.getCharacteristic(Characteristic.LockCurrentState)
         .onSet(this.setActive.bind(this))
@@ -129,7 +129,15 @@ export class WasherDryerStatus {
       ['DETECTING', 'RUNNING', 'RINSING', 'SPINNING', 'DRYING', 'COOLING', 'WASH_REFRESHING', 'STEAMSOFTENING'].includes(this.data?.state);
   }
 
+  public get isRemoteStartEnable() {
+    return this.data.remoteStart === 'REMOTE_START_ON';
+  }
+
   public get isDoorLocked() {
+    if (!this.data.doorLock) {
+      return null;
+    }
+
     return this.data.doorLock === 'DOOR_LOCK_ON';
   }
 
