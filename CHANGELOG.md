@@ -1,5 +1,12 @@
 # Change Log
 
+## v0.2.10
+
+### Bug fixes
+
+* device monitoring value mapping from device model
+* fix issue #22
+
 ## v0.2.9
 
 ### Other changes
