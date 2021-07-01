@@ -31,16 +31,27 @@ export default class Refrigerator extends baseDevice {
     this.serviceLabel.setCharacteristic(Characteristic.ServiceLabelNamespace, Characteristic.ServiceLabelNamespace.DOTS);
 
     this.serviceFridge = this.createThermostat('Fridge');
+
+    const fridgeValues = Object.values(device.deviceModel.monitoringValue.fridgeTemp_C.valueMapping).filter(value => {
+      return value.label !== 'IGNORE';
+    }).map(value => {
+      return parseInt(value.label);
+    });
     this.serviceFridge.getCharacteristic(Characteristic.TargetTemperature)
       .onSet(this.setFridgeTemperature.bind(this))
-      .setProps({ minValue: 1, maxValue: 7, minStep: 1 });
+      .setProps({ minValue: Math.min(...fridgeValues), maxValue: Math.max(...fridgeValues), minStep: 1 });
     this.serviceFridge.updateCharacteristic(Characteristic.ServiceLabelIndex, 1);
     this.serviceFridge.addLinkedService(this.serviceLabel);
 
+    const freezerValues = Object.values(device.deviceModel.monitoringValue.freezerTemp_C.valueMapping).filter(value => {
+      return value.label !== 'IGNORE';
+    }).map(value => {
+      return parseInt(value.label);
+    });
     this.serviceFreezer = this.createThermostat('Freezer');
     this.serviceFreezer.getCharacteristic(Characteristic.TargetTemperature)
       .onSet(this.setFreezerTemperature.bind(this))
-      .setProps({ minValue: -24, maxValue: -14, minStep: 1 });
+      .setProps({ minValue: Math.min(...freezerValues), maxValue: Math.max(...freezerValues), minStep: 1 });
     this.serviceFreezer.updateCharacteristic(Characteristic.ServiceLabelIndex, 2);
     this.serviceFreezer.addLinkedService(this.serviceLabel);
 
@@ -123,12 +134,27 @@ export default class Refrigerator extends baseDevice {
 
   async setFreezerTemperature(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
+    const freezerTemp = value.toString();
+    const freezerValueMapping = device.deviceModel.monitoringValue.fridgeTemp_C.valueMapping;
+    const freezerIndex = Object.keys(freezerValueMapping).map(key => {
+      return {
+        index: key,
+        label: freezerValueMapping[key].label,
+      };
+    }).filter(valueMap => {
+      return valueMap.label === freezerTemp;
+    });
+
+    if (!freezerIndex.length) {
+      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.INVALID_VALUE_IN_REQUEST);
+    }
+
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: null,
       dataValue: null,
       dataSetList: {
         refState: {
-          freezerTemp: -13 - parseInt(value.toString()),
+          freezerTemp: freezerIndex[0].index,
           tempUnit: 'CELSIUS',
         },
       },
@@ -138,12 +164,27 @@ export default class Refrigerator extends baseDevice {
 
   async setFridgeTemperature(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
+    const fridgeTemp = value.toString();
+    const fridgeValueMapping = device.deviceModel.monitoringValue.fridgeTemp_C.valueMapping;
+    const fridgeIndex = Object.keys(fridgeValueMapping).map(key => {
+      return {
+        index: key,
+        label: fridgeValueMapping[key].label,
+      };
+    }).filter(valueMap => {
+      return valueMap.label === fridgeTemp;
+    });
+
+    if (!fridgeIndex.length) {
+      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.INVALID_VALUE_IN_REQUEST);
+    }
+
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: null,
       dataValue: null,
       dataSetList: {
         refState: {
-          fridgeTemp: 8 - parseInt(value.toString()),
+          fridgeTemp: fridgeIndex[0].index,
           tempUnit: 'CELSIUS',
         },
       },

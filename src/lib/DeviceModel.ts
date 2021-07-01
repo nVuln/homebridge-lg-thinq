@@ -16,6 +16,7 @@ export interface MonitoringValue {
   dataType: string;
   valueMapping: {
     [key: string]: {
+      index: string;
       label: string;
     };
   };
