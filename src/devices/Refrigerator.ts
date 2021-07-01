@@ -2,6 +2,7 @@ import {LGThinQHomebridgePlatform} from '../platform';
 import {CharacteristicValue, PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
 import {baseDevice} from '../baseDevice';
+import {DeviceModel} from "../lib/DeviceModel";
 
 export default class Refrigerator extends baseDevice {
   protected serviceLabel;
@@ -55,6 +56,10 @@ export default class Refrigerator extends baseDevice {
     this.updateAccessoryCharacteristic(device);
   }
 
+  public get Status() {
+    return new RefrigeratorStatus(this.accessory.context.device.data.snapshot?.refState, this.accessory.context.device.deviceModel);
+  }
+
   /**
    * create a thermostat service
    */
@@ -85,19 +90,18 @@ export default class Refrigerator extends baseDevice {
     super.updateAccessoryCharacteristic(device);
 
     const {Characteristic} = this.platform;
-    const Status = new RefrigeratorStatus(device.data.snapshot?.refState);
 
-    this.serviceFreezer.updateCharacteristic(Characteristic.CurrentTemperature, Status.freezerTemperature);
-    this.serviceFreezer.updateCharacteristic(Characteristic.TargetTemperature, Status.freezerTemperature);
+    this.serviceFreezer.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.freezerTemperature);
+    this.serviceFreezer.updateCharacteristic(Characteristic.TargetTemperature, this.Status.freezerTemperature);
 
-    this.serviceFridge.updateCharacteristic(Characteristic.CurrentTemperature, Status.fridgeTemperature);
-    this.serviceFridge.updateCharacteristic(Characteristic.TargetTemperature, Status.fridgeTemperature);
+    this.serviceFridge.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.fridgeTemperature);
+    this.serviceFridge.updateCharacteristic(Characteristic.TargetTemperature, this.Status.fridgeTemperature);
 
-    const contactSensorValue = Status.isDoorClosed ?
+    const contactSensorValue = this.Status.isDoorClosed ?
       Characteristic.ContactSensorState.CONTACT_DETECTED : Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
     this.serviceDoorOpened.updateCharacteristic(Characteristic.ContactSensorState, contactSensorValue);
 
-    this.serviceExpressMode.updateCharacteristic(Characteristic.On, Status.isExpressModeOn);
+    this.serviceExpressMode.updateCharacteristic(Characteristic.On, this.Status.isExpressModeOn);
   }
 
   async setExpressMode(value: CharacteristicValue) {
@@ -149,14 +153,16 @@ export default class Refrigerator extends baseDevice {
 }
 
 export class RefrigeratorStatus {
-  constructor(protected data) {}
+  constructor(protected data, protected deviceModel: DeviceModel) {}
 
   public get freezerTemperature() {
-    return -13 - parseInt(this.data?.freezerTemp || 11);
+    const valueMapping = this.deviceModel.monitoringValue.freezerTemp_C.valueMapping;
+    return parseInt(valueMapping[this.data?.freezerTemp].label);
   }
 
   public get fridgeTemperature() {
-    return 8 - parseInt(this.data?.fridgeTemp || 1);
+    const valueMapping = this.deviceModel.monitoringValue.fridgeTemp_C.valueMapping;
+    return parseInt(valueMapping[this.data?.fridgeTemp].label);
   }
 
   public get isDoorClosed() {

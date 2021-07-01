@@ -5,7 +5,7 @@ import {Session} from './Session';
 import {Gateway} from './Gateway';
 
 import {requestClient} from './request';
-import Auth from './Auth';
+import {Auth} from './Auth';
 import {WorkId} from './ThinQ';
 import {TokenError} from '../errors/TokenError';
 import {MonitorError} from '../errors/MonitorError';
@@ -18,21 +18,22 @@ function resolveUrl(from, to) {
 
 export class API {
   protected _homes;
-  protected gateway: Gateway | undefined;
-  protected session: Session | undefined;
+  protected _gateway: Gateway | undefined;
+  protected session: Session = new Session('', '', 0);
   protected auth!: Auth;
   protected userNumber!: string;
 
+  protected username!: string;
+  protected password!: string;
+
   constructor(
-    protected country: string,
-    protected language: string,
-    protected username: string,
-    protected password: string,
+    protected country: string = 'US',
+    protected language: string = 'en-US',
   ) {}
 
   public async getDeviceInfo(device_id: string) {
     const headers = this.defaultHeaders;
-    const deviceUrl = resolveUrl(this.gateway?.thinq2_url, 'service/devices/' + device_id);
+    const deviceUrl = resolveUrl(this._gateway?.thinq2_url, 'service/devices/' + device_id);
 
     return requestClient.get(deviceUrl, { headers }).then(res => res.data.result);
   }
@@ -44,7 +45,7 @@ export class API {
 
     // get all devices in home
     for (let i = 0; i < homes.length; i++) {
-      const homeUrl = resolveUrl(this.gateway?.thinq2_url, 'service/homes/' + homes[i].homeId);
+      const homeUrl = resolveUrl(this._gateway?.thinq2_url, 'service/homes/' + homes[i].homeId);
       const resp = await requestClient.get(homeUrl, { headers }).then(res => res.data);
 
       devices.push(...resp.result.devices);
@@ -60,7 +61,7 @@ export class API {
   public async getListHomes() {
     if (!this._homes) {
       const headers = this.defaultHeaders;
-      const homesUrl = resolveUrl(this.gateway?.thinq2_url, 'service/homes');
+      const homesUrl = resolveUrl(this._gateway?.thinq2_url, 'service/homes');
       this._homes = await requestClient.get(homesUrl, { headers }).then(res => res.data).then(data => data.result.item);
     }
 
@@ -69,7 +70,7 @@ export class API {
 
   public async sendCommandToDevice(device_id: string, values: Record<string, any>) {
     const headers = this.defaultHeaders;
-    const controlUrl = resolveUrl(this.gateway?.thinq2_url, 'service/devices/'+device_id+'/control-sync');
+    const controlUrl = resolveUrl(this._gateway?.thinq2_url, 'service/devices/'+device_id+'/control-sync');
     return requestClient.post(controlUrl, {
       'ctrlKey': 'basicCtrl',
       'command': 'Set',
@@ -85,7 +86,7 @@ export class API {
       deviceId,
       workId,
     };
-    return await requestClient.post(this.gateway?.thinq1_url + 'rti/rtiMon', { lgedmRoot: data }, { headers })
+    return await requestClient.post(this._gateway?.thinq1_url + 'rti/rtiMon', { lgedmRoot: data }, { headers })
       .then(res => res.data.lgedmRoot)
       .then(data => {
         if ('returnCd' in data) {
@@ -104,7 +105,7 @@ export class API {
   public async getMonitorResult(device_id, work_id) {
     const headers = this.monitorHeaders;
     const workList = [{ deviceId: device_id, workId: work_id }];
-    return await requestClient.post(this.gateway?.thinq1_url + 'rti/rtiResult', { lgedmRoot: { workList } }, { headers })
+    return await requestClient.post(this._gateway?.thinq1_url + 'rti/rtiResult', { lgedmRoot: { workList } }, { headers })
       .then(resp => resp.data.lgedmRoot)
       .then(data => {
         if ('returnCd' in data) {
@@ -129,22 +130,37 @@ export class API {
       });
   }
 
+  public setRefreshToken(refreshToken) {
+    this.session = new Session(refreshToken, refreshToken, 0);
+  }
+
+  public setUsernamePassword(username, password) {
+    this.username = username;
+    this.password = password;
+  }
+
+  public async gateway() {
+    if (!this._gateway) {
+      const gateway = await requestClient.get(constants.GATEWAY_URL, { headers: this.defaultHeaders }).then(res => res.data.result);
+      this._gateway = new Gateway(gateway);
+    }
+
+    return this._gateway;
+  }
+
   public async ready() {
     // get gateway first
-    if (!this.gateway) {
-      const gateway = await requestClient.get(constants.GATEWAY_URL, { headers: this.defaultHeaders }).then(res => res.data.result);
-      this.gateway = new Gateway(gateway);
-    }
+    const gateway = await this.gateway();
 
     if (!this.auth) {
-      this.auth = new Auth(this.gateway);
+      this.auth = new Auth(gateway);
     }
 
-    if (!this.session?.hasToken()) {
+    if (!this.session.hasToken() && this.username && this.password) {
       this.session = await this.auth.login(this.username, this.password);
     }
 
-    if (!this.session?.hasValidToken()) {
+    if (!this.session.hasValidToken() && !!this.session.refreshToken) {
       this.session = await this.auth.refreshNewToken(this.session);
     }
 
@@ -183,7 +199,7 @@ export class API {
     }
 
     const headers = {};
-    if (this.session?.accessToken) {
+    if (this.session.accessToken) {
       headers['x-emp-token'] = this.session.accessToken;
     }
 

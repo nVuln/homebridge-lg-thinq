@@ -1,5 +1,5 @@
 export class Gateway {
-  constructor(protected data) {}
+  constructor(public data) {}
 
   public get emp_base_url() {
     return this.data.empTermsUri + '/';

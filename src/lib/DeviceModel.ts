@@ -12,6 +12,14 @@ export interface ModelDataValue {
   [key: string]: any;
 }
 
+export interface MonitoringValue {
+  dataType: string;
+  valueMapping: {
+    [key: string]: {
+      label: string;
+    };
+  };
+}
 export interface ModelData {
   Info: {
     productType: string;
@@ -25,6 +33,9 @@ export interface ModelData {
   };
   Value: {
     [key: string]: ModelDataValue;
+  };
+  MonitoringValue: {
+    [key: string]: MonitoringValue;
   };
 
   [key: string]: any;
@@ -61,6 +72,10 @@ export class DeviceModel {
   public constructor(
     public data: ModelData,
   ) {
+  }
+
+  public get monitoringValue() {
+    return this.data.MonitoringValue;
   }
 
   public value(name: string) {

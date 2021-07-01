@@ -19,7 +19,13 @@ export class ThinQ {
     public readonly config: PlatformConfig,
     public readonly log: Logger,
   ) {
-    this.api = new API(this.config.country, this.config.language, this.config.username, this.config.password);
+    this.api = new API(this.config.country, this.config.language);
+
+    if (config.refresh_token) {
+      this.api.setRefreshToken(config.refresh_token);
+    } else if (config.username && config.password) {
+      this.api.setUsernamePassword(config.username, config.password);
+    }
   }
 
   public async devices() {
@@ -47,26 +53,32 @@ export class ThinQ {
       }
     }
 
-    return listDevices.map(device => new Device(device));
+    return listDevices.map(dev => {
+      const device = new Device(dev);
+      device.deviceModel = this.deviceModel[device.id];
+      return device;
+    });
   }
 
   public async startMonitor(device: Device) {
-    if (device.platform === PlatformType.ThinQ1) {
-      try {
-        if (!(device.id in this.deviceModel)) {
-          this.deviceModel[device.id] = await this.api.getDeviceModelInfo(device.data).then(modelInfo => {
-            return new DeviceModel(modelInfo);
-          });
-        }
-
-        this.workIds[device.id] = await this.api.sendMonitorCommand(device.id, 'Start', uuid.v4()).then(data => data.workId);
-      } catch (err) {
-        if (err instanceof NotConnectedError) {
-          return false;
-        }
-
-        this.log.error(err);
+    try {
+      if (!(device.id in this.deviceModel)) {
+        this.deviceModel[device.id] = await this.api.getDeviceModelInfo(device.data).then(modelInfo => {
+          return new DeviceModel(modelInfo);
+        });
       }
+
+      device.deviceModel = this.deviceModel[device.id];
+
+      if (device.platform === PlatformType.ThinQ1) {
+        this.workIds[device.id] = await this.api.sendMonitorCommand(device.id, 'Start', uuid.v4()).then(data => data.workId);
+      }
+    } catch (err) {
+      if (err instanceof NotConnectedError) {
+        return false;
+      }
+
+      this.log.error(err);
     }
   }
 

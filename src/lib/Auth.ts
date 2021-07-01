@@ -8,7 +8,7 @@ import { DateTime } from 'luxon';
 import {AuthenticationError} from '../errors/AuthenticationError';
 import {TokenError} from '../errors/TokenError';
 
-export default class Auth {
+export class Auth {
   public lgeapi_url: string;
 
   // prepare thinq v1
@@ -49,6 +49,10 @@ export default class Auth {
     // try login with username and hashed password
     const loginUrl = this.gateway.emp_base_url + 'emp/v2.0/account/session/' + encodeURIComponent(username);
     const res = await requestClient.post(loginUrl, qs.stringify(data), { headers }).then(res => res.data).catch(err => {
+      if (!err.response) {
+        throw err;
+      }
+
       const {code, message} = err.response.data.error;
       if (code === 'MS.001.03') {
         throw new AuthenticationError('Double-check your country in configuration');

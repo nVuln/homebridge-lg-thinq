@@ -1,6 +1,8 @@
 import { DeviceType } from './constants';
+import {DeviceModel} from './DeviceModel';
 
 export class Device {
+  public deviceModel!: DeviceModel;
   constructor(public data) {}
 
   public get id() {
