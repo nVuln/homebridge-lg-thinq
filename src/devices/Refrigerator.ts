@@ -166,17 +166,9 @@ export default class Refrigerator extends baseDevice {
   async setFreezerTemperature(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
     const freezerTemp = value.toString();
-    const freezerValueMapping = device.deviceModel.monitoringValue.fridgeTemp_C.valueMapping;
-    const freezerIndex = Object.keys(freezerValueMapping).map(key => {
-      return {
-        index: key,
-        label: freezerValueMapping[key].label,
-      };
-    }).filter(valueMap => {
-      return valueMap.label === freezerTemp;
-    });
+    const freezerValue = device.deviceModel.lookupMonitorEnumName('freezerTemp_C', freezerTemp);
 
-    if (!freezerIndex.length) {
+    if (!freezerValue) {
       throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.INVALID_VALUE_IN_REQUEST);
     }
 
@@ -185,7 +177,7 @@ export default class Refrigerator extends baseDevice {
       dataValue: null,
       dataSetList: {
         refState: {
-          freezerTemp: freezerIndex[0].index,
+          freezerTemp: parseInt(freezerValue),
           tempUnit: 'CELSIUS',
         },
       },
@@ -196,17 +188,9 @@ export default class Refrigerator extends baseDevice {
   async setFridgeTemperature(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
     const fridgeTemp = value.toString();
-    const fridgeValueMapping = device.deviceModel.monitoringValue.fridgeTemp_C.valueMapping;
-    const fridgeIndex = Object.keys(fridgeValueMapping).map(key => {
-      return {
-        index: key,
-        label: fridgeValueMapping[key].label,
-      };
-    }).filter(valueMap => {
-      return valueMap.label === fridgeTemp;
-    });
+    const fridgeValue = device.deviceModel.lookupMonitorEnumName('fridgeTemp_C', fridgeTemp);
 
-    if (!fridgeIndex.length) {
+    if (!fridgeValue) {
       throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.INVALID_VALUE_IN_REQUEST);
     }
 
@@ -215,7 +199,7 @@ export default class Refrigerator extends baseDevice {
       dataValue: null,
       dataSetList: {
         refState: {
-          fridgeTemp: fridgeIndex[0].index,
+          fridgeTemp: parseInt(fridgeValue),
           tempUnit: 'CELSIUS',
         },
       },

@@ -4,7 +4,7 @@
 
 ### Bug fixes
 
-* fix issue #21 & #22
+* fix issue #19 & #22
 
 ## v0.2.11
 
