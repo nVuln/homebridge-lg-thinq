@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.2.12
+
+### Bug fixes
+
+* fix issue #21 & #22
+
 ## v0.2.11
 
 ### Bug fixes
