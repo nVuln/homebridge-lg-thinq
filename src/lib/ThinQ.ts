@@ -34,6 +34,8 @@ export class ThinQ {
     try {
       listDevices = await this.api.getListDevices();
     } catch (err) {
+      // data: { resultCode: '0110', result: '' }
+      // login to LG ThinQ app to check error
       // network issue, no response
       if (!err.response) {
         return [];
@@ -45,8 +47,8 @@ export class ThinQ {
         listDevices = await this.api.getListDevices();
       } catch (err) {
         // write log if error not is network issue
-        if (!err.response) {
-          this.log.error(err);
+        if (err.response) {
+          this.log.error(err.response.data);
         }
 
         return [];

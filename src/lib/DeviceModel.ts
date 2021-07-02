@@ -151,15 +151,16 @@ export class DeviceModel {
     return options[value];
   }
 
-  public referenceName(key: string, value: any): string | null {
-    const val = String(value);
-    const reference = (this.value(key) as ReferenceValue).reference;
-
-    if (val in reference) {
-      return reference[val]._comment;
+  public lookupMonitorEnumName(key: string, label: string) {
+    if (!(key in this.monitoringValue)) {
+      return null;
     }
 
-    return null;
+    function getKeyByValue(obj, value) {
+      return Object.keys(obj).find(key => obj[key].label === value);
+    }
+
+    return getKeyByValue(this.monitoringValue[key].valueMapping, label) || null;
   }
 
   public decodeMonitor(data: any) {

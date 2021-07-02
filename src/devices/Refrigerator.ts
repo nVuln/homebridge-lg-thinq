@@ -2,7 +2,7 @@ import {LGThinQHomebridgePlatform} from '../platform';
 import {CharacteristicValue, PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
 import {baseDevice} from '../baseDevice';
-import {DeviceModel} from "../lib/DeviceModel";
+import {DeviceModel} from '../lib/DeviceModel';
 
 export default class Refrigerator extends baseDevice {
   protected serviceLabel;
@@ -10,6 +10,7 @@ export default class Refrigerator extends baseDevice {
   protected serviceFridge;
   protected serviceDoorOpened;
   protected serviceExpressMode;
+  protected serviceExpressFridge;
 
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
@@ -64,6 +65,13 @@ export default class Refrigerator extends baseDevice {
     this.serviceExpressMode.getCharacteristic(Characteristic.On).onSet(this.setExpressMode.bind(this));
     this.serviceExpressMode.addLinkedService(this.serviceLabel);
 
+    if ('expressFridge' in device.snapshot) {
+      // Express Fridge
+      this.serviceExpressFridge = accessory.getService(Switch) || accessory.addService(Switch, 'Express Fridge');
+      this.serviceExpressFridge.getCharacteristic(Characteristic.On).onSet(this.setExpressFridge.bind(this));
+      this.serviceExpressFridge.addLinkedService(this.serviceLabel);
+    }
+
     this.updateAccessoryCharacteristic(device);
   }
 
@@ -113,17 +121,40 @@ export default class Refrigerator extends baseDevice {
     this.serviceDoorOpened.updateCharacteristic(Characteristic.ContactSensorState, contactSensorValue);
 
     this.serviceExpressMode.updateCharacteristic(Characteristic.On, this.Status.isExpressModeOn);
+
+    if ('expressFridge' in device.snapshot) {
+      this.serviceExpressFridge.updateCharacteristic(Characteristic.On, this.Status.isExpressFridgeOn);
+    }
   }
 
   async setExpressMode(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
-    const expressModeValue = value as boolean ? 'EXPRESS_ON' : 'OFF';
+    const On = device.deviceModel.lookupMonitorEnumName('expressMode', '@CP_ON_EN_W');
+    const Off = device.deviceModel.lookupMonitorEnumName('expressMode', '@CP_OFF_EN_W');
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: null,
       dataValue: null,
       dataSetList: {
         refState: {
-          expressMode: expressModeValue,
+          expressMode: value as boolean ? On : Off,
+          tempUnit: 'CELSIUS',
+        },
+      },
+      dataGetList: null,
+    });
+    this.platform.log.debug('Set Express Mode ->', value);
+  }
+
+  async setExpressFridge(value: CharacteristicValue) {
+    const device: Device = this.accessory.context.device;
+    const On = device.deviceModel.lookupMonitorEnumName('expressFridge', '@CP_ON_EN_W');
+    const Off = device.deviceModel.lookupMonitorEnumName('expressFridge', '@CP_OFF_EN_W');
+    this.platform.ThinQ?.deviceControl(device.id, {
+      dataKey: null,
+      dataValue: null,
+      dataSetList: {
+        refState: {
+          expressFridge: value as boolean ? On : Off,
           tempUnit: 'CELSIUS',
         },
       },
@@ -211,6 +242,10 @@ export class RefrigeratorStatus {
   }
 
   public get isExpressModeOn() {
-    return this.data?.expressMode === 'EXPRESS_ON';
+    return this.data?.expressMode === this.deviceModel.lookupMonitorEnumName('expressMode', '@CP_ON_EN_W');
+  }
+
+  public get isExpressFridgeOn() {
+    return this.data?.expressFridge === this.deviceModel.lookupMonitorEnumName('expressFridge', '@CP_ON_EN_W');
   }
 }
