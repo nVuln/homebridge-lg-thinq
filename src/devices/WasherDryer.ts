@@ -3,6 +3,7 @@ import {LGThinQHomebridgePlatform} from '../platform';
 import {PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
 import {PlatformType} from '../lib/constants';
+import {DeviceModel} from '../lib/DeviceModel';
 
 export default class WasherDryer extends baseDevice {
   protected serviceWasherDryer;
@@ -34,8 +35,8 @@ export default class WasherDryer extends baseDevice {
     this.serviceLabel = accessory.getService(ServiceLabel) || accessory.addService(ServiceLabel, device.name);
 
     this.serviceWasherDryer = accessory.getService(Valve) || accessory.addService(Valve, device.name);
-    this.serviceWasherDryer.getCharacteristic(Characteristic.Active).
-      onSet(this.setActive.bind(this));
+    this.serviceWasherDryer.getCharacteristic(Characteristic.Active)
+      .onSet(this.setActive.bind(this));
     this.serviceWasherDryer.setCharacteristic(Characteristic.Name, device.name);
     this.serviceWasherDryer.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.WATER_FAUCET);
     this.serviceWasherDryer.getCharacteristic(Characteristic.RemainingDuration).setProps({
@@ -45,7 +46,7 @@ export default class WasherDryer extends baseDevice {
     this.serviceWasherDryer.addLinkedService(this.serviceLabel);
 
     // onlu thinq2 support door lock status
-    if (device.platform === PlatformType.ThinQ2 && this.Status.isDoorLocked !== null) {
+    if (device.platform === PlatformType.ThinQ2 && 'doorLock' in device.snapshot?.washerDryer) {
       this.serviceDoorLock = accessory.getService(LockMechanism) || accessory.addService(LockMechanism, 'Door Lock');
       this.serviceDoorLock.getCharacteristic(Characteristic.LockCurrentState)
         .onSet(this.setActive.bind(this))
@@ -113,12 +114,12 @@ export default class WasherDryer extends baseDevice {
   }
 
   public get Status() {
-    return new WasherDryerStatus(this.accessory.context.device.snapshot?.washerDryer, this);
+    return new WasherDryerStatus(this.accessory.context.device.snapshot?.washerDryer, this, this.accessory.context.device.deviceModel);
   }
 }
 
 export class WasherDryerStatus {
-  constructor(protected data, protected accessory) {}
+  constructor(protected data, protected accessory, protected deviceModel: DeviceModel) {}
 
   public get isPowerOn() {
     return !['POWEROFF', 'POWERFAIL'].includes(this.data?.state);
@@ -130,15 +131,11 @@ export class WasherDryerStatus {
   }
 
   public get isRemoteStartEnable() {
-    return this.data.remoteStart === 'REMOTE_START_ON';
+    return this.data.remoteStart === this.deviceModel.lookupMonitorEnumName('remoteStart', '@CP_ON_EN_W');
   }
 
   public get isDoorLocked() {
-    if (!this.data.doorLock) {
-      return null;
-    }
-
-    return this.data.doorLock === 'DOOR_LOCK_ON';
+    return this.data.doorLock === this.deviceModel.lookupMonitorEnumName('doorLock', '@CP_ON_EN_W');
   }
 
   public get remainDuration() {

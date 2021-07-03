@@ -152,6 +152,10 @@ export class DeviceModel {
   }
 
   public lookupMonitorEnumName(key: string, label: string) {
+    if (this.data.Value) {
+      return this.enumName(key, label);
+    }
+
     if (!(key in this.monitoringValue)) {
       return null;
     }

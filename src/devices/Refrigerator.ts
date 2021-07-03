@@ -65,7 +65,7 @@ export default class Refrigerator extends baseDevice {
     this.serviceExpressMode.getCharacteristic(Characteristic.On).onSet(this.setExpressMode.bind(this));
     this.serviceExpressMode.addLinkedService(this.serviceLabel);
 
-    if ('expressFridge' in device.snapshot) {
+    if ('expressFridge' in device.snapshot?.refState) {
       // Express Fridge
       this.serviceExpressFridge = accessory.getService(Switch) || accessory.addService(Switch, 'Express Fridge');
       this.serviceExpressFridge.getCharacteristic(Characteristic.On).onSet(this.setExpressFridge.bind(this));
@@ -76,7 +76,7 @@ export default class Refrigerator extends baseDevice {
   }
 
   public get Status() {
-    return new RefrigeratorStatus(this.accessory.context.device.data.snapshot?.refState, this.accessory.context.device.deviceModel);
+    return new RefrigeratorStatus(this.accessory.context.device.snapshot?.refState, this.accessory.context.device.deviceModel);
   }
 
   /**
@@ -122,7 +122,7 @@ export default class Refrigerator extends baseDevice {
 
     this.serviceExpressMode.updateCharacteristic(Characteristic.On, this.Status.isExpressModeOn);
 
-    if ('expressFridge' in device.snapshot) {
+    if ('expressFridge' in device.snapshot?.refState) {
       this.serviceExpressFridge.updateCharacteristic(Characteristic.On, this.Status.isExpressFridgeOn);
     }
   }

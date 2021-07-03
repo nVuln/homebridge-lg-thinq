@@ -105,9 +105,10 @@ export default class AirPurifier extends baseDevice {
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.circulate.rotate',
       dataValue: isSwing,
+    }).then(() => {
+      device.data.snapshot['airState.circulate.rotate'] = isSwing;
+      this.updateAccessoryCharacteristic(device);
     });
-    device.data.snapshot['airState.circulate.rotate'] = isSwing;
-    this.updateAccessoryCharacteristic(device);
   }
 
   async setLight(value: CharacteristicValue) {
@@ -120,9 +121,10 @@ export default class AirPurifier extends baseDevice {
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.lightingState.signal',
       dataValue: isLightOn,
+    }).then(() => {
+      device.data.snapshot['airState.lightingState.signal'] = isLightOn;
+      this.updateAccessoryCharacteristic(device);
     });
-    device.data.snapshot['airState.lightingState.signal'] = isLightOn;
-    this.updateAccessoryCharacteristic(device);
   }
 
   public updateAccessoryCharacteristic(device: Device) {

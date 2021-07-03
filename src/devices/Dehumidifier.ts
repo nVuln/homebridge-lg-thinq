@@ -66,9 +66,10 @@ export default class Dehumidifier extends baseDevice {
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.operation',
       dataValue: isOn,
+    }).then(() => {
+      device.data.snapshot['airState.operation'] = isOn ? 1 : 0;
+      this.updateAccessoryCharacteristic(device);
     });
-    device.data.snapshot['airState.operation'] = isOn ? 1 : 0;
-    this.updateAccessoryCharacteristic(device);
   }
 
   async setHumidityThreshold(value: CharacteristicValue) {
@@ -76,9 +77,10 @@ export default class Dehumidifier extends baseDevice {
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.humidity.desired',
       dataValue: value as number,
+    }).then(() => {
+      device.data.snapshot['airState.humidity.desired'] = value;
+      this.updateAccessoryCharacteristic(device);
     });
-    device.data.snapshot['airState.humidity.desired'] = value;
-    this.updateAccessoryCharacteristic(device);
   }
 
   async setSpeed(value: CharacteristicValue) {

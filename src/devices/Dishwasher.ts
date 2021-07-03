@@ -2,7 +2,7 @@ import {baseDevice} from '../baseDevice';
 import {LGThinQHomebridgePlatform} from '../platform';
 import {PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
-import {WasherDryerStatus} from "./WasherDryer";
+import {WasherDryerStatus} from './WasherDryer';
 
 export default class Dishwasher extends baseDevice {
   protected serviceDishwasher;
@@ -44,11 +44,11 @@ export default class Dishwasher extends baseDevice {
   }
 
   public get Status() {
-    return new DishwasherStatus(this.accessory.context.device.snapshot?.dishwasher, this);
+    return new DishwasherStatus(this.accessory.context.device.snapshot?.dishwasher, this, this.accessory.context.device.deviceModel);
   }
 }
 
-// shared some status in washer
+// re-use some status in washer
 export class DishwasherStatus extends WasherDryerStatus {
   public get isRunning() {
     return this.data?.state === 'RUNNING';
