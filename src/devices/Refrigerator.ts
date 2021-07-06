@@ -31,28 +31,11 @@ export default class Refrigerator extends baseDevice {
     this.serviceLabel = accessory.getService(ServiceLabel) || accessory.addService(ServiceLabel, device.name);
     this.serviceLabel.setCharacteristic(Characteristic.ServiceLabelNamespace, Characteristic.ServiceLabelNamespace.DOTS);
 
-    this.serviceFridge = this.createThermostat('Fridge');
-
-    const fridgeValues = Object.values(device.deviceModel.monitoringValue.fridgeTemp_C.valueMapping).filter(value => {
-      return value.label !== 'IGNORE';
-    }).map(value => {
-      return parseInt(value.label);
-    });
-    this.serviceFridge.getCharacteristic(Characteristic.TargetTemperature)
-      .onSet(this.setFridgeTemperature.bind(this))
-      .setProps({ minValue: Math.min(...fridgeValues), maxValue: Math.max(...fridgeValues), minStep: 1 });
+    this.serviceFridge = this.createThermostat('Fridge', 'fridgeTemp');
     this.serviceFridge.updateCharacteristic(Characteristic.ServiceLabelIndex, 1);
     this.serviceFridge.addLinkedService(this.serviceLabel);
 
-    const freezerValues = Object.values(device.deviceModel.monitoringValue.freezerTemp_C.valueMapping).filter(value => {
-      return value.label !== 'IGNORE';
-    }).map(value => {
-      return parseInt(value.label);
-    });
-    this.serviceFreezer = this.createThermostat('Freezer');
-    this.serviceFreezer.getCharacteristic(Characteristic.TargetTemperature)
-      .onSet(this.setFreezerTemperature.bind(this))
-      .setProps({ minValue: Math.min(...freezerValues), maxValue: Math.max(...freezerValues), minStep: 1 });
+    this.serviceFreezer = this.createThermostat('Freezer', 'freezerTemp');
     this.serviceFreezer.updateCharacteristic(Characteristic.ServiceLabelIndex, 2);
     this.serviceFreezer.addLinkedService(this.serviceLabel);
 
@@ -77,29 +60,6 @@ export default class Refrigerator extends baseDevice {
 
   public get Status() {
     return new RefrigeratorStatus(this.accessory.context.device.snapshot?.refState, this.accessory.context.device.deviceModel);
-  }
-
-  /**
-   * create a thermostat service
-   */
-  protected createThermostat(name: string) {
-    const {Characteristic} = this.platform;
-    const service = this.accessory.getService(name) || this.accessory.addService(this.platform.Service.Thermostat, name, name);
-    // cool only
-    service.setCharacteristic(Characteristic.CurrentHeatingCoolingState, Characteristic.CurrentHeatingCoolingState.COOL);
-    service.getCharacteristic(Characteristic.TargetHeatingCoolingState)
-      .setProps({
-        minValue: Characteristic.TargetHeatingCoolingState.COOL,
-        maxValue: Characteristic.TargetHeatingCoolingState.COOL,
-      });
-    service.setCharacteristic(Characteristic.TargetHeatingCoolingState, Characteristic.TargetHeatingCoolingState.COOL);
-    // celsius only
-    service.getCharacteristic(Characteristic.TemperatureDisplayUnits).setProps({
-      minValue: Characteristic.TemperatureDisplayUnits.CELSIUS,
-      maxValue: Characteristic.TemperatureDisplayUnits.CELSIUS,
-    });
-
-    return service;
   }
 
   /**
@@ -163,53 +123,62 @@ export default class Refrigerator extends baseDevice {
     this.platform.log.debug('Set Express Mode ->', value);
   }
 
-  async setFreezerTemperature(value: CharacteristicValue) {
+  /**
+   * create a thermostat service
+   */
+  protected createThermostat(name: string, key: string) {
     const device: Device = this.accessory.context.device;
-    const freezerTemp = value.toString();
-    const freezerValue = device.deviceModel.lookupMonitorEnumName('freezerTemp_C', freezerTemp);
-
-    if (!freezerValue) {
-      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.INVALID_VALUE_IN_REQUEST);
-    }
-
-    this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: null,
-      dataValue: null,
-      dataSetList: {
-        refState: {
-          freezerTemp: parseInt(freezerValue),
-          tempUnit: 'CELSIUS',
-        },
-      },
-      dataGetList: null,
+    const {Characteristic} = this.platform;
+    const service = this.accessory.getService(name) || this.accessory.addService(this.platform.Service.Thermostat, name, name);
+    // cool only
+    service.setCharacteristic(Characteristic.CurrentHeatingCoolingState, Characteristic.CurrentHeatingCoolingState.COOL);
+    service.getCharacteristic(Characteristic.TargetHeatingCoolingState)
+      .setProps({
+        minValue: Characteristic.TargetHeatingCoolingState.COOL,
+        maxValue: Characteristic.TargetHeatingCoolingState.COOL,
+      });
+    service.setCharacteristic(Characteristic.TargetHeatingCoolingState, Characteristic.TargetHeatingCoolingState.COOL);
+    // celsius only
+    service.getCharacteristic(Characteristic.TemperatureDisplayUnits).setProps({
+      minValue: Characteristic.TemperatureDisplayUnits.CELSIUS,
+      maxValue: Characteristic.TemperatureDisplayUnits.CELSIUS,
     });
-  }
 
-  async setFridgeTemperature(value: CharacteristicValue) {
-    const device: Device = this.accessory.context.device;
-    const fridgeTemp = value.toString();
-    const fridgeValue = device.deviceModel.lookupMonitorEnumName('fridgeTemp_C', fridgeTemp);
-
-    if (!fridgeValue) {
-      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.INVALID_VALUE_IN_REQUEST);
-    }
-
-    this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: null,
-      dataValue: null,
-      dataSetList: {
-        refState: {
-          fridgeTemp: parseInt(fridgeValue),
-          tempUnit: 'CELSIUS',
-        },
-      },
-      dataGetList: null,
+    const values = Object.values(device.deviceModel.monitoringValue[key + '_C'].valueMapping).filter(value => {
+      return value.label !== 'IGNORE';
+    }).map(value => {
+      return parseInt(value.label);
     });
+
+    service.getCharacteristic(Characteristic.TargetTemperature)
+      .onSet((value: CharacteristicValue) => {
+        const indexValue = device.deviceModel.lookupMonitorEnumName(key + '_C', value.toString());
+
+        if (!indexValue) {
+          throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.INVALID_VALUE_IN_REQUEST);
+        }
+
+        this.platform.ThinQ?.deviceControl(device.id, {
+          dataKey: null,
+          dataValue: null,
+          dataSetList: {
+            refState: {
+              [key]: parseInt(indexValue),
+              tempUnit: 'CELSIUS',
+            },
+          },
+          dataGetList: null,
+        });
+      })
+      .setProps({minValue: Math.min(...values), maxValue: Math.max(...values), minStep: 1});
+
+    return service;
   }
 }
 
 export class RefrigeratorStatus {
-  constructor(protected data, protected deviceModel: DeviceModel) {}
+  constructor(protected data, protected deviceModel: DeviceModel) {
+  }
 
   public get freezerTemperature() {
     const valueMapping = this.deviceModel.monitoringValue.freezerTemp_C.valueMapping;
