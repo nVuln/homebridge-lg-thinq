@@ -51,6 +51,6 @@ export default class Dishwasher extends baseDevice {
 // re-use some status in washer
 export class DishwasherStatus extends WasherDryerStatus {
   public get isRunning() {
-    return this.data?.state === 'RUNNING';
+    return this.isPowerOn && this.data?.state === 'RUNNING';
   }
 }
