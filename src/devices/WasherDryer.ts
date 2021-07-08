@@ -144,10 +144,11 @@ export class WasherDryerStatus {
       this.accessory.stopTime = 0;
       return 0;
     }
+    const remainTimeHour = this.data?.remainTimeHour || 0;
+    const remainTimeMinute = this.data?.remainTimeMinute || 0;
 
     if (!this.accessory.stopTime) {
-      const remainTimeInMinute = this.data?.remainTimeHour * 60 + this.data?.remainTimeMinute;
-      this.accessory.stopTime = currentTimestamp + remainTimeInMinute * 60;
+      this.accessory.stopTime = currentTimestamp + remainTimeHour * 60 + remainTimeMinute * 60;
     }
 
     return this.accessory.stopTime - currentTimestamp;
