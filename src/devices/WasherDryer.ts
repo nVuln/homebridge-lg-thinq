@@ -90,14 +90,14 @@ export default class WasherDryer extends baseDevice {
 
     if (this.platform.config.washer_trigger as boolean) {
       if (!this.isRunning && this.Status.isRunning && this.stopTime) {
-        this.once('washer.finished', () => {
+        this.once('washer.'+device.id+'.finished', () => {
           const SINGLE = Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS;
           this.serviceEventFinished.updateCharacteristic(Characteristic.ProgrammableSwitchEvent, SINGLE);
         });
       }
 
       if (this.isRunning && !this.Status.isRunning && this.stopTime) {
-        this.emit('washer.finished');
+        this.emit('washer.'+device.id+'.finished');
       }
     }
 
@@ -144,11 +144,13 @@ export class WasherDryerStatus {
       this.accessory.stopTime = 0;
       return 0;
     }
+
     const remainTimeHour = this.data?.remainTimeHour || 0;
     const remainTimeMinute = this.data?.remainTimeMinute || 0;
+    const stopTime = currentTimestamp + remainTimeHour * 60 + remainTimeMinute * 60;
 
-    if (!this.accessory.stopTime) {
-      this.accessory.stopTime = currentTimestamp + remainTimeHour * 60 + remainTimeMinute * 60;
+    if (!this.accessory.stopTime || Math.abs(stopTime - this.accessory.stopTime) > 120 /* 2 min different */) {
+      this.accessory.stopTime = stopTime;
     }
 
     return this.accessory.stopTime - currentTimestamp;
