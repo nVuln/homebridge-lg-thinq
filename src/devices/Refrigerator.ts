@@ -182,12 +182,12 @@ export class RefrigeratorStatus {
 
   public get freezerTemperature() {
     const valueMapping = this.deviceModel.monitoringValue.freezerTemp_C.valueMapping;
-    return parseInt(valueMapping[this.data?.freezerTemp].label);
+    return parseInt(valueMapping[this.data?.freezerTemp]?.label || '0');
   }
 
   public get fridgeTemperature() {
     const valueMapping = this.deviceModel.monitoringValue.fridgeTemp_C.valueMapping;
-    return parseInt(valueMapping[this.data?.fridgeTemp].label);
+    return parseInt(valueMapping[this.data?.fridgeTemp]?.label || '0');
   }
 
   public get isDoorClosed() {
