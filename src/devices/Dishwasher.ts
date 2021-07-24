@@ -26,6 +26,10 @@ export default class Dishwasher extends baseDevice {
     this.serviceDishwasher = accessory.getService(Valve) || accessory.addService(Valve, 'Dishwasher');
     this.serviceDishwasher.setCharacteristic(Characteristic.Name, device.name);
     this.serviceDishwasher.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.WATER_FAUCET);
+    this.serviceDishwasher.getCharacteristic(Characteristic.Active)
+      .onSet(this.setActive.bind(this))
+      .updateValue(Characteristic.Active.INACTIVE);
+    this.serviceDishwasher.setCharacteristic(Characteristic.InUse, Characteristic.InUse.NOT_IN_USE);
     this.serviceDishwasher.getCharacteristic(Characteristic.RemainingDuration).setProps({
       maxValue: 86400, // 1 day
     });
@@ -33,8 +37,17 @@ export default class Dishwasher extends baseDevice {
     this.updateAccessoryCharacteristic(device);
   }
 
+  public setActive() {
+    throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.NOT_ALLOWED_IN_CURRENT_STATE);
+  }
+
   public updateAccessoryCharacteristic(device: Device) {
     super.updateAccessoryCharacteristic(device);
+
+    if (!device.snapshot.online) {
+      // device not online, do not update status
+      return;
+    }
 
     const {Characteristic} = this.platform;
 

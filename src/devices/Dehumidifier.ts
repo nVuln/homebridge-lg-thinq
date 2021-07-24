@@ -31,11 +31,13 @@ export default class Dehumidifier extends baseDevice {
     this.serviceDehumidifier = accessory.getService(HumidifierDehumidifier) || accessory.addService(HumidifierDehumidifier);
     this.serviceDehumidifier.setCharacteristic(Characteristic.Name, device.name);
     this.serviceDehumidifier.getCharacteristic(Characteristic.Active)
-      .onSet(this.setActive.bind(this));
+      .onSet(this.setActive.bind(this))
+      .updateValue(Characteristic.Active.INACTIVE);
     this.serviceDehumidifier.getCharacteristic(Characteristic.CurrentHumidifierDehumidifierState)
       .setProps({
         validValues: [0, 1, 3],
-      });
+      })
+      .updateValue(Characteristic.CurrentHumidifierDehumidifierState.INACTIVE);
     this.serviceDehumidifier.getCharacteristic(Characteristic.TargetHumidifierDehumidifierState)
       .setProps({
         validValues: [2],
@@ -96,6 +98,12 @@ export default class Dehumidifier extends baseDevice {
 
   public updateAccessoryCharacteristic(device: Device) {
     super.updateAccessoryCharacteristic(device);
+
+    if (!device.snapshot.online) {
+      // device not online, do not update status
+      return;
+    }
+
     const {
       Characteristic,
     } = this.platform;
