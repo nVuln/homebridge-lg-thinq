@@ -164,6 +164,10 @@ export class Auth {
     };
 
     const resp = await requestClient.get(profileUrl, { headers }).then(resp => resp.data);
+    if (resp.status === 2) {
+      throw new AuthenticationError(resp.message);
+    }
+
     return resp.account.userNo as string;
   }
 

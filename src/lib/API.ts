@@ -131,7 +131,7 @@ export class API {
   }
 
   public setRefreshToken(refreshToken) {
-    this.session = new Session(refreshToken, refreshToken, 0);
+    this.session = new Session('', refreshToken, 0);
   }
 
   public setUsernamePassword(username, password) {

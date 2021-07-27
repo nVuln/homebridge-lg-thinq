@@ -21,7 +21,7 @@ export class Helper {
       case 'AIR_PURIFIER': return AirPurifier;
       case 'REFRIGERATOR': return Refrigerator;
       case 'WASHER':
-      case 'WASHER_2':
+      case 'WASHER_NEW':
       case 'WASH_TOWER':
         return WasherDryer;
       case 'DRYER': return WasherDryer;
