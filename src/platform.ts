@@ -31,11 +31,12 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
     public readonly api: API,
   ) {
     this.events = new EventEmitter();
-    if (!config.country || !config.language || !config.username || !config.password) {
+    if (!config.country || !config.language || !((config.username && config.password) || config.refresh_token)) {
       this.log.error('Missing required config parameter.');
       return;
     }
     this.enable_thinq1 = config.thinq1 as boolean;
+    this.config.devices = this.config.devices || [];
 
     this.ThinQ = new ThinQ(this, config, log);
 
@@ -76,8 +77,12 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
         continue;
       }
 
-      this.log.debug('Found device: ', device.toString());
-      this.log.debug('data: ', JSON.stringify(device.data));
+      this.log.debug('Found device: ', JSON.stringify(device.data));
+
+      if (this.config.devices.length && !this.config.devices.find(enabled => enabled.id === device.id)) {
+        this.log.debug('Device skipped: ', device.id);
+        continue;
+      }
 
       const existingAccessory = this.accessories.find(accessory => accessory.UUID === device.id);
 

@@ -2,16 +2,37 @@
   "pluginAlias": "LGThinQ",
   "pluginType": "platform",
   "singular": true,
+  "customUi": true,
   "schema": {
+	"auth_mode": {
+	  "title": "Auth Mode",
+	  "type": "string",
+	  "default": "account",
+	  "oneOf": [
+		{ "title": "LG Account", "enum": ["account"] },
+		{ "title": "Token", "enum": ["token"] }
+	  ]
+	},
 	"username": {
 	  "title": "Username",
 	  "type": "string",
-	  "required": true
+	  "condition": {
+		"functionBody": "return model.auth_mode === 'account';"
+	  }
 	},
 	"password": {
 	  "title": "Password",
 	  "type": "string",
-	  "required": true
+	  "condition": {
+		"functionBody": "return model.auth_mode === 'account';"
+	  }
+	},
+	"refresh_token": {
+	  "title": "Refresh Token",
+	  "type": "string",
+	  "condition": {
+		"functionBody": "return model.auth_mode === 'token';"
+	  }
 	},
 	"country": {
 	  "title": "Country",
@@ -30,27 +51,48 @@
 	  "type": "boolean",
 	  "default": false
 	},
-	"washer_trigger": {
-	  "title": "Enable washer program finished trigger?",
-	  "type": "boolean",
-	  "default": false
-	}
-  },
-  "layout": [
-	{
-	  "type": "flex",
-	  "flex-flow": "row wrap",
-	  "items": [
-		"username",
-		{
-		  "key": "password",
-		  "type": "password"
+	"devices": {
+	  "title": "Devices",
+	  "description": "leave it empty to enable all device",
+	  "type": "array",
+	  "items": {
+		"type": "object",
+		"properties": {
+		  "id": {
+			"title": "Device ID",
+			"type": "string",
+			"required": true
+		  },
+		  "name": {
+			"title": "Device Name",
+			"type": "string"
+		  },
+		  "type": {
+			"title": "Device Type",
+			"type": "string",
+			"enum": [
+			  "WASHER",
+			  "WASHER_NEW",
+			  "WASH_TOWER",
+			  "DRYER",
+			  "REFRIGERATOR",
+			  "DISHWASHER",
+			  "AIR_PURIFIER",
+			  "DEHUMIDIFIER"
+			],
+			"condition": {
+			  "functionBody": "return false;"
+			}
+		  },
+		  "washer_trigger": {
+			"title": "Enable washer program finished trigger?",
+			"type": "boolean",
+			"condition": {
+			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['WASHER','WASHER_NEW', 'WASH_TOWER'].includes(model.devices[arrayIndices].type);"
+			}
+		  }
 		}
-	  ]
-	},
-	"country",
-	"language",
-	"thinq1",
-	"washer_trigger"
-  ]
+	  }
+	}
+  }
 }

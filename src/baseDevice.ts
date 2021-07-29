@@ -24,4 +24,8 @@ export class baseDevice extends EventEmitter {
   public updateAccessoryCharacteristic(device: Device) {
     this.accessory.context.device = device;
   }
+
+  public get config() {
+    return this.platform.config.devices.find(enabled => enabled.id === this.accessory.context.device.id);
+  }
 }

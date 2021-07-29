@@ -179,9 +179,9 @@ export class Auth {
       svc_list: constants.SVC_CODE,
       svc_integrated: 'Y',
       redirect_uri: this.gateway.login_base_url + 'login/iabClose',
-      show_thirdparty_login: 'LGE,MYLG',
-      division: 'ha:T20',
-      callback_url: this.gateway.login_base_url + 'login/iabClose',
+      show_thirdparty_login: 'LGE,MYLG,GGL,AMZ,FBK,APPL',
+      division: 'ha',
+      callback_url: this.gateway.login_base_url,
     };
 
     return this.gateway.login_base_url + 'login/signIn' + qs.stringify(params, { addQueryPrefix: true });

@@ -1,7 +1,7 @@
 {
   "displayName": "Homebridge LG ThinQ",
   "name": "homebridge-lg-thinq",
-  "version": "0.2.18",
+  "version": "1.0.0",
   "description": "A Homebridge plugin for controlling/monitoring LG ThinQ device via LG ThinQ platform.",
   "license": "Apache-2.0",
   "publishConfig": {
@@ -45,6 +45,7 @@
   "homepage": "https://github.com/nVuln/homebridge-lg-thinq#readme",
   "author": "",
   "dependencies": {
+    "@homebridge/plugin-ui-utils": "^0.0.19",
     "axios": "^0.21.1",
     "luxon": "^1.27.0",
     "qs": "^6.10.1",

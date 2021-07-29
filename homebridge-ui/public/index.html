@@ -1,0 +1,492 @@
+<script crossorigin="anonymous" src="js/jquery.slim.js"></script>
+<script crossorigin="anonymous" src="js/popper.js"></script>
+<script crossorigin="anonymous" src="js/bootstrap.js"></script>
+
+<div class="card card-body" style="display: none" id="loginForm">
+    <h5>Plugin need your LG account authorization, please login by using form below</h5>
+    <hr/>
+    <div class="form-group">
+        <label for="country_language">select country / language of your account</label>
+        <select class="form-control w-100" id="country_language">
+            <option data-country="AE" data-language="ar-AE">United Arab Emirates/العربية</option>
+            <option data-country="AE" data-language="en-AE">United Arab Emirates/English</option>
+            <option data-country="AG" data-language="en-AG">Antigua and Barbuda/English</option>
+            <option data-country="AL" data-language="en-AL">Albania/English</option>
+            <option data-country="AL" data-language="sq-AL">Albania/Shqip</option>
+            <option data-country="AM" data-language="en-AM">Armenia/English</option>
+            <option data-country="AM" data-language="fr-AM">Armenia/français</option>
+            <option data-country="AO" data-language="en-AO">Angola/English</option>
+            <option data-country="AR" data-language="es-AR">Argentina/Spanish</option>
+            <option data-country="AT" data-language="de-AT">Austria/Deutsch</option>
+            <option data-country="AT" data-language="en-AT">Austria/English</option>
+            <option data-country="AU" data-language="en-AU">Australia/English</option>
+            <option data-country="AZ" data-language="en-AZ">Azerbaijan/English</option>
+            <option data-country="BA" data-language="hr-BA">Bosnia/Hrvatski</option>
+            <option data-country="BA" data-language="sr-BA">Bosnia/Srpski</option>
+            <option data-country="BB" data-language="en-BB">Barbados/English</option>
+            <option data-country="BD" data-language="en-BD">Bangladesh/English</option>
+            <option data-country="BE" data-language="en-BE">Belgium/English</option>
+            <option data-country="BE" data-language="fr-BE">Belgium/français</option>
+            <option data-country="BE" data-language="nl-BE">Belgium/Nederlands</option>
+            <option data-country="BF" data-language="fr-BF">Burkina Faso/français</option>
+            <option data-country="BG" data-language="bg-BG">Bulgaria/Български</option>
+            <option data-country="BG" data-language="en-BG">Bulgaria/English</option>
+            <option data-country="BH" data-language="ar-BH">Bahrain/العربية</option>
+            <option data-country="BH" data-language="en-BH">Bahrain/English</option>
+            <option data-country="BJ" data-language="fr-BJ">Benin/français</option>
+            <option data-country="BO" data-language="es-BO">Bolivia/Spanish</option>
+            <option data-country="BR" data-language="pt-BR">Brazil/Português</option>
+            <option data-country="BS" data-language="en-BS">Bahamas/English</option>
+            <option data-country="BY" data-language="ru-BY">Belarus/Русский</option>
+            <option data-country="BZ" data-language="en-BZ">Belize/English</option>
+            <option data-country="CA" data-language="en-CA">Canada/English</option>
+            <option data-country="CA" data-language="fr-CA">Canada/français</option>
+            <option data-country="CD" data-language="fr-CD">DR Congo/français</option>
+            <option data-country="CF" data-language="fr-CF">Central African Republic/français</option>
+            <option data-country="CG" data-language="fr-CG">Congo Brazzaville/français</option>
+            <option data-country="CH" data-language="de-CH">Switzerland/Deutsch</option>
+            <option data-country="CH" data-language="en-CH">Switzerland/English</option>
+            <option data-country="CH" data-language="fr-CH">Switzerland/français</option>
+            <option data-country="CI" data-language="fr-CI">Cote dKIvoire(Republic of Ivory Coast)/français</option>
+            <option data-country="CL" data-language="en-CL">Chile/English</option>
+            <option data-country="CL" data-language="es-CL">Chile/Spanish</option>
+            <option data-country="CM" data-language="fr-CM">Cameroon/français</option>
+            <option data-country="CN" data-language="en-CN">China/English</option>
+            <option data-country="CN" data-language="zh-CN">China/中国语</option>
+            <option data-country="CO" data-language="en-CO">Colombia/English</option>
+            <option data-country="CO" data-language="es-CO">Colombia/Spanish</option>
+            <option data-country="CR" data-language="es-CR">Costa Rica/Spanish</option>
+            <option data-country="CU" data-language="es-CU">Cuba/Spanish</option>
+            <option data-country="CV" data-language="pt-CV">Cape Verde/Português</option>
+            <option data-country="CY" data-language="el-CY">Cyprus/Ελληνικά</option>
+            <option data-country="CY" data-language="en-CY">Cyprus/English</option>
+            <option data-country="CZ" data-language="cs-CZ">Czech Republic/Česky</option>
+            <option data-country="CZ" data-language="en-CZ">Czech Republic/English</option>
+            <option data-country="DE" data-language="de-DE">Germany/Deutsch</option>
+            <option data-country="DE" data-language="en-DE">Germany/English</option>
+            <option data-country="DJ" data-language="fr-DJ">Djibouti/francais</option>
+            <option data-country="DK" data-language="da-DK">Denmark/Dansk</option>
+            <option data-country="DK" data-language="en-DK">Denmark/English</option>
+            <option data-country="DM" data-language="en-DM">Dominica/English</option>
+            <option data-country="DO" data-language="es-DO">Dominican Rep./Spanish</option>
+            <option data-country="DZ" data-language="ar-DZ">Algeria/العربية</option>
+            <option data-country="DZ" data-language="en-DZ">Algeria/English</option>
+            <option data-country="DZ" data-language="fr-DZ">Algeria/francais</option>
+            <option data-country="EC" data-language="en-EC">Ecuador/English</option>
+            <option data-country="EC" data-language="es-EC">Ecuador/Spanish</option>
+            <option data-country="EE" data-language="en-EE">Estonia/English</option>
+            <option data-country="EE" data-language="et-EE">Estonia/Eesti</option>
+            <option data-country="EE" data-language="ru-EE">Estonia/Русский</option>
+            <option data-country="EG" data-language="ar-EG">Egypt/العربية</option>
+            <option data-country="EG" data-language="en-EG">Egypt/English</option>
+            <option data-country="ES" data-language="en-ES">Spain/English</option>
+            <option data-country="ES" data-language="es-ES">Spain/Spanish</option>
+            <option data-country="ET" data-language="en-ET">Ethiopia/English</option>
+            <option data-country="FI" data-language="en-FI">Finland/English</option>
+            <option data-country="FI" data-language="fi-FI">Finland/Suomi</option>
+            <option data-country="FR" data-language="fr-FR">France/français</option>
+            <option data-country="GA" data-language="fr-GA">Gabon/français</option>
+            <option data-country="GB" data-language="en-GB">UK/English</option>
+            <option data-country="GD" data-language="en-GD">Grenada/English</option>
+            <option data-country="GE" data-language="en-GE">Georgia/English</option>
+            <option data-country="GH" data-language="en-GH">Ghana/English</option>
+            <option data-country="GM" data-language="en-GM">Gambia/English</option>
+            <option data-country="GN" data-language="fr-GN">Guinea Conakry/français</option>
+            <option data-country="GQ" data-language="es-GQ">Guinea Equatorial/Spanish</option>
+            <option data-country="GQ" data-language="fr-GQ">Guinea Equatorial/français</option>
+            <option data-country="GR" data-language="el-GR">Greece/Ελληνικά</option>
+            <option data-country="GR" data-language="en-GR">Greece/English</option>
+            <option data-country="GT" data-language="es-GT">Guatemala/Spanish</option>
+            <option data-country="GY" data-language="en-GY">Guyana/English</option>
+            <option data-country="HK" data-language="en-HK">Hong Kong/English</option>
+            <option data-country="HK" data-language="zh-HK">Hong Kong/中国语</option>
+            <option data-country="HN" data-language="es-HN">Honduras/Spanish</option>
+            <option data-country="HR" data-language="en-HR">Croatia/English</option>
+            <option data-country="HR" data-language="hr-HR">Croatia/Hrvatski</option>
+            <option data-country="HT" data-language="fr-HT">Haiti/français</option>
+            <option data-country="HU" data-language="en-HU">Hungary/English</option>
+            <option data-country="HU" data-language="hu-HU">Hungary/magyar</option>
+            <option data-country="ID" data-language="en-ID">Indonesia/English</option>
+            <option data-country="ID" data-language="id-ID">Indonesia/Bahasa Indonesia</option>
+            <option data-country="IE" data-language="en-IE">Ireland/English</option>
+            <option data-country="IL" data-language="en-IL">Israel/English</option>
+            <option data-country="IN" data-language="en-IN">India/English</option>
+            <option data-country="IQ" data-language="ar-IQ">Iraq/العربية</option>
+            <option data-country="IQ" data-language="en-IQ">Iraq/English</option>
+            <option data-country="IR" data-language="en-IR">Iran/English</option>
+            <option data-country="IS" data-language="en-IS">Iceland/English</option>
+            <option data-country="IT" data-language="en-IT">Italy/English</option>
+            <option data-country="IT" data-language="it-IT">Italy/Italiano</option>
+            <option data-country="JM" data-language="en-JM">Jamaica/English</option>
+            <option data-country="JO" data-language="ar-JO">Jordan/العربية</option>
+            <option data-country="JO" data-language="en-JO">Jordan/English</option>
+            <option data-country="JP" data-language="ja-JP">Japan/日本語</option>
+            <option data-country="KE" data-language="en-KE">Kenya/English</option>
+            <option data-country="KG" data-language="ru-KG">Kyrgyzstan/Русский</option>
+            <option data-country="KH" data-language="en-KH">Cambodia/English</option>
+            <option data-country="KN" data-language="en-KN">Saint Kitts and Nevis/English</option>
+            <option data-country="KR" data-language="ko-KR">Korea/한국어</option>
+            <option data-country="KW" data-language="ar-KW">Kuwait/العربية</option>
+            <option data-country="KW" data-language="en-KW">Kuwait/English</option>
+            <option data-country="KZ" data-language="en-KZ">Kazakhstan/English</option>
+            <option data-country="KZ" data-language="kk-KZ">Kazakhstan/Kazakh</option>
+            <option data-country="KZ" data-language="ru-KZ">Kazakhstan/Русский</option>
+            <option data-country="LB" data-language="ar-LB">Lebanon/العربية</option>
+            <option data-country="LB" data-language="en-LB">Lebanon/English</option>
+            <option data-country="LC" data-language="en-LC">Saint Lucia/English</option>
+            <option data-country="LK" data-language="en-LK">Sri Lanka/English</option>
+            <option data-country="LR" data-language="en-LR">Liberia/English</option>
+            <option data-country="LT" data-language="en-LT">Lithuania/English</option>
+            <option data-country="LT" data-language="lt-LT">Lithuania/Lietuvių</option>
+            <option data-country="LU" data-language="de-LU">Luxemburg/Deutsch</option>
+            <option data-country="LU" data-language="en-LU">Luxemburg/English</option>
+            <option data-country="LU" data-language="fr-LU">Luxemburg/français</option>
+            <option data-country="LV" data-language="en-LV">Latvia/English</option>
+            <option data-country="LV" data-language="lv-LV">Latvia/Latviešu</option>
+            <option data-country="LY" data-language="ar-LY">Libya/العربية</option>
+            <option data-country="LY" data-language="en-LY">Libya/English</option>
+            <option data-country="MA" data-language="ar-MA">Morocco/العربية</option>
+            <option data-country="MA" data-language="en-MA">Morocco/English</option>
+            <option data-country="MA" data-language="fr-MA">Morocco/français</option>
+            <option data-country="MD" data-language="ro-MD">Moldova/Română</option>
+            <option data-country="MD" data-language="ru-MD">Moldova/Русский</option>
+            <option data-country="ME" data-language="en-ME">Montenegro/English</option>
+            <option data-country="ME" data-language="sr-ME">Montenegro/Srpski</option>
+            <option data-country="MK" data-language="en-MK">Macedonia/English</option>
+            <option data-country="MK" data-language="mk-MK">Macedonia/Македонски</option>
+            <option data-country="ML" data-language="fr-ML">Mali/français</option>
+            <option data-country="MM" data-language="en-MM">Myanmar (Burma)/English</option>
+            <option data-country="MT" data-language="en-MT">Malta/English</option>
+            <option data-country="MU" data-language="en-MU">Mauritius/English</option>
+            <option data-country="MX" data-language="en-MX">Mexico/English</option>
+            <option data-country="MX" data-language="es-MX">Mexico/Spanish</option>
+            <option data-country="MY" data-language="en-MY">Malaysia/English</option>
+            <option data-country="NE" data-language="fr-NE">Niger/français</option>
+            <option data-country="NG" data-language="en-NG">Nigeria/English</option>
+            <option data-country="NI" data-language="es-NI">Nicaragua/Spanish</option>
+            <option data-country="NL" data-language="en-NL">Netherlands/English</option>
+            <option data-country="NL" data-language="nl-NL">Netherlands/Nederlands</option>
+            <option data-country="NO" data-language="en-NO">Norway/English</option>
+            <option data-country="NO" data-language="no-NO">Norway/Norsk</option>
+            <option data-country="NZ" data-language="en-NZ">New Zealand/English</option>
+            <option data-country="OM" data-language="ar-OM">Oman/العربية</option>
+            <option data-country="OM" data-language="en-OM">Oman/English</option>
+            <option data-country="PA" data-language="en-PA">Panama/English</option>
+            <option data-country="PA" data-language="es-PA">Panama/Spanish</option>
+            <option data-country="PE" data-language="en-PE">Peru/English</option>
+            <option data-country="PE" data-language="es-PE">Peru/Spanish</option>
+            <option data-country="PH" data-language="en-PH">Philippines/English</option>
+            <option data-country="PK" data-language="en-PK">Pakistan/English</option>
+            <option data-country="PL" data-language="en-PL">Poland/English</option>
+            <option data-country="PL" data-language="pl-PL">Poland/Polski</option>
+            <option data-country="PR" data-language="es-PR">Puerto Rico/Spanish</option>
+            <option data-country="PS" data-language="en-PS">Palestine/English</option>
+            <option data-country="PT" data-language="en-PT">Portugal/English</option>
+            <option data-country="PT" data-language="pt-PT">Portugal/Português</option>
+            <option data-country="PY" data-language="es-PY">Paraguay/Spanish</option>
+            <option data-country="QA" data-language="ar-QA">Qatar/العربية</option>
+            <option data-country="QA" data-language="en-QA">Qatar/English</option>
+            <option data-country="RO" data-language="en-RO">Romania/English</option>
+            <option data-country="RO" data-language="ro-RO">Romania/Română</option>
+            <option data-country="RS" data-language="en-RS">Serbia/English</option>
+            <option data-country="RS" data-language="sr-RS">Serbia/Srpski</option>
+            <option data-country="RU" data-language="ru-RU">Russia/Русский</option>
+            <option data-country="RW" data-language="fr-RW">Rwanda/français</option>
+            <option data-country="SA" data-language="ar-SA">Saudi arabia/العربية</option>
+            <option data-country="SA" data-language="en-SA">Saudi arabia/English</option>
+            <option data-country="SD" data-language="en-SD">Sudan/English</option>
+            <option data-country="SE" data-language="en-SE">Sweden/English</option>
+            <option data-country="SE" data-language="sv-SE">Sweden/Svenska</option>
+            <option data-country="SG" data-language="en-SG">Singapore/English</option>
+            <option data-country="SI" data-language="en-SI">Slovenia/English</option>
+            <option data-country="SI" data-language="sl-SI">Slovenia/Slovenščina</option>
+            <option data-country="SK" data-language="en-SK">Slovakia/English</option>
+            <option data-country="SK" data-language="sk-SK">Slovakia/Slovenčina</option>
+            <option data-country="SL" data-language="en-SL">Sierra Leone/English</option>
+            <option data-country="SN" data-language="fr-SN">Senegal/français</option>
+            <option data-country="SO" data-language="en-SO">Somalia/English</option>
+            <option data-country="SR" data-language="nl-SR">Republic of Suriname/Nederlands</option>
+            <option data-country="ST" data-language="pt-ST">Sao Tome and Principe/Português</option>
+            <option data-country="SV" data-language="es-SV">El salvador/Spanish</option>
+            <option data-country="SY" data-language="ar-SY">Syria/العربية</option>
+            <option data-country="SY" data-language="en-SY">Syria/English</option>
+            <option data-country="TD" data-language="fr-TD">Chad/français</option>
+            <option data-country="TG" data-language="fr-TG">Togo/français</option>
+            <option data-country="TH" data-language="en-TH">Thailand/English</option>
+            <option data-country="TH" data-language="th-TH">Thailand/ไทย</option>
+            <option data-country="TN" data-language="ar-TN">Tunisia/العربية</option>
+            <option data-country="TN" data-language="en-TN">Tunisia/English</option>
+            <option data-country="TR" data-language="en-TR">Turkey/English</option>
+            <option data-country="TR" data-language="tr-TR">Turkey/Türkçe</option>
+            <option data-country="TT" data-language="en-TT">Trinidad/English</option>
+            <option data-country="TW" data-language="en-TW">Taiwan/English</option>
+            <option data-country="TW" data-language="zh-TW">Taiwan/繁體中文</option>
+            <option data-country="TZ" data-language="en-TZ">Tanzania/English</option>
+            <option data-country="UA" data-language="ru-UA">Ukraine/Русский</option>
+            <option data-country="UA" data-language="uk-UA">Ukraine/Українська мова</option>
+            <option data-country="UG" data-language="en-UG">Uganda/English</option>
+            <option data-country="US" data-language="en-US">USA/English</option>
+            <option data-country="UY" data-language="es-UY">Uruguay/Spanish</option>
+            <option data-country="UZ" data-language="en-UZ">Uzbekistan/English</option>
+            <option data-country="UZ" data-language="ru-UZ">Uzbekistan/Русский</option>
+            <option data-country="UZ" data-language="uz-UZ">Uzbekistan/O'zbek tili</option>
+            <option data-country="VC" data-language="en-VC">Saint Vincent/English</option>
+            <option data-country="VE" data-language="es-VE">Venezuela/Spanish</option>
+            <option data-country="VN" data-language="en-VN">Vietnam/English</option>
+            <option data-country="VN" data-language="vi-VN">Vietnam/Tiếng Việt</option>
+            <option data-country="XK" data-language="en-XK">Kosovo/English</option>
+            <option data-country="YE" data-language="ar-YE">Yemen/العربية</option>
+            <option data-country="YE" data-language="en-YE">Yemen/English</option>
+            <option data-country="ZA" data-language="en-ZA">South Africa/English</option>
+            <option data-country="ZM" data-language="en-ZM">Zambia/English</option>
+        </select>
+    </div>
+    <div id="accordion">
+        <div class="card">
+            <div class="card-header" id="headingOne">
+                <h5 class="mb-0">
+                    <button aria-controls="collapseOne" aria-expanded="true" class="btn btn-link" data-target="#collapseOne" data-toggle="collapse">
+                        Login with LG Account (plain username/password)
+                    </button>
+                </h5>
+            </div>
+
+            <div aria-labelledby="headingOne" class="collapse show" data-parent="#accordion" id="collapseOne">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label for="userNameInput">Username</label>
+                                <input class="form-control" id="usernameInput" required type="text">
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label for="passwordInput">Password</label>
+                                <input class="form-control" id="passwordInput" required type="password">
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="1" id="rememberUsername">
+                                <label class="form-check-label" for="rememberUsername">
+                                    Remember username & password (optional)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button class="btn btn-primary btn-login" id="getTokenButton" type="button">Get Token</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header" id="headingTwo">
+                <h5 class="mb-0">
+                    <button aria-controls="collapseTwo" aria-expanded="false" class="btn btn-link collapsed" data-target="#collapseTwo"
+                            data-toggle="collapse">
+                        Login with other methods (Facebook, Amazon ...)
+                    </button>
+                </h5>
+            </div>
+            <div aria-labelledby="headingTwo" class="collapse" data-parent="#accordion" id="collapseTwo">
+                <div class="card-body">
+                    <p>Click button below to login, Then paste the URL where the browser is redirected to "Redirect URL" input</p>
+                    <div class="text-center">
+                        <a class="btn btn-primary btn-login-other-method" target="_blank">
+                            <div class="spinner-border" role="status"></div>
+                            <span>Loading...</span>
+                        </a>
+                    </div>
+                    <div class="form-group">
+                        <label for="userNameInput">Redirected URL</label>
+                        <input class="form-control redirected-url" required type="text">
+                    </div>
+                    <div class="text-center">
+                        <button class="btn btn-primary btn-token-from-url" type="button">Get Token</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+  const homebridge = window.homebridge;
+  const $ = jQuery = window.jQuery;
+
+  async function init(configuration) {
+    homebridge.showSpinner();
+
+    configuration.auth_mode = 'token';
+
+    $('#usernameInput').val(configuration.username);
+    $('#passwordInput').val(configuration.password);
+    $('#refresh_token').val(configuration.refresh_token);
+    $('#thinq1').prop('checked', !!configuration.thinq1);
+    $('#rememberUsername').prop('checked', configuration.username && configuration.password);
+
+    $('#all-devices').prop('checked', !configuration.devices || !configuration.devices.length);
+
+    $('#configForm, #loginForm').hide();
+
+    if (configuration.refresh_token) {
+      let default_devices = [];
+      if (typeof configuration.devices !== 'object' || !configuration.devices || !configuration.devices.length) {
+        const resp = await homebridge.request('/get-all-devices', {
+          country: configuration.country,
+          language: configuration.language,
+          refresh_token: configuration.refresh_token
+        });
+
+        configuration.devices = null;
+        default_devices = resp.devices;
+      }
+
+      const config = await homebridge.getPluginConfigSchema();
+      const configForm = homebridge.createForm({
+        schema: {
+          refresh_token: config.schema.refresh_token,
+          thinq1: config.schema.thinq1,
+          devices: {
+            ...config.schema.devices,
+            default: default_devices,
+          },
+        }
+      }, configuration);
+
+      // watch for change events
+      configForm.onChange((change) => {
+        Object.assign(configuration, change);
+        homebridge.updatePluginConfig([configuration]);
+      });
+
+      homebridge.hideSpinner();
+    }
+    else {
+      $('#loginForm').show();
+
+      homebridge.request('/getLoginUrl', {
+        country: configuration.country,
+        language: configuration.language,
+      }).then(loginUrl => {
+        $('.btn-login-other-method').attr('href', loginUrl).html("Click here to login");
+      });
+
+      homebridge.hideSpinner();
+    }
+  }
+
+  (async () => {
+    homebridge.showSpinner();
+
+    // get the initial config - this is an array potentially containing multiple config blocks
+    const pluginConfig = await homebridge.getPluginConfig();
+
+    if (!pluginConfig.length) {
+      pluginConfig.push({});
+    }
+    const configuration = pluginConfig[0];
+
+    let option_selected = $('#country_language option[data-country="'+configuration.country+'"][data-language="'+configuration.language+'"]');
+    if (!option_selected.length) {
+      option_selected = $('#country_language option[data-country="US"][data-language="en-US"]');
+      configuration.country = 'US';
+      configuration.language = 'en-US';
+    }
+    option_selected.prop('selected', true);
+
+    await init(configuration);
+
+    // button event
+    $('#thinq1').on('change', async function () {
+      configuration.thinq1 = $(this).prop('checked');
+      await homebridge.updatePluginConfig([configuration]);
+    });
+
+    $('#country_language').on('change', async function () {
+      const selected = $(this).find(':selected');
+      configuration.country = $(selected).data('country');
+      configuration.language = $(selected).data('language');
+      await homebridge.updatePluginConfig([configuration]);
+    });
+
+    $('.btn-token-from-url').on('click', async function (e) {
+      e.preventDefault();
+      var btn = $(this);
+      if (!$('.redirected-url').val()) {
+        homebridge.toast.error('A Redirect URL must be provided.', 'Error');
+      }
+      else {
+        btn.html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
+        const urlObject = new URL($('.redirected-url').val());
+
+        if (urlObject.searchParams.get('refresh_token')) {
+          configuration.refresh_token = urlObject.searchParams.get('refresh_token');
+
+          await homebridge.updatePluginConfig([configuration]);
+          await homebridge.savePluginConfig();
+
+          btn.html('Login success! Restart homebridge to apply.').prop('disabled', true);
+          homebridge.toast.success('Login success', 'Success');
+
+          await init(configuration);
+        }
+        else {
+          homebridge.toast.error('Redirect URL invalid.', 'Error');
+          btn.html('GET TOKEN');
+        }
+      }
+    })
+
+    $('.btn-login').on('click', function (e) {
+      e.preventDefault();
+      var username = $('#usernameInput').val(),
+        password = $('#passwordInput').val();
+
+      if (username && password) {
+        var btn = $(this);
+        btn.prop('disabled', true).html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
+
+        homebridge.request('/loginByUserPass', {
+          country: configuration.country,
+          language: configuration.language,
+          username: username,
+          password: password,
+        }).then(async data => {
+          if (typeof data.success === 'undefined' || data.success === false) {
+            homebridge.toast.error('Login error. ' + data.error, 'Error');
+            btn.prop('disabled', false).html("GET TOKEN");
+          }
+          else {
+            configuration.refresh_token = data.token;
+            if ($('#rememberUsername:checked').length) {
+              configuration.username = username;
+              configuration.password = password;
+            }
+            else {
+              configuration.username = '';
+              configuration.password = '';
+            }
+
+            await homebridge.updatePluginConfig([configuration]);
+            await homebridge.savePluginConfig();
+
+            btn.html('Login success! Restart homebridge to apply.');
+            homebridge.toast.success('Login success', 'Success');
+
+            await init(configuration);
+          }
+        })
+      }
+      else {
+        homebridge.toast.error('A username and password must be provided.', 'Error');
+      }
+    })
+
+  })();
+
+</script>
