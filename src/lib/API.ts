@@ -10,6 +10,7 @@ import {WorkId} from './ThinQ';
 import {TokenError} from '../errors/TokenError';
 import {MonitorError} from '../errors/MonitorError';
 import {NotConnectedError} from '../errors/NotConnectedError';
+import * as uuid from 'uuid';
 
 function resolveUrl(from, to) {
   const url = new URL(to, from);
@@ -78,15 +79,9 @@ export class API {
     }, { headers }).then(resp => resp.data);
   }
 
-  public async sendMonitorCommand(deviceId: string, cmdOpt: string, workId: WorkId) {
+  private async thinq1PostRequest(endpoint: string, data: any) {
     const headers = this.monitorHeaders;
-    const data = {
-      cmd: 'Mon',
-      cmdOpt,
-      deviceId,
-      workId,
-    };
-    return await requestClient.post(this._gateway?.thinq1_url + 'rti/rtiMon', { lgedmRoot: data }, { headers })
+    return await requestClient.post(this._gateway?.thinq1_url + endpoint, { lgedmRoot: data }, { headers })
       .then(res => res.data.lgedmRoot)
       .then(data => {
         if ('returnCd' in data) {
@@ -102,19 +97,38 @@ export class API {
       });
   }
 
+  public async sendControlCommand(deviceId: string, key: string, value: any) {
+    const data = {
+      cmd: 'Control',
+      cmdOpt: 'Set',
+      value: {
+        [key]: value,
+      },
+      deviceId,
+      workId: uuid.v4(),
+      data: '',
+    };
+
+    return this.thinq1PostRequest('rti/rtiControl', data);
+  }
+
+  public async sendMonitorCommand(deviceId: string, cmdOpt: string, workId: WorkId) {
+    const data = {
+      cmd: 'Mon',
+      cmdOpt,
+      deviceId,
+      workId,
+    };
+
+    return await this.thinq1PostRequest('rti/rtiMon', data);
+  }
+
   public async getMonitorResult(device_id, work_id) {
-    const headers = this.monitorHeaders;
     const workList = [{ deviceId: device_id, workId: work_id }];
-    return await requestClient.post(this._gateway?.thinq1_url + 'rti/rtiResult', { lgedmRoot: { workList } }, { headers })
-      .then(resp => resp.data.lgedmRoot)
+    return await this.thinq1PostRequest('rti/rtiResult', workList)
       .then(data => {
-        if ('returnCd' in data) {
-          const code = data.returnCd as string;
-          if (code === '0106') {
-            throw new NotConnectedError(data.returnMsg || '');
-          } else if (code !== '0000') {
-            throw new TokenError(code + ' - ' + data.returnMsg || '');
-          }
+        if (!('workList' in data) || !('returnCode' in data.workList)) {
+          return null;
         }
 
         const workList = data.workList;

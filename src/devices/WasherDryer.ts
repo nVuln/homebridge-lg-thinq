@@ -1,6 +1,6 @@
 import {baseDevice} from '../baseDevice';
 import {LGThinQHomebridgePlatform} from '../platform';
-import {PlatformAccessory} from 'homebridge';
+import {CharacteristicValue, PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
 import {PlatformType} from '../lib/constants';
 import {DeviceModel} from '../lib/DeviceModel';
@@ -77,7 +77,13 @@ export default class WasherDryer extends baseDevice {
     this.updateAccessoryCharacteristic(device);
   }
 
-  public setActive() {
+  public setActive(value: CharacteristicValue) {
+    const device: Device = this.accessory.context.device;
+    if (device.platform === PlatformType.ThinQ1) {
+      this.platform.ThinQ?.thinq1DeviceControl(device.id, 'Power', value as boolean ? 'On' : 'Off');
+      return value;
+    }
+
     throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.NOT_ALLOWED_IN_CURRENT_STATE);
   }
 
