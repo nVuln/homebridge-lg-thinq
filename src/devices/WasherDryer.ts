@@ -57,7 +57,7 @@ export default class WasherDryer extends baseDevice {
       this.serviceDoorLock.addLinkedService(this.serviceWasherDryer);
     }
 
-    if (this.config.washer_trigger as boolean) {
+    if (this.config?.washer_trigger as boolean) {
       this.serviceEventFinished = accessory.getService(StatelessProgrammableSwitch)
         || accessory.addService(StatelessProgrammableSwitch, device.name + ' - Program Finished');
       this.serviceEventFinished.getCharacteristic(Characteristic.ProgrammableSwitchEvent)
@@ -100,7 +100,7 @@ export default class WasherDryer extends baseDevice {
       this.serviceDoorLock.updateCharacteristic(Characteristic.LockTargetState, this.Status.isDoorLocked ? 1 : 0);
     }
 
-    if (this.config.washer_trigger as boolean) {
+    if (this.config?.washer_trigger as boolean) {
       if (this.isRunning && !this.Status.isRunning && this.Status.remainDuration <= 0) {
         const SINGLE = Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS;
         this.serviceEventFinished.updateCharacteristic(Characteristic.ProgrammableSwitchEvent, SINGLE);
