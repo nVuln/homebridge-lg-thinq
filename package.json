@@ -50,5 +50,9 @@
     "luxon": "^1.27.0",
     "qs": "^6.10.1",
     "uuid": "^8.3.2"
+  },
+  "funding": {
+	"type" : "paypal",
+	"url" : "https://paypal.me/ndhan"
   }
 }
