@@ -141,7 +141,8 @@ export class WasherDryerStatus {
 
   public get remainDuration() {
     const currentTimestamp = Math.floor(Date.now() / 1000);
-    if (!this.isRunning || !this.isPowerOn || (this.accessory.stopTime && this.accessory.stopTime < currentTimestamp)) {
+    if (!this.isRunning || !this.isPowerOn
+      || (this.accessory.stopTime && (currentTimestamp - this.accessory.stopTime) >= currentTimestamp)) {
       this.accessory.stopTime = 0;
       return 0;
     }
@@ -150,12 +151,12 @@ export class WasherDryerStatus {
       this.data.remainTimeHour = 0;
     }
 
-    const stopTime = currentTimestamp + this.data.remainTimeHour * 60 + this.data.remainTimeMinute * 60;
+    const stopTime = this.data.remainTimeHour * 3600 + this.data.remainTimeMinute * 60;
 
     if (!this.accessory.stopTime || Math.abs(stopTime - this.accessory.stopTime) > 120 /* 2 min different */) {
       this.accessory.stopTime = stopTime;
     }
 
-    return this.accessory.stopTime - currentTimestamp;
+    return this.accessory.stopTime;
   }
 }
