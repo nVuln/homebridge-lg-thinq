@@ -4,16 +4,16 @@ import {Device} from '../lib/Device';
 import {baseDevice} from '../baseDevice';
 
 enum RotateSpeed {
-  AUTO = 8,
   LOW = 2,
   MEDIUM = 4,
   HIGH = 6,
   EXTRA = 7,
 }
 
+// opMode = 14 => normal mode, can rotate speed
 export default class AirPurifier extends baseDevice {
   protected serviceAirPurifier: Service;
-  protected serviceAirQuanlity: Service;
+  protected serviceAirQuality: Service;
   protected serviceLight: Service;
 
   constructor(
@@ -45,11 +45,7 @@ export default class AirPurifier extends baseDevice {
         return this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE;
       })
       .onSet(this.setActive.bind(this));
-
     this.serviceAirPurifier.getCharacteristic(Characteristic.TargetAirPurifierState)
-      .onGet(() => {
-        return Characteristic.TargetAirPurifierState.AUTO;
-      })
       .onSet(this.setTargetAirPurifierState.bind(this));
 
     /**
@@ -57,9 +53,11 @@ export default class AirPurifier extends baseDevice {
      */
     this.serviceAirPurifier.setCharacteristic(Characteristic.Name, device.name);
     this.serviceAirPurifier.getCharacteristic(Characteristic.SwingMode).onSet(this.setSwingMode.bind(this));
-    this.serviceAirPurifier.getCharacteristic(Characteristic.RotationSpeed).onSet(this.setRotationSpeed.bind(this));
+    this.serviceAirPurifier.getCharacteristic(Characteristic.RotationSpeed)
+      .onSet(this.setRotationSpeed.bind(this))
+      .setProps({minValue: 1, maxValue: 4, minStep: 1});
 
-    this.serviceAirQuanlity = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
+    this.serviceAirQuality = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
 
     this.serviceLight = accessory.getService(Lightbulb) || accessory.addService(Lightbulb, device.name + ' - Light');
     this.serviceLight.getCharacteristic(Characteristic.On).onSet(this.setLight.bind(this));
@@ -67,36 +65,61 @@ export default class AirPurifier extends baseDevice {
     this.updateAccessoryCharacteristic(device);
   }
 
+  public get Status() {
+    return new AirPurifierStatus(this.accessory.context.device.snapshot);
+  }
+
   async setActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
     const isOn = value as boolean ? 1 : 0;
+    if (this.Status.isPowerOn && isOn) {
+      return; // don't send same status
+    }
+
+    this.platform.log.debug('Set Active State ->', value);
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.operation',
       dataValue: isOn as number,
+    }).then(() => {
+      device.data.snapshot['airState.operation'] = isOn as number;
+      this.updateAccessoryCharacteristic(device);
     });
   }
 
   async setTargetAirPurifierState(value: CharacteristicValue) {
+    const device: Device = this.accessory.context.device;
+    if (!this.Status.isPowerOn || (!!value !== this.Status.isNormalMode)) {
+      return; // just skip it
+    }
+
     this.platform.log.debug('Set Target State ->', value);
+    this.platform.ThinQ?.deviceControl(device.id, {
+      dataKey: 'airState.opMode',
+      dataValue: value as boolean ? 16 : 14,
+    });
   }
 
   async setRotationSpeed(value: CharacteristicValue) {
-    if (!this.Status.isPowerOn) {
-      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.NOT_ALLOWED_IN_CURRENT_STATE);
+    if (!this.Status.isPowerOn || !this.Status.isNormalMode) {
+      return;
     }
 
     this.platform.log.debug('Set Rotation Speed ->', value);
     const device: Device = this.accessory.context.device;
-    const values = Object.values(RotateSpeed);
+    const values = Object.keys(RotateSpeed);
+    const windStrength = parseInt(values[Math.round((value as number)) - 1]) || 8;
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.windStrength',
-      dataValue: values[Math.floor((value as number) / 20)] || RotateSpeed.AUTO, // convert from percent to level, 100% = high, 0% = auto
+      dataValue: windStrength,
+    }).then(() => {
+      device.data.snapshot['airState.windStrength'] = windStrength;
+      this.updateAccessoryCharacteristic(device);
     });
   }
 
   async setSwingMode(value: CharacteristicValue) {
-    if (!this.Status.isPowerOn) {
-      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.NOT_ALLOWED_IN_CURRENT_STATE);
+    if (!this.Status.isPowerOn || !this.Status.isNormalMode) {
+      return;
     }
 
     const device: Device = this.accessory.context.device;
@@ -130,26 +153,37 @@ export default class AirPurifier extends baseDevice {
     super.updateAccessoryCharacteristic(device);
     const {
       Characteristic,
+      Characteristic: {
+        TargetAirPurifierState,
+      },
     } = this.platform;
+
+    if (!device.snapshot.online) {
+      // device not online, do not update status
+      return;
+    }
 
     this.serviceAirPurifier.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
     this.serviceAirPurifier.updateCharacteristic(Characteristic.CurrentAirPurifierState, this.Status.isPowerOn ? 2 : 0);
+    this.serviceAirPurifier.updateCharacteristic(TargetAirPurifierState,
+      this.Status.isNormalMode ? TargetAirPurifierState.MANUAL : TargetAirPurifierState.AUTO);
     this.serviceAirPurifier.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwing ? 1 : 0);
+    this.serviceAirPurifier.updateCharacteristic(Characteristic.RotationSpeed, this.Status.rotationSpeed);
 
-    this.serviceAirQuanlity.updateCharacteristic(Characteristic.AirQuality, this.Status.airQuality.overall);
-    this.serviceAirQuanlity.updateCharacteristic(Characteristic.PM2_5Density, this.Status.airQuality.PM2);
-    this.serviceAirQuanlity.updateCharacteristic(Characteristic.PM10Density, this.Status.airQuality.PM10);
+    // airState.quality.sensorMon = 1 mean sensor always running even device not running
+    if (this.Status.isPowerOn || device.snapshot['airState.quality.sensorMon'] as boolean) {
+      this.serviceAirQuality.updateCharacteristic(Characteristic.AirQuality, this.Status.airQuality.overall);
+      this.serviceAirQuality.updateCharacteristic(Characteristic.PM2_5Density, this.Status.airQuality.PM2);
+      this.serviceAirQuality.updateCharacteristic(Characteristic.PM10Density, this.Status.airQuality.PM10);
+    }
 
     this.serviceLight.updateCharacteristic(Characteristic.On, this.Status.isLightOn);
-  }
-
-  public get Status() {
-    return new AirPurifierStatus(this.accessory.context.device.snapshot);
   }
 }
 
 export class AirPurifierStatus {
-  constructor(protected data) {}
+  constructor(protected data) {
+  }
 
   public get isPowerOn() {
     return this.data['airState.operation'] as boolean;
@@ -169,5 +203,14 @@ export class AirPurifierStatus {
       PM2: parseInt(this.data['airState.quality.PM2'] || '0'),
       PM10: parseInt(this.data['airState.quality.PM10'] || '0'),
     };
+  }
+
+  public get rotationSpeed() {
+    const index = Object.keys(RotateSpeed).indexOf(parseInt(this.data['airState.windStrength']).toString());
+    return index !== -1 ? index + 1 : 4;
+  }
+
+  public get isNormalMode() {
+    return this.data['airState.opMode'] === 14;
   }
 }
