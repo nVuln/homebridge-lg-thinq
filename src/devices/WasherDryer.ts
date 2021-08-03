@@ -1,6 +1,6 @@
 import {baseDevice} from '../baseDevice';
 import {LGThinQHomebridgePlatform} from '../platform';
-import {CharacteristicValue, PlatformAccessory} from 'homebridge';
+import {CharacteristicValue, Perms, PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
 import {PlatformType} from '../lib/constants';
 import {DeviceModel} from '../lib/DeviceModel';
@@ -26,13 +26,25 @@ export default class WasherDryer extends baseDevice {
         Valve,
       },
       Characteristic,
+      Characteristic: {
+        LockCurrentState,
+      },
     } = this.platform;
 
     const device: Device = accessory.context.device;
 
     this.serviceWasherDryer = accessory.getService(Valve) || accessory.addService(Valve, device.name);
+    const activePerms = [
+      Perms.PAIRED_READ,
+      Perms.NOTIFY,
+    ];
+    if (device.platform === PlatformType.ThinQ1) {
+      activePerms.push(Perms.PAIRED_WRITE);
+    }
+
     this.serviceWasherDryer.getCharacteristic(Characteristic.Active)
       .onSet(this.setActive.bind(this))
+      .setProps({ perms: activePerms })
       .updateValue(Characteristic.Active.INACTIVE);
     this.serviceWasherDryer.setCharacteristic(Characteristic.Name, device.name);
     this.serviceWasherDryer.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.WATER_FAUCET);
@@ -47,10 +59,11 @@ export default class WasherDryer extends baseDevice {
       this.serviceDoorLock.getCharacteristic(Characteristic.LockCurrentState)
         .onSet(this.setActive.bind(this))
         .setProps({
-          minValue: Characteristic.LockCurrentState.UNSECURED,
-          maxValue: Characteristic.LockCurrentState.SECURED,
+          minValue: 0,
+          maxValue: 3,
+          validValues: [LockCurrentState.UNSECURED, LockCurrentState.SECURED, LockCurrentState.UNKNOWN],
         })
-        .updateValue(Characteristic.LockCurrentState.UNSECURED);
+        .updateValue(LockCurrentState.UNKNOWN);
       this.serviceDoorLock.getCharacteristic(Characteristic.LockTargetState)
         .onSet(this.setActive.bind(this))
         .updateValue(Characteristic.LockTargetState.UNSECURED);
@@ -96,13 +109,19 @@ export default class WasherDryer extends baseDevice {
     }
 
     this.isRunning = this.Status.isRunning;
-    const {Characteristic} = this.platform;
+    const {
+      Characteristic,
+      Characteristic: {
+        LockCurrentState,
+      },
+    } = this.platform;
     this.serviceWasherDryer.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
     this.serviceWasherDryer.updateCharacteristic(Characteristic.InUse, this.Status.isRunning ? 1 : 0);
     this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
 
     if (this.serviceDoorLock) {
-      this.serviceDoorLock.updateCharacteristic(Characteristic.LockCurrentState, this.Status.isDoorLocked ? 1 : 0);
+      this.serviceDoorLock.updateCharacteristic(LockCurrentState, this.Status.isPowerOn ?
+        (this.Status.isDoorLocked ? LockCurrentState.SECURED : LockCurrentState.UNSECURED) : LockCurrentState.UNKNOWN);
       this.serviceDoorLock.updateCharacteristic(Characteristic.LockTargetState, this.Status.isDoorLocked ? 1 : 0);
     }
 
