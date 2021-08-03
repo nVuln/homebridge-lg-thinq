@@ -23,10 +23,12 @@ export default class Dehumidifier extends baseDevice {
         HumiditySensor,
       },
       Characteristic,
+      Characteristic: {
+        CurrentHumidifierDehumidifierState,
+      },
     } = this.platform;
 
     const device: Device = accessory.context.device;
-    this.platform.log.debug('Dehumidifier data: ', JSON.stringify(device.data));
 
     this.serviceDehumidifier = accessory.getService(HumidifierDehumidifier) || accessory.addService(HumidifierDehumidifier);
     this.serviceDehumidifier.setCharacteristic(Characteristic.Name, device.name);
@@ -35,14 +37,18 @@ export default class Dehumidifier extends baseDevice {
       .updateValue(Characteristic.Active.INACTIVE);
     this.serviceDehumidifier.getCharacteristic(Characteristic.CurrentHumidifierDehumidifierState)
       .setProps({
-        validValues: [0, 1, 3],
+        validValues: [
+          CurrentHumidifierDehumidifierState.INACTIVE,
+          CurrentHumidifierDehumidifierState.IDLE,
+          CurrentHumidifierDehumidifierState.DEHUMIDIFYING,
+        ],
       })
       .updateValue(Characteristic.CurrentHumidifierDehumidifierState.INACTIVE);
     this.serviceDehumidifier.getCharacteristic(Characteristic.TargetHumidifierDehumidifierState)
       .setProps({
         validValues: [2],
       })
-      .setValue(Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER);
+      .updateValue(Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER);
 
     this.serviceDehumidifier.getCharacteristic(Characteristic.RelativeHumidityDehumidifierThreshold)
       .onSet(this.setHumidityThreshold.bind(this))
@@ -53,7 +59,12 @@ export default class Dehumidifier extends baseDevice {
       });
 
     this.serviceDehumidifier.getCharacteristic(Characteristic.RotationSpeed)
-      .onSet(this.setSpeed.bind(this));
+      .onSet(this.setSpeed.bind(this))
+      .setProps({
+        minValue: 1,
+        maxValue: Object.keys(RotateSpeed).length / 2,
+        minStep: 1,
+      });
 
     this.serviceHumiditySensor = accessory.getService(HumiditySensor) || accessory.addService(HumiditySensor);
     this.serviceHumiditySensor.addLinkedService(this.serviceDehumidifier);
@@ -65,6 +76,10 @@ export default class Dehumidifier extends baseDevice {
     this.platform.log.debug('Set Dehumidifier Active State ->', value);
     const device: Device = this.accessory.context.device;
     const isOn = value as boolean;
+    if (this.Status.isPowerOn && isOn) {
+      return; // don't send same status
+    }
+
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.operation',
       dataValue: isOn,
@@ -75,6 +90,10 @@ export default class Dehumidifier extends baseDevice {
   }
 
   async setHumidityThreshold(value: CharacteristicValue) {
+    if (!this.Status.isPowerOn) {
+      return;
+    }
+
     const device: Device = this.accessory.context.device;
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.humidity.desired',
@@ -86,13 +105,18 @@ export default class Dehumidifier extends baseDevice {
   }
 
   async setSpeed(value: CharacteristicValue) {
+    if (!this.Status.isPowerOn) {
+      return;
+    }
+
     const device: Device = this.accessory.context.device;
-    const values = Object.values(RotateSpeed);
+    const values = Object.keys(RotateSpeed);
+    const windStrength = parseInt(values[Math.round((value as number)) - 1]) || RotateSpeed.HIGH;
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.windStrength',
-      dataValue: values[Math.floor((value as number) / 50)] || RotateSpeed.HIGH, // 0-50 = LOW, 50-100 = HIGH
+      dataValue: windStrength,
     });
-    device.data.snapshot['airState.windStrength'] = value;
+    device.data.snapshot['airState.windStrength'] = windStrength;
     this.updateAccessoryCharacteristic(device);
   }
 
@@ -106,21 +130,29 @@ export default class Dehumidifier extends baseDevice {
 
     const {
       Characteristic,
+      Characteristic: {
+        CurrentHumidifierDehumidifierState: {
+          INACTIVE,
+          IDLE,
+          DEHUMIDIFYING,
+        },
+      },
     } = this.platform;
 
-    const Status = new DehumidifierStatus(device.snapshot);
-    this.serviceDehumidifier.updateCharacteristic(Characteristic.Active, Status.isPowerOn ? 1 : 0);
-    this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentRelativeHumidity, Status.humidityCurrent);
-    this.serviceDehumidifier.updateCharacteristic(Characteristic.RelativeHumidityDehumidifierThreshold, Status.humidityTarget);
-    const {INACTIVE, IDLE, DEHUMIDIFYING} = Characteristic.CurrentHumidifierDehumidifierState;
-    const currentState = Status.isDehumidifying ? DEHUMIDIFYING : (Status.isPowerOn ? IDLE : INACTIVE);
+    this.serviceDehumidifier.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
+    this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentRelativeHumidity, this.Status.humidityCurrent);
+    this.serviceDehumidifier.updateCharacteristic(Characteristic.RelativeHumidityDehumidifierThreshold, this.Status.humidityTarget);
+    const currentState = this.Status.isDehumidifying ? DEHUMIDIFYING : (this.Status.isPowerOn ? IDLE : INACTIVE);
     this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentHumidifierDehumidifierState, currentState);
 
-    const rotateSpeed = Object.values(RotateSpeed).indexOf(Status.windStrength || RotateSpeed.LOW);
-    this.serviceDehumidifier.updateCharacteristic(Characteristic.RotationSpeed, rotateSpeed);
+    this.serviceDehumidifier.updateCharacteristic(Characteristic.RotationSpeed, this.Status.rotationSpeed);
 
-    this.serviceHumiditySensor.updateCharacteristic(Characteristic.CurrentRelativeHumidity, Status.humidityCurrent);
-    this.serviceHumiditySensor.updateCharacteristic(Characteristic.StatusActive, Status.isPowerOn);
+    this.serviceHumiditySensor.updateCharacteristic(Characteristic.CurrentRelativeHumidity, this.Status.humidityCurrent);
+    this.serviceHumiditySensor.updateCharacteristic(Characteristic.StatusActive, this.Status.isPowerOn);
+  }
+
+  public get Status() {
+    return new DehumidifierStatus(this.accessory.context.device.snapshot);
   }
 }
 
@@ -149,5 +181,10 @@ export class DehumidifierStatus {
 
   public get humidityTarget() {
     return this.data['airState.humidity.desired'] || 0;
+  }
+
+  public get rotationSpeed() {
+    const index = Object.keys(RotateSpeed).indexOf(parseInt(this.data['airState.windStrength']).toString());
+    return index !== -1 ? index + 1 : Object.keys(RotateSpeed).length / 2;
   }
 }
