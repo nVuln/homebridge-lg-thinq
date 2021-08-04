@@ -5,6 +5,8 @@ import { Helper } from './helper';
 import {ThinQ} from './lib/ThinQ';
 import {EventEmitter} from 'events';
 import {PlatformType} from './lib/constants';
+import {ManualProcessNeeded} from './errors';
+import {Device} from './lib/Device';
 
 /**
  * HomebridgePlatform
@@ -69,7 +71,14 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
     }
     const accessoriesToRemoveUUID = this.accessories.map(accessory => accessory.UUID);
 
-    const devices = await this.ThinQ.devices();
+    let devices: Device[] = [];
+    try {
+      devices = await this.ThinQ.devices();
+    } catch (err) {
+      if (err instanceof ManualProcessNeeded) {
+        return; // stop plugin here
+      }
+    }
 
     for (const device of devices) {
       if (!this.enable_thinq1 && device.platform === PlatformType.ThinQ1) {
@@ -139,17 +148,25 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       return;
     }
 
-    this.log.info('Start polling device data.');
+    this.log.info('START polling device data.');
     const ThinQ = this.ThinQ;
-    setInterval(() => {
-      ThinQ.devices().then(async (devices) => {
-        for (let device of devices) {
-          if (this.enable_thinq1) {
-            device = await ThinQ.pollMonitor(device);
+    const interval = setInterval(() => {
+      try {
+        ThinQ.devices().then(async (devices) => {
+          for (let device of devices) {
+            if (this.enable_thinq1) {
+              device = await ThinQ.pollMonitor(device);
+            }
+            this.events.emit(device.id, device);
           }
-          this.events.emit(device.id, device);
+        });
+      } catch (err) {
+        if (err instanceof ManualProcessNeeded) {
+          this.log.info('STOP polling device data.');
+          clearInterval(interval);
+          return; // stop plugin here
         }
-      });
+      }
     }, this.intervalTime);
   }
 }

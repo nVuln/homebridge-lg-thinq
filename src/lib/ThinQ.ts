@@ -6,8 +6,7 @@ import {PlatformType} from './constants';
 import * as uuid from 'uuid';
 import {DeviceModel} from './DeviceModel';
 import Helper from '../v1/helper';
-import {MonitorError} from '../errors/MonitorError';
-import {NotConnectedError} from '../errors/NotConnectedError';
+import {NotConnectedError, ManualProcessNeeded, MonitorError} from '../errors';
 export type WorkId = typeof uuid['v4'];
 
 export class ThinQ {
@@ -34,11 +33,13 @@ export class ThinQ {
     try {
       listDevices = await this.api.getListDevices();
     } catch (err) {
-      // data: { resultCode: '0110', result: '' }
-      // login to LG ThinQ app to check error
-      // network issue, no response
-      if (!err.response) {
+      if (err instanceof NotConnectedError) {
         return [];
+      } else if (err.response?.data?.resultCode === '0110' || err.response?.status === 400) {
+        this.log.error('Please open the native LG App and sign in to your account to see what happened, '+
+          'maybe new agreement need your accept. Then try restarting Homebridge.');
+
+        throw new ManualProcessNeeded();
       }
 
       // retry it 1 times
@@ -47,8 +48,8 @@ export class ThinQ {
         listDevices = await this.api.getListDevices();
       } catch (err) {
         // write log if error not is network issue
-        if (err.response) {
-          this.log.error(err.response.data);
+        if (!(err instanceof NotConnectedError)) {
+          this.log.error(err);
         }
 
         return [];

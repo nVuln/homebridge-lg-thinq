@@ -5,8 +5,7 @@ import * as constants from './constants';
 import * as qs from 'qs';
 import crypto from 'crypto';
 import { DateTime } from 'luxon';
-import {AuthenticationError} from '../errors/AuthenticationError';
-import {TokenError} from '../errors/TokenError';
+import {TokenError, AuthenticationError} from '../errors';
 
 export class Auth {
   public lgeapi_url: string;
