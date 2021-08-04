@@ -140,7 +140,7 @@ export class Auth {
     };
     const resp = await requestClient.post(tokenUrl, qs.stringify(data), { headers }).then(resp => resp.data);
 
-    session.newToken(resp.access_token, resp.expiredIn);
+    session.newToken(resp.access_token, parseInt(resp.expires_in));
 
     return session;
   }

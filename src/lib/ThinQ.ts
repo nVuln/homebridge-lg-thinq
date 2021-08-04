@@ -35,14 +35,14 @@ export class ThinQ {
     } catch (err) {
       if (err instanceof NotConnectedError) {
         return [];
-      } else if (err.response?.data?.resultCode === '0110' || err.response?.status === 400) {
+      } else if (err.response?.data?.resultCode === '0110') {
         this.log.error('Please open the native LG App and sign in to your account to see what happened, '+
           'maybe new agreement need your accept. Then try restarting Homebridge.');
 
         throw new ManualProcessNeeded();
       }
 
-      // retry it 1 times
+      // retry it 1 times, resultCode 0102 = token expired
       try {
         await this.api.refreshNewToken();
         listDevices = await this.api.getListDevices();
