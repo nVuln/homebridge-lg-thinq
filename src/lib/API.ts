@@ -69,12 +69,12 @@ export class API {
     return this._homes;
   }
 
-  public async sendCommandToDevice(device_id: string, values: Record<string, any>) {
+  public async sendCommandToDevice(device_id: string, values: Record<string, any>, command: 'Set' | 'Operation') {
     const headers = this.defaultHeaders;
     const controlUrl = resolveUrl(this._gateway?.thinq2_url, 'service/devices/'+device_id+'/control-sync');
     return requestClient.post(controlUrl, {
       'ctrlKey': 'basicCtrl',
-      'command': 'Set',
+      'command': command,
       ...values,
     }, { headers }).then(resp => resp.data);
   }

@@ -138,9 +138,9 @@ export class ThinQ {
     }
   }
 
-  public async deviceControl(id: string, values: Record<string, any>) {
+  public async deviceControl(id: string, values: Record<string, any>, command: 'Set' | 'Operation' = 'Set') {
     try {
-      return await this.api.sendCommandToDevice(id, values);
+      return await this.api.sendCommandToDevice(id, values, command);
     } catch (err) {
       this.log.error(err);
     }
