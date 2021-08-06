@@ -65,6 +65,7 @@ export class ThinQ {
 
   public async startMonitor(device: Device) {
     try {
+      await this.api.ready();
       if (!(device.id in this.deviceModel)) {
         this.deviceModel[device.id] = await this.api.getDeviceModelInfo(device.data).then(modelInfo => {
           return new DeviceModel(modelInfo);
@@ -88,6 +89,7 @@ export class ThinQ {
   public async stopMonitor(device: Device) {
     if (device.platform === PlatformType.ThinQ1 && device.id in this.workIds) {
       try {
+        await this.api.ready();
         await this.api.sendMonitorCommand(device.id, 'Stop', this.workIds[device.id]);
         delete this.workIds[device.id];
       } catch (err) {
@@ -104,6 +106,7 @@ export class ThinQ {
           throw new NotConnectedError();
         }
 
+        await this.api.ready();
         result = await this.api.getMonitorResult(device.id, this.workIds[device.id]);
       } catch (err) {
         if (err instanceof MonitorError) {
@@ -133,6 +136,7 @@ export class ThinQ {
 
   public async thinq1DeviceControl(id: string, key: string, value: any) {
     try {
+      await this.api.ready();
       return await this.api.sendControlCommand(id, key, value);
     } catch (err) {
       this.log.error(err);
@@ -141,6 +145,7 @@ export class ThinQ {
 
   public async deviceControl(id: string, values: Record<string, any>, command: 'Set' | 'Operation' = 'Set') {
     try {
+      await this.api.ready();
       return await this.api.sendCommandToDevice(id, values, command);
     } catch (err) {
       this.log.error(err);
