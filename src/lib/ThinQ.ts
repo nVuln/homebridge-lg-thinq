@@ -161,4 +161,18 @@ export class ThinQ {
       return false;
     }
   }
+
+  public async getLatestNotificationOfDevice(device: Device) {
+    const list = await this.api.getListNotification();
+
+    for (let i=0; i < list.length; i++) {
+      const message = JSON.parse(list[i].message);
+      if (message.extra?.id === device.id) {
+        list[i].message = message;
+        return list[i];
+      }
+    }
+
+    return null;
+  }
 }

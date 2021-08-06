@@ -32,6 +32,18 @@ export class API {
     protected language: string = 'en-US',
   ) {}
 
+  public async getListNotification() {
+    const headers = this.defaultHeaders;
+    const url = resolveUrl(this._gateway?.thinq2_url, 'service/users/push/send-Backward-history?seqNo=');
+    const resp = await requestClient.get(url, { headers }).then(res => res.data);
+
+    if (!('resultCode' in resp) || resp.resultCode !== '0000' || !('result' in resp)) {
+      return [];
+    }
+
+    return resp.result.pushSendList;
+  }
+
   public async getDeviceInfo(device_id: string) {
     const headers = this.defaultHeaders;
     const deviceUrl = resolveUrl(this._gateway?.thinq2_url, 'service/devices/' + device_id);
