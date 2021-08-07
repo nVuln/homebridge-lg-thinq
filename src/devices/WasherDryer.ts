@@ -10,12 +10,8 @@ export default class WasherDryer extends baseDevice {
   protected serviceEventFinished;
   protected serviceDoorLock;
 
-  protected interval: NodeJS.Timer | null = null;
-  protected intervalTime = 10000; // 10s
-  protected lastMessage;
-  protected ready = false;
-
-  public stopTime;
+  public isRunning = false;
+  public stopTime = 0;
 
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
@@ -83,6 +79,7 @@ export default class WasherDryer extends baseDevice {
           maxValue: Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS,
           validValues: [Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS],
         });
+      this.serviceEventFinished.updateCharacteristic(Characteristic.ServiceLabelIndex, 3);
     } else {
       const serviceEvent = accessory.getService(StatelessProgrammableSwitch);
       if (serviceEvent) {
@@ -91,11 +88,6 @@ export default class WasherDryer extends baseDevice {
     }
 
     this.updateAccessoryCharacteristic(device);
-
-    this.platform.ThinQ?.getLatestNotificationOfDevice(device).then(message => {
-      this.lastMessage = message;
-      this.ready = true;
-    });
   }
 
   public setActive(value: CharacteristicValue) {
@@ -116,40 +108,28 @@ export default class WasherDryer extends baseDevice {
       return;
     }
 
+    this.isRunning = this.Status.isRunning;
     const {
       Characteristic,
       Characteristic: {
         LockCurrentState,
       },
     } = this.platform;
-
-    if (this.config?.washer_trigger as boolean && this.Status.isRunning && !this.interval && this.ready) {
-      this.interval = setInterval(async () => {
-        const lastMessage = await this.platform.ThinQ?.getLatestNotificationOfDevice(device);
-        if (lastMessage && lastMessage.message?.extra?.code === '0000' && lastMessage.seqNo !== this.lastMessage?.seqNo) {
-          // single pressed button
-          const SINGLE = Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS;
-          this.serviceEventFinished.updateCharacteristic(Characteristic.ProgrammableSwitchEvent, SINGLE);
-
-          if (this.interval) {
-            clearInterval(this.interval);
-            this.interval = null;
-          }
-        }
-      }, this.intervalTime);
-    }
-
     this.serviceWasherDryer.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
     this.serviceWasherDryer.updateCharacteristic(Characteristic.InUse, this.Status.isRunning ? 1 : 0);
-
-    if (this.Status.remainDuration !== null) {
-      this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
-    }
+    this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
 
     if (this.serviceDoorLock) {
       this.serviceDoorLock.updateCharacteristic(LockCurrentState, this.Status.isPowerOn ?
         (this.Status.isDoorLocked ? LockCurrentState.SECURED : LockCurrentState.UNSECURED) : LockCurrentState.UNKNOWN);
       this.serviceDoorLock.updateCharacteristic(Characteristic.LockTargetState, this.Status.isDoorLocked ? 1 : 0);
+    }
+
+    if (this.config?.washer_trigger as boolean) {
+      if (this.isRunning && !this.Status.isRunning && this.Status.remainDuration <= 0) {
+        const SINGLE = Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS;
+        this.serviceEventFinished.updateCharacteristic(Characteristic.ProgrammableSwitchEvent, SINGLE);
+      }
     }
   }
 
@@ -179,24 +159,23 @@ export class WasherDryerStatus {
   }
 
   public get remainDuration() {
-    if (!this.isRunning) {
-      return null; // skip it if washer not running
-    }
-
     const currentTimestamp = Math.floor(Date.now() / 1000);
-
-    const {
-      remainTimeHour = 0,
-      remainTimeMinute = 0,
-    } = this.data;
-
-    const remainDuration = remainTimeHour * 3600 + remainTimeMinute * 60;
-
-    if (!this.accessory.stopTime || Math.abs(currentTimestamp + remainDuration - this.accessory.stopTime) > 120 /* 2 min different */) {
-      this.accessory.stopTime = currentTimestamp + remainDuration;
-      return remainDuration;
+    if (!this.isRunning || !this.isPowerOn
+      || (this.accessory.stopTime && (currentTimestamp - this.accessory.stopTime) >= currentTimestamp)) {
+      this.accessory.stopTime = 0;
+      return 0;
     }
 
-    return null;
+    if (!('remainTimeHour' in this.data)) {
+      this.data.remainTimeHour = 0;
+    }
+
+    const stopTime = this.data.remainTimeHour * 3600 + this.data.remainTimeMinute * 60;
+
+    if (!this.accessory.stopTime || Math.abs(stopTime - this.accessory.stopTime) > 120 /* 2 min different */) {
+      this.accessory.stopTime = stopTime;
+    }
+
+    return this.accessory.stopTime;
   }
 }
