@@ -190,12 +190,26 @@ export class RefrigeratorStatus {
   constructor(protected data, protected deviceModel: DeviceModel) {
   }
 
+  protected fToC(fahrenheit) {
+    return (fahrenheit - 32) * 5 / 9;
+  }
+
   public get freezerTemperature() {
-    return parseInt(this.freezerTempValueMapping[this.data?.freezerTemp]?.label || '0');
+    const temp = parseInt(this.freezerTempValueMapping[this.data?.freezerTemp]?.label || '0');
+    if (this.tempUnit === 'FAHRENHEIT') {
+      return this.fToC(temp);
+    }
+
+    return temp;
   }
 
   public get fridgeTemperature() {
-    return parseInt(this.fridgeTempValueMapping[this.data?.fridgeTemp]?.label || '0');
+    const temp = parseInt(this.fridgeTempValueMapping[this.data?.fridgeTemp]?.label || '0');
+    if (this.tempUnit === 'FAHRENHEIT') {
+      return this.fToC(temp);
+    }
+
+    return temp;
   }
 
   public get isDoorClosed() {
