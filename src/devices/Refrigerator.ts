@@ -97,7 +97,7 @@ export default class Refrigerator extends baseDevice {
       dataSetList: {
         refState: {
           expressMode: value as boolean ? On : Off,
-          tempUnit: 'CELSIUS',
+          tempUnit: this.Status.tempUnit,
         },
       },
       dataGetList: null,
@@ -115,12 +115,21 @@ export default class Refrigerator extends baseDevice {
       dataSetList: {
         refState: {
           expressFridge: value as boolean ? On : Off,
-          tempUnit: 'CELSIUS',
+          tempUnit: this.Status.tempUnit,
         },
       },
       dataGetList: null,
     });
     this.platform.log.debug('Set Express Mode ->', value);
+  }
+
+  async tempUnit() {
+    const {
+      Characteristic: {
+        TemperatureDisplayUnits,
+      },
+    } = this.platform;
+    return this.Status.tempUnit ? TemperatureDisplayUnits.CELSIUS : TemperatureDisplayUnits.FAHRENHEIT;
   }
 
   /**
@@ -129,6 +138,7 @@ export default class Refrigerator extends baseDevice {
   protected createThermostat(name: string, key: string) {
     const device: Device = this.accessory.context.device;
     const {Characteristic} = this.platform;
+    const isCelsius = this.Status.tempUnit === 'CELSIUS';
     const service = this.accessory.getService(name) || this.accessory.addService(this.platform.Service.Thermostat, name, name);
     // cool only
     service.setCharacteristic(Characteristic.CurrentHeatingCoolingState, Characteristic.CurrentHeatingCoolingState.COOL);
@@ -141,10 +151,10 @@ export default class Refrigerator extends baseDevice {
     // celsius only
     service.getCharacteristic(Characteristic.TemperatureDisplayUnits).setProps({
       minValue: Characteristic.TemperatureDisplayUnits.CELSIUS,
-      maxValue: Characteristic.TemperatureDisplayUnits.CELSIUS,
-    });
+      maxValue: Characteristic.TemperatureDisplayUnits.FAHRENHEIT,
+    }).onGet(this.tempUnit.bind(this));
 
-    const values = Object.values(device.deviceModel.monitoringValue[key + '_C'].valueMapping).filter(value => {
+    const values = Object.values(device.deviceModel.monitoringValue[key + (isCelsius ? '_C' : '_F')].valueMapping).filter(value => {
       return value.label !== 'IGNORE';
     }).map(value => {
       return parseInt(value.label);
@@ -152,7 +162,7 @@ export default class Refrigerator extends baseDevice {
 
     service.getCharacteristic(Characteristic.TargetTemperature)
       .onSet((value: CharacteristicValue) => {
-        const indexValue = device.deviceModel.lookupMonitorEnumName(key + '_C', value.toString());
+        const indexValue = device.deviceModel.lookupMonitorEnumName(key + (isCelsius ? '_C' : '_F'), value.toString());
 
         if (!indexValue) {
           throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.INVALID_VALUE_IN_REQUEST);
@@ -164,7 +174,7 @@ export default class Refrigerator extends baseDevice {
           dataSetList: {
             refState: {
               [key]: parseInt(indexValue),
-              tempUnit: 'CELSIUS',
+              tempUnit: this.Status.tempUnit,
             },
           },
           dataGetList: null,
@@ -181,13 +191,11 @@ export class RefrigeratorStatus {
   }
 
   public get freezerTemperature() {
-    const valueMapping = this.deviceModel.monitoringValue.freezerTemp_C.valueMapping;
-    return parseInt(valueMapping[this.data?.freezerTemp]?.label || '0');
+    return parseInt(this.freezerTempValueMapping[this.data?.freezerTemp]?.label || '0');
   }
 
   public get fridgeTemperature() {
-    const valueMapping = this.deviceModel.monitoringValue.fridgeTemp_C.valueMapping;
-    return parseInt(valueMapping[this.data?.fridgeTemp]?.label || '0');
+    return parseInt(this.fridgeTempValueMapping[this.data?.fridgeTemp]?.label || '0');
   }
 
   public get isDoorClosed() {
@@ -200,5 +208,19 @@ export class RefrigeratorStatus {
 
   public get isExpressFridgeOn() {
     return this.data?.expressFridge === this.deviceModel.lookupMonitorEnumName('expressFridge', '@CP_ON_EN_W');
+  }
+
+  public get tempUnit() {
+    return this.data?.tempUnit || 'CELSIUS';
+  }
+
+  protected get freezerTempValueMapping() {
+    const isCelsius = this.tempUnit === 'CELSIUS';
+    return this.deviceModel.monitoringValue[isCelsius ? 'freezerTemp_C' : 'freezerTemp_F']?.valueMapping;
+  }
+
+  protected get fridgeTempValueMapping() {
+    const isCelsius = this.tempUnit === 'CELSIUS';
+    return this.deviceModel.monitoringValue[isCelsius ? 'fridgeTemp_C' : 'fridgeTemp_F']?.valueMapping;
   }
 }
