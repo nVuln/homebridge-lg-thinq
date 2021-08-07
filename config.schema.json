@@ -47,9 +47,9 @@
 	  "required": true
 	},
 	"refresh_interval": {
-	  "title": "Refresh interval (in minute)",
+	  "title": "Refresh interval (in second)",
 	  "type": "number",
-	  "default": 5,
+	  "default": 60,
 	  "required": false
 	},
 	"thinq1": {
