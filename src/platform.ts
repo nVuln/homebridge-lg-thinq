@@ -22,7 +22,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
 
   public readonly ThinQ: ThinQ | undefined;
   public readonly events: EventEmitter;
-  private readonly intervalTime = 5000; // 5 second
+  private readonly intervalTime;
 
   // enable thinq1 support
   private readonly enable_thinq1: boolean = false;
@@ -40,6 +40,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
     this.enable_thinq1 = config.thinq1 as boolean;
     this.config.devices = this.config.devices || [];
 
+    this.intervalTime = (config.refresh_interval || 5) * 1000;
     this.ThinQ = new ThinQ(this, config, log);
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.

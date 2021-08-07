@@ -46,6 +46,12 @@
 	  "default": "en-US",
 	  "required": true
 	},
+	"refresh_interval": {
+	  "title": "Refresh interval (in minute)",
+	  "type": "number",
+	  "default": 5,
+	  "required": false
+	},
 	"thinq1": {
 	  "title": "Enable ThinQ1 Support?",
 	  "type": "boolean",

@@ -350,6 +350,7 @@
       const configForm = homebridge.createForm({
         schema: {
           refresh_token: config.schema.refresh_token,
+          refresh_interval: config.schema.refresh_interval,
           thinq1: config.schema.thinq1,
           devices: {
             ...config.schema.devices,
