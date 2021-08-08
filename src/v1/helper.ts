@@ -2,8 +2,20 @@ import {Device} from '../lib/Device';
 import {PlatformType} from '../lib/constants';
 import {DeviceModel} from '../lib/DeviceModel';
 import WasherDryer from './transforms/WasherDryer';
+import Washer from './devices/Washer';
 
 export default class Helper {
+  public static make(device: Device) {
+    if (device.platform !== PlatformType.ThinQ1) {
+      return null;
+    }
+
+    switch (device.type) {
+      case 'WASHER': return Washer;
+    }
+
+    return null;
+  }
   /**
    * transform device from thinq1 to thinq2 compatible (with snapshot data)
    */

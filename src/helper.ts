@@ -5,6 +5,8 @@ import Refrigerator from './devices/Refrigerator';
 import WasherDryer from './devices/WasherDryer';
 import Dishwasher from './devices/Dishwasher';
 import Dehumidifier from './devices/Dehumidifier';
+import {default as V1helper} from './v1/helper';
+import {PlatformType} from './lib/constants';
 
 /**
  * Platform Accessory
@@ -17,6 +19,15 @@ export class Helper {
       return null;
     }
 
+    if (device.platform === PlatformType.ThinQ1) {
+      // check if thinq1 available
+      const deviceClass = V1helper.make(device);
+      if (deviceClass) {
+        return deviceClass;
+      }
+    }
+
+    // thinq2
     switch (device.type) {
       case 'AIR_PURIFIER': return AirPurifier;
       case 'REFRIGERATOR': return Refrigerator;

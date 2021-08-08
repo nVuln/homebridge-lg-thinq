@@ -6,12 +6,11 @@ import {PlatformType} from '../lib/constants';
 import {DeviceModel} from '../lib/DeviceModel';
 
 export default class WasherDryer extends baseDevice {
+  public isRunning = false;
+  public stopTime = 0;
   protected serviceWasherDryer;
   protected serviceEventFinished;
   protected serviceDoorLock;
-
-  public isRunning = false;
-  public stopTime = 0;
 
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
@@ -34,17 +33,14 @@ export default class WasherDryer extends baseDevice {
     const device: Device = accessory.context.device;
 
     this.serviceWasherDryer = accessory.getService(Valve) || accessory.addService(Valve, device.name);
-    const activePerms = [
-      Perms.PAIRED_READ,
-      Perms.NOTIFY,
-    ];
-    if (device.platform === PlatformType.ThinQ1) {
-      activePerms.push(Perms.PAIRED_WRITE);
-    }
-
     this.serviceWasherDryer.getCharacteristic(Characteristic.Active)
       .onSet(this.setActive.bind(this))
-      .setProps({ perms: activePerms })
+      .setProps({
+        perms: [
+          Perms.PAIRED_READ,
+          Perms.NOTIFY,
+        ],
+      })
       .updateValue(Characteristic.Active.INACTIVE);
     this.serviceWasherDryer.setCharacteristic(Characteristic.Name, device.name);
     this.serviceWasherDryer.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.WATER_FAUCET);
@@ -90,14 +86,12 @@ export default class WasherDryer extends baseDevice {
     this.updateAccessoryCharacteristic(device);
   }
 
-  public setActive(value: CharacteristicValue) {
-    const device: Device = this.accessory.context.device;
-    if (device.platform === PlatformType.ThinQ1) {
-      this.platform.ThinQ?.thinq1DeviceControl(device.id, 'Power', value as boolean ? 'On' : 'Off');
-      return value;
-    }
+  public get Status() {
+    return new WasherDryerStatus(this.accessory.context.device.snapshot?.washerDryer, this, this.accessory.context.device.deviceModel);
+  }
 
-    throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.NOT_ALLOWED_IN_CURRENT_STATE);
+  async setActive(value: CharacteristicValue) {
+    return value;
   }
 
   public updateAccessoryCharacteristic(device: Device) {
@@ -132,14 +126,11 @@ export default class WasherDryer extends baseDevice {
       }
     }
   }
-
-  public get Status() {
-    return new WasherDryerStatus(this.accessory.context.device.snapshot?.washerDryer, this, this.accessory.context.device.deviceModel);
-  }
 }
 
 export class WasherDryerStatus {
-  constructor(protected data, protected accessory, protected deviceModel: DeviceModel) {}
+  constructor(protected data, protected accessory, protected deviceModel: DeviceModel) {
+  }
 
   public get isPowerOn() {
     return !['POWEROFF', 'POWERFAIL'].includes(this.data?.state);
