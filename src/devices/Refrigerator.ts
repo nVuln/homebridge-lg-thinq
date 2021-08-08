@@ -138,7 +138,6 @@ export default class Refrigerator extends baseDevice {
   protected createThermostat(name: string, key: string) {
     const device: Device = this.accessory.context.device;
     const {Characteristic} = this.platform;
-    const isCelsius = this.Status.tempUnit === 'CELSIUS';
     const service = this.accessory.getService(name) || this.accessory.addService(this.platform.Service.Thermostat, name, name);
     // cool only
     service.setCharacteristic(Characteristic.CurrentHeatingCoolingState, Characteristic.CurrentHeatingCoolingState.COOL);
@@ -154,15 +153,20 @@ export default class Refrigerator extends baseDevice {
       maxValue: Characteristic.TemperatureDisplayUnits.FAHRENHEIT,
     }).onGet(this.tempUnit.bind(this));
 
-    const values = Object.values(device.deviceModel.monitoringValue[key + (isCelsius ? '_C' : '_F')].valueMapping).filter(value => {
+    const values = Object.values(device.deviceModel.monitoringValue[key + '_C'].valueMapping).filter(value => {
       return value.label !== 'IGNORE';
     }).map(value => {
       return parseInt(value.label);
     });
 
     service.getCharacteristic(Characteristic.TargetTemperature)
-      .onSet((value: CharacteristicValue) => {
-        const indexValue = device.deviceModel.lookupMonitorEnumName(key + (isCelsius ? '_C' : '_F'), value.toString());
+      .onSet((value: CharacteristicValue) => { // value in celsius
+        let indexValue;
+        if (this.Status.tempUnit === 'FAHRENHEIT') {
+          indexValue = device.deviceModel.lookupMonitorEnumName(key + '_F', cToF(value as number).toString());
+        } else {
+          indexValue = device.deviceModel.lookupMonitorEnumName(key + '_C', value.toString());
+        }
 
         if (!indexValue) {
           throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.INVALID_VALUE_IN_REQUEST);
@@ -190,14 +194,10 @@ export class RefrigeratorStatus {
   constructor(protected data, protected deviceModel: DeviceModel) {
   }
 
-  protected fToC(fahrenheit) {
-    return (fahrenheit - 32) * 5 / 9;
-  }
-
   public get freezerTemperature() {
     const temp = parseInt(this.freezerTempValueMapping[this.data?.freezerTemp]?.label || '0');
     if (this.tempUnit === 'FAHRENHEIT') {
-      return this.fToC(temp);
+      return fToC(temp);
     }
 
     return temp;
@@ -206,7 +206,7 @@ export class RefrigeratorStatus {
   public get fridgeTemperature() {
     const temp = parseInt(this.fridgeTempValueMapping[this.data?.fridgeTemp]?.label || '0');
     if (this.tempUnit === 'FAHRENHEIT') {
-      return this.fToC(temp);
+      return fToC(temp);
     }
 
     return temp;
@@ -237,4 +237,12 @@ export class RefrigeratorStatus {
     const isCelsius = this.tempUnit === 'CELSIUS';
     return this.deviceModel.monitoringValue[isCelsius ? 'fridgeTemp_C' : 'fridgeTemp_F']?.valueMapping;
   }
+}
+
+function fToC(fahrenheit) {
+  return parseFloat(((fahrenheit - 32) * 5 / 9).toFixed(1));
+}
+
+function cToF(celsius) {
+  return Math.round(celsius * 9 / 5 + 32);
 }
