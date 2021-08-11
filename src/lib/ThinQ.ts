@@ -122,7 +122,8 @@ export class ThinQ {
             await this.stopMonitor(device);
           }
         } else if (err instanceof NotConnectedError) {
-          this.log.debug('Device not connected: ', device.toString());
+          // device not online
+          // this.log.debug('Device not connected: ', device.toString());
         } else {
           throw err;
         }
