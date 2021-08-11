@@ -178,6 +178,10 @@ export class API {
       this.session = await this.auth.refreshNewToken(this.session);
     }
 
+    if (!this.auth.jsessionId) {
+      this.auth.jsessionId = await this.auth.getJSessionId(this.session?.accessToken);
+    }
+
     if (!this.userNumber) {
       this.userNumber = await this.auth.getUserNumber(this.session?.accessToken);
     }
@@ -192,13 +196,21 @@ export class API {
   }
 
   protected get monitorHeaders() {
-    return {
+    const monitorHeaders = {
       'Accept': 'application/json',
-      'x-thinq-token': this.session?.accessToken,
-      'x-thinq-jsessionId': this.auth.jsessionId,
       'x-thinq-application-key': 'wideq',
       'x-thinq-security-key': 'nuts_securitykey',
     };
+
+    if (typeof this.session?.accessToken === 'string') {
+      monitorHeaders['x-thinq-token'] = this.session?.accessToken;
+    }
+
+    if (typeof this.auth?.jsessionId === 'string') {
+      monitorHeaders['x-thinq-jsessionId'] = this.auth?.jsessionId;
+    }
+
+    return monitorHeaders;
   }
 
   protected get defaultHeaders() {

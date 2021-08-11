@@ -98,28 +98,45 @@ export class Auth {
 
     this.lgeapi_url = token.oauth2_backend_url || this.lgeapi_url;
 
+    return new Session(token.access_token, token.refresh_token, token.expires_in);
+  }
+
+  public async getJSessionId(accessToken: string) {
     // login to old gateway also - thinq v1
     const memberLoginUrl = this.gateway.thinq1_url + 'member/login';
     const memberLoginHeaders = {
       'x-thinq-application-key': 'wideq',
       'x-thinq-security-key': 'nuts_securitykey',
       'Accept': 'application/json',
-      'x-thinq-token': token.access_token,
+      'x-thinq-token': accessToken,
     };
     const memberLoginData = {
       countryCode: this.gateway.country_code,
       langCode: this.gateway.language_code,
       loginType: 'EMP',
-      token: token.access_token,
+      token: accessToken,
     };
-    this.jsessionId = await requestClient.post(memberLoginUrl, { lgedmRoot: memberLoginData }, {
+
+    return this.jsessionId = await requestClient.post(memberLoginUrl, { lgedmRoot: memberLoginData }, {
       headers: memberLoginHeaders,
     }).then(res => res.data).then(data => data.lgedmRoot.jsessionId);
-
-    return new Session(token.access_token, token.refresh_token, token.expires_in);
   }
 
   public async refreshNewToken(session: Session) {
+    const gateway = await requestClient.post('https://kic.lgthinq.com:46030/api/common/gatewayUriList', {
+      lgedmRoot: {
+        countryCode: this.gateway.country_code,
+        langCode: this.gateway.language_code,
+      },
+    }, {
+      headers: {
+        'Accept': 'application/json',
+        'x-thinq-application-key': 'wideq',
+        'x-thinq-security-key': 'nuts_securitykey',
+      },
+    }).then(res => res.data.lgedmRoot);
+
+    this.lgeapi_url = gateway.oauthUri + '/';
     const tokenUrl = this.lgeapi_url + 'oauth2/token';
     const data = {
       grant_type: 'refresh_token',
