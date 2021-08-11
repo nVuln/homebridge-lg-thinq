@@ -3,6 +3,8 @@ import {PlatformType} from '../lib/constants';
 import {DeviceModel} from '../lib/DeviceModel';
 import WasherDryer from './transforms/WasherDryer';
 import Washer from './devices/Washer';
+import RefState from './transforms/RefState';
+import Refrigerator from './devices/Refrigerator';
 
 export default class Helper {
   public static make(device: Device) {
@@ -12,6 +14,7 @@ export default class Helper {
 
     switch (device.type) {
       case 'WASHER': return Washer;
+      case 'REFRIGERATOR': return Refrigerator;
     }
 
     return null;
@@ -28,6 +31,9 @@ export default class Helper {
       case 'DRYER':
       case 'WASHER':
         device.data.snapshot = WasherDryer(deviceModel, monitorData);
+        break;
+      case 'REFRIGERATOR':
+        device.data.snapshot = RefState(deviceModel, monitorData);
         break;
       default:
         // return original device data if not supported
