@@ -141,11 +141,11 @@ export class WasherDryerStatus {
   }
 
   public get isRemoteStartEnable() {
-    return this.data.remoteStart === this.deviceModel.lookupMonitorEnumName('remoteStart', '@CP_ON_EN_W');
+    return this.data.remoteStart === this.deviceModel.lookupMonitorName('remoteStart', '@CP_ON_EN_W');
   }
 
   public get isDoorLocked() {
-    return this.data.doorLock === this.deviceModel.lookupMonitorEnumName('doorLock', '@CP_ON_EN_W');
+    return this.data.doorLock === this.deviceModel.lookupMonitorName('doorLock', '@CP_ON_EN_W');
   }
 
   public get remainDuration() {

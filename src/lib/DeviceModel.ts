@@ -85,19 +85,20 @@ export class DeviceModel {
       return null;
     }
 
-    switch (data.type.toLowerCase()) {
+    const type = data.type || data.data_type;
+    switch (type.toLowerCase()) {
       case 'enum':
         return {
           type: ValueType.Enum,
-          options: data.option,
+          options: data.option || data.value_mapping,
         } as EnumValue;
 
       case 'range':
         return {
           type: ValueType.Range,
-          min: data.option.min,
-          max: data.option.max,
-          step: data.option?.step || 1,
+          min: (data.option || data.value_validation)?.min,
+          max: (data.option || data.value_validation)?.max,
+          step: (data.option || data.value_validation)?.step || 1,
         } as RangeValue;
 
       case 'bit': {
@@ -151,9 +152,33 @@ export class DeviceModel {
     return options[value];
   }
 
-  public lookupMonitorEnumName(key: string, label: string) {
+  public monitoringValueMapping(key) {
+    if (this.data.Value && this.value(key)) {
+      return (this.value(key) as EnumValue).options;
+    }
+
+    if (!(key in this.monitoringValue)) {
+      return {};
+    }
+
+    return this.monitoringValue[key].valueMapping || {};
+  }
+
+  public lookupMonitorValue(key: string, name: string, default_value: null | string = null) {
     if (this.data.Value) {
-      return this.enumName(key, label);
+      return this.enumName(key, name);
+    }
+
+    if (!this.monitoringValueMapping(key) || !(name in this.monitoringValueMapping(key))) {
+      return null;
+    }
+
+    return this.monitoringValueMapping(key)[name]?.label || default_value || null;
+  }
+
+  public lookupMonitorName(key: string, label: string) {
+    if (this.data.Value) {
+      return this.enumValue(key, label);
     }
 
     if (!(key in this.monitoringValue)) {
