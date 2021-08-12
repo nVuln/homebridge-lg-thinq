@@ -41,6 +41,10 @@ export class Device {
     return this.data.platformType;
   }
 
+  public get online() {
+    return this.data.online || this.data.snapshot.online;
+  }
+
   public toString() {
     return `${this.id}: ${this.name} (${this.type} ${this.model})`;
   }

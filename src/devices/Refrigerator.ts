@@ -72,6 +72,11 @@ export default class Refrigerator extends baseDevice {
   public updateAccessoryCharacteristic(device: Device) {
     super.updateAccessoryCharacteristic(device);
 
+    if (!device.online) {
+      // device not online, do not update status
+      return;
+    }
+
     const {Characteristic} = this.platform;
 
     this.serviceFreezer.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.freezerTemperature);

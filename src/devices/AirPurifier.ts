@@ -158,7 +158,7 @@ export default class AirPurifier extends baseDevice {
       },
     } = this.platform;
 
-    if (!device.snapshot.online) {
+    if (!device.online) {
       // device not online, do not update status
       return;
     }

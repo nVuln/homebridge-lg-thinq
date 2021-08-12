@@ -44,7 +44,7 @@ export default class Dishwasher extends baseDevice {
   public updateAccessoryCharacteristic(device: Device) {
     super.updateAccessoryCharacteristic(device);
 
-    if (!device.snapshot.online) {
+    if (!device.online) {
       // device not online, do not update status
       return;
     }

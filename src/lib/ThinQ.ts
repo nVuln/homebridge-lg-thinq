@@ -100,7 +100,7 @@ export class ThinQ {
 
   public async pollMonitor(device: Device) {
     if (device.platform === PlatformType.ThinQ1) {
-      let result: any = new Uint8Array(1024);
+      let result: any = null;
       try {
         if (!(device.id in this.workIds)) {
           throw new NotConnectedError();
@@ -129,7 +129,7 @@ export class ThinQ {
         }
       }
 
-      return Helper.transform(device, this.deviceModel[device.id], result);
+      return Helper.transform(device, this.deviceModel[device.id], result || new Uint8Array(1024));
     }
 
     return device;
