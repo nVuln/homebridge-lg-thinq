@@ -71,6 +71,7 @@ npm i -g homebridge-lg-thinq
 | Washer & Dryer | ✔️ | ✔️ | 🚫 | ✔️ | ✔️ |
 | Dishwasher | ✔️ | ✔️ | ✔️ | ✔️ | 🚫 |
 | Dehumidifier | ✔️ | ✔️ | ⚠️ | ✔️ | 🚫 |
+| AC | in development | ⚠️ | ⚠️ | ⚠️ | ⚠️ |
 
 for more device support please open issue request.
 

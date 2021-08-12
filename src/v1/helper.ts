@@ -1,8 +1,9 @@
 import {Device} from '../lib/Device';
 import {PlatformType} from '../lib/constants';
 import {DeviceModel} from '../lib/DeviceModel';
+import AirState from './transforms/AirState';
 import WasherDryer from './transforms/WasherDryer';
-import Washer from './devices/Washer';
+import {Washer, AC} from './devices';
 import RefState from './transforms/RefState';
 import Refrigerator from './devices/Refrigerator';
 
@@ -14,6 +15,7 @@ export default class Helper {
 
     switch (device.type) {
       case 'WASHER': return Washer;
+      case 'AC': return AC;
       case 'REFRIGERATOR': return Refrigerator;
     }
 
@@ -39,6 +41,9 @@ export default class Helper {
       case 'DRYER':
       case 'WASHER':
         device.data.snapshot = WasherDryer(deviceModel, monitorData);
+        break;
+      case 'AC':
+        device.data.snapshot = AirState(deviceModel, monitorData);
         break;
       case 'REFRIGERATOR':
         device.data.snapshot = RefState(deviceModel, monitorData);

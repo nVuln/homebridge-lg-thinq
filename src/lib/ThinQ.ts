@@ -168,7 +168,11 @@ export class ThinQ {
       await this.api.ready();
       return await this.api.sendCommandToDevice(id, values, command, ctrlKey);
     } catch (err) {
-      this.log.error(err);
+      if (err.response) {
+        this.log.error(err.response);
+      } else {
+        this.log.error(err);
+      }
     }
   }
 
