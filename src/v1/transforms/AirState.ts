@@ -11,7 +11,7 @@ export enum ACOperation {
 
 export default function AirState(deviceModel: DeviceModel, monitorData) {
   const decodedMonitor = deviceModel.decodeMonitor(monitorData);
-  return {
+  const airState = {
     'airState.opMode': (decodedMonitor['OpMode'] || 0) as number,
     'airState.operation': loopupEnum(deviceModel, decodedMonitor, 'Operation') !== ACOperation.OFF,
     'airState.tempState.current': (decodedMonitor['TempCur'] || 0) as number,
@@ -20,10 +20,26 @@ export default function AirState(deviceModel: DeviceModel, monitorData) {
     'airState.wDir.vStep': (decodedMonitor['WDirVStep'] || 0) as number,
     'airState.wDir.hStep': (decodedMonitor['WDirHStep'] || 0) as number,
 
-    'airState.quality.sensorMon': decodedMonitor['SensorMon'] || 0,
     'airState.quality.overall': 0, // unknown
-    'airState.quality.PM1': decodedMonitor['SensorPM1'] || 0,
-    'airState.quality.PM2': decodedMonitor['SensorPM2'] || 0,
-    'airState.quality.PM10': decodedMonitor['SensorPM10'] || 0,
   };
+
+  if (decodedMonitor['SensorMon']) {
+    airState['airState.quality.sensorMon'] = decodedMonitor['SensorMon'] || 0;
+  }
+
+  if (decodedMonitor['SensorPM1']) {
+    airState['airState.quality.PM1'] = decodedMonitor['SensorPM1'];
+  }
+
+  if (decodedMonitor['SensorPM2']) {
+    airState['airState.quality.PM2'] = decodedMonitor['SensorPM2'] || 0;
+  }
+
+  if (decodedMonitor['SensorPM10']) {
+    airState['airState.quality.PM10'] = decodedMonitor['SensorPM10'];
+  }
+
+  console.log('Debug - AC decoded data: ', decodedMonitor);
+
+  return airState;
 }

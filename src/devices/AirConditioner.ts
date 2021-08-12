@@ -5,14 +5,15 @@ import {Device} from '../lib/Device';
 
 export enum FanSpeed {
   LOW = 2,
+  LOW_MEDIUM = 3,
   MEDIUM = 4,
+  MEDIUM_HIGH = 5,
   HIGH = 6,
 }
 
 export default class AirConditioner extends baseDevice {
   protected service;
   protected serviceAirQuality;
-  protected serviceFanV2;
 
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
@@ -24,7 +25,6 @@ export default class AirConditioner extends baseDevice {
       Service: {
         AirQualitySensor,
         HeaterCooler,
-        Fanv2,
       },
       Characteristic,
     } = this.platform;
@@ -84,35 +84,20 @@ export default class AirConditioner extends baseDevice {
       .onSet(this.setTargetTemperature.bind(this))
       .updateValue(this.Status.targetTemperature);
 
-    if (this.Status.airQuality) {
-      // air quality
-      this.serviceAirQuality = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
-    }
-
-    // fan controller
-    this.serviceFanV2 = accessory.getService(Fanv2) || accessory.addService(Fanv2);
-    this.serviceFanV2.addLinkedService(this.service);
-
-    this.serviceFanV2.getCharacteristic(Characteristic.Active)
-      .onSet(this.fanStatusReadonly.bind(this))
-      .updateValue(Characteristic.Active.INACTIVE);
-    this.serviceFanV2.getCharacteristic(Characteristic.Name).updateValue(device.name + ' - Fan');
-    this.serviceFanV2.getCharacteristic(Characteristic.CurrentFanState)
-      .setProps({
-        validValues: [Characteristic.CurrentFanState.INACTIVE, Characteristic.CurrentFanState.BLOWING_AIR],
-      })
-      .updateValue(Characteristic.CurrentFanState.INACTIVE);
-    this.serviceFanV2.getCharacteristic(Characteristic.TargetFanState)
-      .onSet(this.setFanMode.bind(this));
-    this.serviceFanV2.getCharacteristic(Characteristic.RotationSpeed)
+    this.service.getCharacteristic(Characteristic.RotationSpeed)
       .setProps({
         minValue: 0,
         maxValue: Object.keys(FanSpeed).length / 2,
         minStep: 0.1,
       })
       .onSet(this.setFanSpeed.bind(this));
-    this.serviceFanV2.getCharacteristic(Characteristic.SwingMode)
+    this.service.getCharacteristic(Characteristic.SwingMode)
       .onSet(this.setSwingMode.bind(this));
+
+    if (this.Status.airQuality) {
+      // air quality
+      this.serviceAirQuality = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
+    }
 
     this.updateAccessoryCharacteristic(device);
   }
@@ -133,8 +118,6 @@ export default class AirConditioner extends baseDevice {
       Characteristic,
       Characteristic: {
         Active,
-        CurrentFanState,
-        TargetFanState,
       },
     } = this.platform;
 
@@ -165,40 +148,11 @@ export default class AirConditioner extends baseDevice {
       }
     }
 
-    // fan controller
-    this.serviceFanV2.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? Active.ACTIVE : Active.INACTIVE);
-
-    // eslint-disable-next-line max-len
-    this.serviceFanV2.updateCharacteristic(Characteristic.CurrentFanState, this.Status.isPowerOn ? CurrentFanState.BLOWING_AIR : CurrentFanState.INACTIVE);
-    // eslint-disable-next-line max-len
-    this.serviceFanV2.updateCharacteristic(Characteristic.TargetFanState, this.Status.fanAutoMode ? TargetFanState.AUTO : TargetFanState.MANUAL);
-
-    this.serviceFanV2.updateCharacteristic(Characteristic.RotationSpeed, this.Status.windStrength);
-  }
-
-  async fanStatusReadonly(value: CharacteristicValue) {
-    const isOn = value as boolean;
-    if ((this.Status.isPowerOn && isOn) || (!this.Status.isPowerOn && !isOn)) {
-      return;
-    }
-
-    const {
-      Characteristic,
-      Characteristic: {
-        Active,
-      },
-    } = this.platform;
-
-    // do not allow change status via home app, revert to prev status in 0.1s
-    setTimeout(() => {
-      this.serviceFanV2.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? Active.ACTIVE : Active.INACTIVE);
-      this.serviceFanV2.updateCharacteristic(Characteristic.RotationSpeed, this.Status.windStrength);
-    }, 100);
+    this.service.updateCharacteristic(Characteristic.RotationSpeed, this.Status.windStrength);
   }
 
   async setTargetState(value: CharacteristicValue) {
     this.platform.log.info('Set target AC mode = ', value);
-    return;
   }
 
   async setActive(value: CharacteristicValue) {
@@ -228,22 +182,6 @@ export default class AirConditioner extends baseDevice {
       dataValue: value as number,
     }).then(() => {
       device.data.snapshot['airState.tempState.target'] = value as number;
-      this.updateAccessoryCharacteristic(device);
-    });
-  }
-
-  async setFanMode(value: CharacteristicValue) {
-    if (!this.Status.isPowerOn) {
-      return;
-    }
-
-    const device: Device = this.accessory.context.device;
-    const windStrength = value ? 8 : FanSpeed.HIGH; // 8 mean fan auto mode
-    this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: 'airState.windStrength',
-      dataValue: windStrength,
-    }).then(() => {
-      device.data.snapshot['airState.windStrength'] = windStrength;
       this.updateAccessoryCharacteristic(device);
     });
   }
@@ -321,9 +259,5 @@ class ACStatus {
   public get windStrength() {
     const index = Object.keys(FanSpeed).indexOf(parseInt(this.data['airState.windStrength']).toString());
     return index !== -1 ? index + 1 : Object.keys(FanSpeed).length / 2;
-  }
-
-  public get fanAutoMode() {
-    return this.data['airState.windStrength'] as number === 8;
   }
 }
