@@ -19,12 +19,21 @@ export default class Helper {
 
     return null;
   }
+
   /**
    * transform device from thinq1 to thinq2 compatible (with snapshot data)
    */
   public static transform(device: Device, deviceModel: DeviceModel, monitorData) {
     if (device.type === PlatformType.ThinQ2) {
       return device;
+    }
+
+    if (monitorData === null) {
+      monitorData = new Uint8Array(1024);
+    }
+    else {
+      // mark device online to perform update
+      device.data.online = true;
     }
 
     switch (device.type) {

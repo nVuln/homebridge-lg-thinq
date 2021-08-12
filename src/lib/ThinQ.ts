@@ -129,7 +129,7 @@ export class ThinQ {
         }
       }
 
-      return Helper.transform(device, this.deviceModel[device.id], result || new Uint8Array(1024));
+      return Helper.transform(device, this.deviceModel[device.id], result);
     }
 
     return device;

@@ -61,6 +61,10 @@ export class Status extends RefrigeratorStatus {
     return parseInt(this.deviceModel.lookupMonitorValue('TempRefrigerator_C', this.data?.fridgeTemp, '0'));
   }
 
+  public get isExpressFridgeOn() {
+    return this.data?.expressFridge === this.deviceModel.lookupMonitorName('ExpressFridge', '@CP_ON_EN_W');
+  }
+
   public get tempUnit() {
     return this.data?.tempUnit ? 'CELSIUS' : 'FAHRENHEIT';
   }
