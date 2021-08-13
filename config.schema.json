@@ -112,6 +112,52 @@
 			"condition": {
 			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
 			}
+		  },
+		  "ac_mode": {
+			"title": "AC Mode (Heating or Cooling or Both)",
+			"type": "string",
+			"default": "BOTH",
+			"required": true,
+			"oneOf": [
+			  {
+				"title": "Both Heating and Cooling mode",
+				"enum": ["BOTH"]
+			  },
+			  {
+				"title": "Cooling mode only",
+				"enum": ["COOLING"]
+			  },
+			  {
+				"title": "Heating mode only",
+				"enum": ["HEATING"]
+			  }
+			],
+			"condition": {
+			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
+			}
+		  },
+		  "ac_swing_mode": {
+			"title": "Swing Mode (vertical or horizontal)",
+			"type": "string",
+			"default": "BOTH",
+			"required": true,
+			"oneOf": [
+			  {
+				"title": "Both vertical and horizontal swing",
+				"enum": ["BOTH"]
+			  },
+			  {
+				"title": "Vertical swing only",
+				"enum": ["VERTICAL"]
+			  },
+			  {
+				"title": "Horizontal swing only",
+				"enum": ["HORIZONTAL"]
+			  }
+			],
+			"condition": {
+			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
+			}
 		  }
 		}
 	  }
