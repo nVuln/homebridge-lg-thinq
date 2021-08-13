@@ -96,6 +96,22 @@
 			"condition": {
 			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['WASHER','WASHER_NEW', 'WASH_TOWER'].includes(model.devices[arrayIndices].type);"
 			}
+		  },
+		  "ac_fan_control_disable": {
+			"title": "Disable Fan ",
+			"description": "if you using Eve app, you can control AC FanSpeed by it self, Home app doesn't.",
+			"type": "boolean",
+			"condition": {
+			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
+			}
+		  },
+		  "ac_air_quality": {
+			"title": "Enable Air Quality",
+			"description": "if your device supported Air Quality sensor",
+			"type": "boolean",
+			"condition": {
+			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
+			}
 		  }
 		}
 	  }
