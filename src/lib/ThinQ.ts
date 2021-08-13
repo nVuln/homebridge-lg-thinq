@@ -63,7 +63,7 @@ export class ThinQ {
     });
   }
 
-  public async startMonitor(device: Device) {
+  public async startMonitor(device: Device, retry = false) {
     try {
       await this.api.ready();
       if (!(device.id in this.deviceModel)) {
@@ -80,6 +80,11 @@ export class ThinQ {
     } catch (err) {
       if (err instanceof NotConnectedError) {
         return false;
+      }
+
+      // retry 1 times
+      if (!retry) {
+        await this.startMonitor(device, true);
       }
 
       this.log.error(err);

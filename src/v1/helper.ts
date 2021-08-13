@@ -29,9 +29,8 @@ export default class Helper {
     }
 
     if (monitorData === null) {
-      monitorData = new Uint8Array(1024);
-    }
-    else {
+      monitorData = {};
+    } else {
       // mark device online to perform update
       device.data.online = true;
     }

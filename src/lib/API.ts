@@ -241,7 +241,7 @@ export class API {
       .then(data => {
         if ('returnCd' in data) {
           const code = data.returnCd as string;
-          if (code === '0106') {
+          if (['0106', '0111'].includes(code)) {
             throw new NotConnectedError(data.returnMsg || '');
           } else if (code !== '0000') {
             throw new TokenError(code + ' - ' + data.returnMsg || '');

@@ -197,7 +197,11 @@ export class DeviceModel {
       return this.decodeMonitorBinary(data);
     }
 
-    return JSON.parse(data);
+    try {
+      return JSON.parse(data.toString());
+    } catch (err) {
+      return data;
+    }
   }
 
   private decodeMonitorBinary(data: any) {
