@@ -6,7 +6,7 @@ import {PlatformType} from './constants';
 import * as uuid from 'uuid';
 import {DeviceModel} from './DeviceModel';
 import Helper from '../v1/helper';
-import {NotConnectedError, ManualProcessNeeded, MonitorError} from '../errors';
+import {NotConnectedError, ManualProcessNeeded, MonitorError, TokenExpiredError} from '../errors';
 export type WorkId = typeof uuid['v4'];
 
 export class ThinQ {
@@ -83,7 +83,8 @@ export class ThinQ {
       }
 
       // retry 1 times
-      if (!retry) {
+      if (!retry && err instanceof TokenExpiredError) {
+        await this.api.refreshNewToken();
         await this.startMonitor(device, true);
       }
 
@@ -96,10 +97,11 @@ export class ThinQ {
       try {
         await this.api.ready();
         await this.api.sendMonitorCommand(device.id, 'Stop', this.workIds[device.id]);
-        delete this.workIds[device.id];
       } catch (err) {
-        this.log.error(err);
+        //this.log.error(err);
       }
+
+      delete this.workIds[device.id];
     }
   }
 
@@ -114,7 +116,9 @@ export class ThinQ {
         await this.api.ready();
         result = await this.api.getMonitorResult(device.id, this.workIds[device.id]);
       } catch (err) {
-        if (err instanceof MonitorError) {
+        if (err instanceof TokenExpiredError) {
+          await this.api.refreshNewToken();
+        } else if (err instanceof MonitorError) {
           // restart monitor and try again
           await this.stopMonitor(device);
           await this.startMonitor(device);
@@ -124,7 +128,7 @@ export class ThinQ {
             result = await this.api.getMonitorResult(device.id, this.workIds[device.id]);
           } catch (err) {
             // stop it
-            await this.stopMonitor(device);
+            // await this.stopMonitor(device);
           }
         } else if (err instanceof NotConnectedError) {
           // device not online
@@ -145,14 +149,24 @@ export class ThinQ {
       await this.api.ready();
       return await this.api.sendControlCommand(id, key, value);
     } catch (err) {
-      this.log.error(err);
+      // retry
+      if (err instanceof TokenExpiredError) {
+        await this.api.refreshNewToken();
+        try {
+          return await this.api.sendControlCommand(id, key, value);
+        } catch (err) {
+          this.log.error(err);
+        }
+      } else {
+        this.log.error(err);
+      }
     }
   }
 
-  public async deviceControl(id: string, values: Record<string, any>, command: 'Set' | 'Operation' = 'Set') {
+  public async deviceControl(id: string, values: Record<string, any>, command: 'Set' | 'Operation' = 'Set', ctrlKey = 'basicCtrl') {
     try {
       await this.api.ready();
-      return await this.api.sendCommandToDevice(id, values, command);
+      return await this.api.sendCommandToDevice(id, values, command, ctrlKey);
     } catch (err) {
       this.log.error(err);
     }

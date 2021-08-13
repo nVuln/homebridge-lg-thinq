@@ -7,7 +7,7 @@ import {Gateway} from './Gateway';
 import {requestClient} from './request';
 import {Auth} from './Auth';
 import {WorkId} from './ThinQ';
-import {MonitorError, NotConnectedError, TokenError} from '../errors';
+import {MonitorError, NotConnectedError, TokenError, TokenExpiredError} from '../errors';
 import * as uuid from 'uuid';
 
 function resolveUrl(from, to) {
@@ -127,11 +127,11 @@ export class API {
     return this._homes;
   }
 
-  public async sendCommandToDevice(device_id: string, values: Record<string, any>, command: 'Set' | 'Operation') {
+  public async sendCommandToDevice(device_id: string, values: Record<string, any>, command: 'Set' | 'Operation', ctrlKey = 'basicCtrl') {
     const headers = this.defaultHeaders;
     const controlUrl = resolveUrl(this._gateway?.thinq2_url, 'service/devices/' + device_id + '/control-sync');
     return requestClient.post(controlUrl, {
-      'ctrlKey': 'basicCtrl',
+      ctrlKey,
       'command': command,
       ...values,
     }, {headers}).then(resp => resp.data);
@@ -243,6 +243,8 @@ export class API {
           const code = data.returnCd as string;
           if (['0106', '0111'].includes(code)) {
             throw new NotConnectedError(data.returnMsg || '');
+          } else if (code === '0102') {
+            throw new TokenExpiredError(data.returnMsg);
           } else if (code !== '0000') {
             throw new TokenError(code + ' - ' + data.returnMsg || '');
           }
