@@ -6,7 +6,7 @@ client.interceptors.response.use((response) => {
   // Do something with response data
   return response;
 }, (err) => {
-  if (!err.response || [502, 504].includes(err.response.status) || err.response?.data?.resultCode === '9999') {
+  if (!err.response || [502, 503, 504].includes(err.response.status) || err.response?.data?.resultCode === '9999') {
     throw new NotConnectedError();
   }
 
