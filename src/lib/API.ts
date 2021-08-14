@@ -232,6 +232,8 @@ export class API {
     }
 
     await this.auth.refreshNewToken(this.session);
+    // get new jsessionid
+    await this.auth.getJSessionId(this.session.accessToken);
   }
 
   private async thinq1PostRequest(endpoint: string, data: any) {
