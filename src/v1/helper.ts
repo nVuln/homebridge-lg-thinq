@@ -30,27 +30,26 @@ export default class Helper {
       return device;
     }
 
-    if (monitorData === null) {
-      monitorData = {};
-    } else {
-      // mark device online to perform update
-      device.data.online = true;
-    }
-
     switch (device.type) {
       case 'DRYER':
       case 'WASHER':
-        device.data.snapshot = WasherDryer(deviceModel, monitorData);
+        device.data.snapshot = WasherDryer(deviceModel, monitorData || {});
         break;
       case 'AC':
-        device.data.snapshot = AirState(deviceModel, monitorData);
+        device.data.snapshot = AirState(deviceModel, monitorData || {});
         break;
       case 'REFRIGERATOR':
-        device.data.snapshot = RefState(deviceModel, monitorData);
+        device.data.snapshot = RefState(deviceModel, monitorData || {});
         break;
       default:
         // return original device data if not supported
         return device;
+    }
+
+    if (monitorData && device.data.snapshot) {
+      // mark device online to perform update
+      device.data.online = true;
+      device.data.snapshot.online = true;
     }
 
     return device;

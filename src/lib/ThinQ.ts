@@ -67,9 +67,14 @@ export class ThinQ {
     try {
       await this.api.ready();
       if (!(device.id in this.deviceModel)) {
-        this.deviceModel[device.id] = await this.api.getDeviceModelInfo(device.data).then(modelInfo => {
-          return new DeviceModel(modelInfo);
-        });
+        try {
+          this.deviceModel[device.id] = await this.api.getDeviceModelInfo(device.data).then(modelInfo => {
+            return new DeviceModel(modelInfo);
+          });
+        } catch (err) {
+          this.log.error('Unable to get device model ', device.id, ' - ', err);
+          return false;
+        }
       }
 
       device.deviceModel = this.deviceModel[device.id];
