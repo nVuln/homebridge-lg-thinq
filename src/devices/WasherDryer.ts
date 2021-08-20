@@ -57,9 +57,9 @@ export default class WasherDryer extends baseDevice {
         .setProps({
           minValue: 0,
           maxValue: 3,
-          validValues: [LockCurrentState.UNSECURED, LockCurrentState.SECURED, LockCurrentState.UNKNOWN],
+          validValues: [LockCurrentState.UNSECURED, LockCurrentState.SECURED],
         })
-        .updateValue(LockCurrentState.UNKNOWN);
+        .updateValue(LockCurrentState.UNSECURED);
       this.serviceDoorLock.getCharacteristic(Characteristic.LockTargetState)
         .onSet(this.setActive.bind(this))
         .updateValue(Characteristic.LockTargetState.UNSECURED);
@@ -113,8 +113,8 @@ export default class WasherDryer extends baseDevice {
     this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
 
     if (this.serviceDoorLock) {
-      this.serviceDoorLock.updateCharacteristic(LockCurrentState, this.Status.isPowerOn ?
-        (this.Status.isDoorLocked ? LockCurrentState.SECURED : LockCurrentState.UNSECURED) : LockCurrentState.UNKNOWN);
+      // eslint-disable-next-line max-len
+      this.serviceDoorLock.updateCharacteristic(LockCurrentState, this.Status.isDoorLocked ? LockCurrentState.SECURED : LockCurrentState.UNSECURED);
       this.serviceDoorLock.updateCharacteristic(Characteristic.LockTargetState, this.Status.isDoorLocked ? 1 : 0);
     }
 
