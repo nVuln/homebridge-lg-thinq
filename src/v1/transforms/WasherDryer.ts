@@ -45,7 +45,6 @@ export default function WasherDryer(deviceModel: DeviceModel, monitorData) {
       remoteStart: lookupEnumIndex(RemoteStart, loopupEnum(deviceModel, decodedMonitor, 'RemoteStart')) || 'REMOTE_START_OFF',
       initialBit: (decodedMonitor['InitialBit'] || false) as boolean ? 'INITIAL_BIT_ON' : 'INITIAL_BIT_OFF',
       childLock: lookupEnumIndex(ChildLock, loopupEnum(deviceModel, decodedMonitor, 'ChildLock')) || 'CHILDLOCK_OFF',
-      doorLock: 'DOOR_LOCK_OFF', // thinq1 not support door lock status
       TCLCount: (decodedMonitor['TCLCount'] || 0) as number,
       reserveTimeHour: (decodedMonitor['Reserve_Time_H'] || 0) as number,
       reserveTimeMinute: (decodedMonitor['Reserve_Time_M'] || 0) as number,
