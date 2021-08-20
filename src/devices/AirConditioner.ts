@@ -16,6 +16,8 @@ export default class AirConditioner extends baseDevice {
   protected service;
   protected serviceAirQuality;
   protected serviceSensor;
+  protected serviceSwitch;
+  protected serviceLight;
 
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
@@ -23,7 +25,16 @@ export default class AirConditioner extends baseDevice {
   ) {
     super(platform, accessory);
 
+    const device: Device = this.accessory.context.device;
     platform.log.info('AC still in development.If you got problem,plz report at https://github.com/nVuln/homebridge-lg-thinq/issues');
+
+    const {
+      Service: {
+        TemperatureSensor,
+        Switch,
+        Lightbulb,
+      },
+    } = this.platform;
 
     this.createHeaterCoolerService();
 
@@ -32,9 +43,35 @@ export default class AirConditioner extends baseDevice {
     }
 
     if (this.config.ac_temperature_sensor as boolean) {
-      // eslint-disable-next-line max-len
-      this.serviceSensor = accessory.getService(platform.Service.TemperatureSensor) || accessory.addService(platform.Service.TemperatureSensor);
+      this.serviceSensor = accessory.getService(TemperatureSensor) || accessory.addService(TemperatureSensor);
       this.serviceSensor.updateCharacteristic(platform.Characteristic.StatusActive, false);
+      this.serviceSensor.addLinkedService(this.service);
+    }
+
+    if (this.config.ac_led_control as boolean) {
+      this.serviceLight = accessory.getService(Lightbulb) || accessory.addService(Lightbulb);
+      this.serviceLight.getCharacteristic(platform.Characteristic.On)
+        .onSet(this.setLight.bind(this))
+        .updateValue(false); // off as default
+      this.serviceLight.addLinkedService(this.service);
+    }
+
+    // more feature
+    if (device.model === 'RAC_056905_WW') {
+      this.serviceSwitch = accessory.getService(Switch) || accessory.addService(Switch, 'Jet Mode');
+      this.serviceSwitch.updateCharacteristic(platform.Characteristic.Name, 'Jet Mode');
+      this.serviceSwitch.getCharacteristic(platform.Characteristic.On)
+        .onSet((value: CharacteristicValue) => {
+          if (this.Status.isPowerOn) {
+            this.platform.ThinQ?.deviceControl(device.id, {
+              dataKey: 'airState.wMode.jet',
+              dataValue: value ? 1 : 0,
+            }).then(() => {
+              device.data.snapshot['airState.wMode.jet'] = value ? 1 : 0;
+              this.updateAccessoryCharacteristic(device);
+            });
+          }
+        });
     }
 
     this.updateAccessoryCharacteristic(this.accessory.context.device);
@@ -46,6 +83,7 @@ export default class AirConditioner extends baseDevice {
       ac_air_quality: false,
       ac_mode: 'BOTH',
       ac_temperature_sensor: false,
+      ac_led_control: false,
     }, super.config);
   }
 
@@ -121,6 +159,30 @@ export default class AirConditioner extends baseDevice {
       this.serviceSensor.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.currentTemperature);
       this.serviceSensor.updateCharacteristic(Characteristic.StatusActive, this.Status.isPowerOn);
     }
+
+    if (this.config.ac_led_control as boolean && this.serviceLight) {
+      this.serviceLight.updateCharacteristic(Characteristic.On, this.Status.isLightOn);
+    }
+
+    // more feature
+    if (device.model === 'RAC_056905_WW' && this.serviceSwitch) {
+      this.serviceSwitch.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.wMode.jet']);
+    }
+  }
+
+  async setLight(value: CharacteristicValue) {
+    if (!this.Status.isPowerOn) {
+      return;
+    }
+
+    const device: Device = this.accessory.context.device;
+    this.platform.ThinQ?.deviceControl(device.id, {
+      dataKey: 'airState.lightingState.displayControl',
+      dataValue: value ? 1 : 0,
+    }).then(() => {
+      device.data.snapshot['airState.lightingState.displayControl'] = value ? 1 : 0;
+      this.updateAccessoryCharacteristic(device);
+    });
   }
 
   async setTargetState(value: CharacteristicValue) {
@@ -379,5 +441,9 @@ export class ACStatus {
     const vStep = Math.floor((this.data['airState.wDir.vStep'] || 0) / 100),
       hStep = Math.floor((this.data['airState.wDir.hStep'] || 0) / 100);
     return !!(vStep + hStep);
+  }
+
+  public get isLightOn() {
+    return !!this.data['airState.lightingState.displayControl'];
   }
 }

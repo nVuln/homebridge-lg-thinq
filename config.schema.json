@@ -110,7 +110,6 @@
 			"title": "AC Mode (Heating or Cooling or Both)",
 			"type": "string",
 			"default": "BOTH",
-			"required": true,
 			"oneOf": [
 			  {
 				"title": "Both Heating and Cooling mode",
@@ -133,7 +132,6 @@
 			"title": "Swing Mode (vertical or horizontal)",
 			"type": "string",
 			"default": "BOTH",
-			"required": true,
 			"oneOf": [
 			  {
 				"title": "Both vertical and horizontal swing",
@@ -154,6 +152,14 @@
 		  },
 		  "ac_temperature_sensor": {
 			"title": "Current temperature as sensor",
+			"type": "boolean",
+			"default": false,
+			"condition": {
+			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
+			}
+		  },
+		  "ac_led_control": {
+			"title": "Enable led panel control",
 			"type": "boolean",
 			"default": false,
 			"condition": {
