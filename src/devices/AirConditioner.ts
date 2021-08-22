@@ -19,6 +19,8 @@ export default class AirConditioner extends baseDevice {
   protected serviceSwitch;
   protected serviceLight;
 
+  protected jetModeModels = ['RAC_056905_CA', 'RAC_056905_WW'];
+
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
     protected readonly accessory: PlatformAccessory,
@@ -57,7 +59,7 @@ export default class AirConditioner extends baseDevice {
     }
 
     // more feature
-    if (device.model === 'RAC_056905_WW') {
+    if (this.jetModeModels.includes(device.model)) {
       this.serviceSwitch = accessory.getService(Switch) || accessory.addService(Switch, 'Jet Mode');
       this.serviceSwitch.updateCharacteristic(platform.Characteristic.Name, 'Jet Mode');
       this.serviceSwitch.getCharacteristic(platform.Characteristic.On)
@@ -165,7 +167,7 @@ export default class AirConditioner extends baseDevice {
     }
 
     // more feature
-    if (device.model === 'RAC_056905_WW' && this.serviceSwitch) {
+    if (this.jetModeModels.includes(device.model) && this.serviceSwitch) {
       this.serviceSwitch.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.wMode.jet']);
     }
   }
@@ -187,20 +189,17 @@ export default class AirConditioner extends baseDevice {
 
   async setTargetState(value: CharacteristicValue) {
     this.platform.log.debug('Set target AC mode = ', value);
-    // temporarily disable, revert to old value in 0.2s
-    setTimeout(() => {
-      this.updateAccessoryCharacteristic(this.accessory.context.device);
-    }, 200);
-    /*const {
+    const {
       Characteristic: {
         TargetHeaterCoolerState,
       },
     } = this.platform;
 
-    const device: Device = this.accessory.context.device;
-    const opMode = value === TargetHeaterCoolerState.HEAT ? 4 : 0;
-    await this.setOpMode(opMode);
-    */
+    if (value === TargetHeaterCoolerState.HEAT && ![1, 4, 6].includes(this.Status.opMode)) {
+      await this.setOpMode(4);
+    } else if (value === TargetHeaterCoolerState.COOL && ![0, 6].includes(this.Status.opMode)) {
+      await this.setOpMode(0);
+    }
   }
 
   async setActive(value: CharacteristicValue) {

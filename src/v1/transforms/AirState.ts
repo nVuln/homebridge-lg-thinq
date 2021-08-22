@@ -97,13 +97,13 @@ Debug - AC decoded data:  {
 export default function AirState(deviceModel: DeviceModel, monitorData) {
   const decodedMonitor = deviceModel.decodeMonitor(monitorData);
   const airState = {
-    'airState.opMode': (decodedMonitor['OpMode'] || 0) as number,
+    'airState.opMode': parseInt(decodedMonitor['OpMode'] || '0') as number,
     'airState.operation': loopupEnum(deviceModel, decodedMonitor, 'Operation') !== ACOperation.OFF,
-    'airState.tempState.current': (decodedMonitor['TempCur'] || 0) as number,
-    'airState.tempState.target': (decodedMonitor['TempCfg'] || 0) as number,
-    'airState.windStrength': (decodedMonitor['WindStrength'] || 0) as number,
-    'airState.wDir.vStep': (decodedMonitor['WDirVStep'] || 0) as number,
-    'airState.wDir.hStep': (decodedMonitor['WDirHStep'] || 0) as number,
+    'airState.tempState.current': parseInt(decodedMonitor['TempCur'] || '0') as number,
+    'airState.tempState.target': parseInt(decodedMonitor['TempCfg'] || '0') as number,
+    'airState.windStrength': parseInt(decodedMonitor['WindStrength'] || '0') as number,
+    'airState.wDir.vStep': parseInt(decodedMonitor['WDirVStep'] || '0') as number,
+    'airState.wDir.hStep': parseInt(decodedMonitor['WDirHStep'] || '0') as number,
 
     'airState.quality.overall': 0, // unknown
   };
