@@ -1,4 +1,4 @@
-import {DeviceModel} from '../../lib/DeviceModel';
+import {DeviceModel, RangeValue} from '../../lib/DeviceModel';
 import {loopupEnum} from '../helper';
 
 export enum ACOperation {
@@ -104,24 +104,26 @@ export default function AirState(deviceModel: DeviceModel, monitorData) {
     'airState.windStrength': parseInt(decodedMonitor['WindStrength'] || '0') as number,
     'airState.wDir.vStep': parseInt(decodedMonitor['WDirVStep'] || '0') as number,
     'airState.wDir.hStep': parseInt(decodedMonitor['WDirHStep'] || '0') as number,
-
-    'airState.quality.overall': 0, // unknown
   };
 
+  // eslint-disable-next-line max-len
+  airState['airState.tempState.current'] = Math.max(airState['airState.tempState.current'], (deviceModel.value('TempCur') as RangeValue).min);
+  airState['airState.tempState.target'] = Math.max(airState['airState.tempState.target'], (deviceModel.value('TempCfg') as RangeValue).min);
+
   if (decodedMonitor['SensorMon']) {
-    airState['airState.quality.sensorMon'] = decodedMonitor['SensorMon'] || 0;
+    airState['airState.quality.sensorMon'] = parseInt(decodedMonitor['SensorMon']);
   }
 
   if (decodedMonitor['SensorPM1']) {
-    airState['airState.quality.PM1'] = decodedMonitor['SensorPM1'];
+    airState['airState.quality.PM1'] = parseInt(decodedMonitor['SensorPM1']);
   }
 
   if (decodedMonitor['SensorPM2']) {
-    airState['airState.quality.PM2'] = decodedMonitor['SensorPM2'] || 0;
+    airState['airState.quality.PM2'] = parseInt(decodedMonitor['SensorPM2']);
   }
 
   if (decodedMonitor['SensorPM10']) {
-    airState['airState.quality.PM10'] = decodedMonitor['SensorPM10'];
+    airState['airState.quality.PM10'] = parseInt(decodedMonitor['SensorPM10']);
   }
 
   return airState;

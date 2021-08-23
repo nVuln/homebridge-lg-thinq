@@ -155,9 +155,15 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       try {
         ThinQ.devices().then(async (devices) => {
           for (let device of devices) {
+            // device not enabled, skip it
+            if (this.config.devices.length && !this.config.devices.find(enabled => enabled.id === device.id)) {
+              continue;
+            }
+
             if (this.enable_thinq1) {
               device = await ThinQ.pollMonitor(device);
             }
+
             this.events.emit(device.id, device);
           }
         });
