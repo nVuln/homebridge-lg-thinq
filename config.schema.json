@@ -165,6 +165,14 @@
 			"condition": {
 			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
 			}
+		  },
+		  "ac_fan_control": {
+			"title": "Enable separate fan control",
+			"type": "boolean",
+			"default": false,
+			"condition": {
+			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
+			}
 		  }
 		}
 	  }
