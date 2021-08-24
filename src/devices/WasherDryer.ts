@@ -20,7 +20,7 @@ export default class WasherDryer extends baseDevice {
 
     const {
       Service: {
-        StatelessProgrammableSwitch,
+        OccupancySensor,
         LockMechanism,
         Valve,
       },
@@ -66,20 +66,11 @@ export default class WasherDryer extends baseDevice {
       this.serviceDoorLock.addLinkedService(this.serviceWasherDryer);
     }
 
-    /*if (this.config?.washer_trigger as boolean) {
-      this.serviceEventFinished = accessory.getService(StatelessProgrammableSwitch)
-        || accessory.addService(StatelessProgrammableSwitch, device.name + ' - Program Finished');
-      this.serviceEventFinished.getCharacteristic(Characteristic.ProgrammableSwitchEvent)
-        .setProps({
-          minValue: Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS,
-          maxValue: Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS,
-          validValues: [Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS],
-        });
-      this.serviceEventFinished.updateCharacteristic(Characteristic.ServiceLabelIndex, 3);
-    }*/
-    const serviceEvent = accessory.getService(StatelessProgrammableSwitch);
-    if (serviceEvent) {
-      accessory.removeService(serviceEvent);
+    if (this.config.washer_trigger as boolean) {
+      this.serviceEventFinished = accessory.getService(OccupancySensor)
+        || accessory.addService(OccupancySensor, device.name + ' - Program Finished');
+      // eslint-disable-next-line max-len
+      this.serviceEventFinished.updateCharacteristic(Characteristic.OccupancyDetected, Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED);
     }
 
     this.updateAccessoryCharacteristic(device);
@@ -101,11 +92,11 @@ export default class WasherDryer extends baseDevice {
       return;
     }
 
-    this.isRunning = this.Status.isRunning;
     const {
       Characteristic,
       Characteristic: {
         LockCurrentState,
+        OccupancyDetected,
       },
     } = this.platform;
     this.serviceWasherDryer.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
@@ -118,12 +109,22 @@ export default class WasherDryer extends baseDevice {
       this.serviceDoorLock.updateCharacteristic(Characteristic.LockTargetState, this.Status.isDoorLocked ? 1 : 0);
     }
 
-    /*if (this.config?.washer_trigger as boolean && this.serviceEventFinished) {
-      if (this.isRunning && !this.Status.isRunning && this.Status.remainDuration <= 0) {
-        const SINGLE = Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS;
-        this.serviceEventFinished.updateCharacteristic(Characteristic.ProgrammableSwitchEvent, SINGLE);
+    if (this.config.washer_trigger as boolean && this.serviceEventFinished) {
+      if (this.Status.isRunning && !this.isRunning) {
+        this.isRunning = true; // marked device as running
+        this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_NOT_DETECTED);
+      } else if (!this.Status.isRunning && this.isRunning) {
+        // device may stopped now, put a trigger event
+        this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_DETECTED);
+        this.isRunning = false; // marked device as not running
       }
-    }*/
+    }
+  }
+
+  public get config() {
+    return Object.assign({}, {
+      washer_trigger: false,
+    }, super.config);
   }
 }
 
@@ -156,11 +157,12 @@ export class WasherDryerStatus {
       return 0;
     }
 
-    if (!('remainTimeHour' in this.data)) {
-      this.data.remainTimeHour = 0;
-    }
+    const {
+      remainTimeHour = 0,
+      remainTimeMinute = 0,
+    } = this.data;
 
-    const stopTime = this.data.remainTimeHour * 3600 + this.data.remainTimeMinute * 60;
+    const stopTime = remainTimeHour * 3600 + remainTimeMinute * 60;
 
     if (!this.accessory.stopTime || Math.abs(stopTime - this.accessory.stopTime) > 120 /* 2 min different */) {
       this.accessory.stopTime = stopTime;
