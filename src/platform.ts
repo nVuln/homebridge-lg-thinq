@@ -49,6 +49,10 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
     // to start discovery of new accessories.
     this.api.on('didFinishLaunching', async () => {
       this.log.debug('Executed didFinishLaunching callback');
+
+      // remove cached devices
+      this.removeAccessories();
+
       // run the method to discover / register your devices as accessories
       await this.discoverDevices();
     });
@@ -142,6 +146,12 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
     }
 
     this.startMonitor();
+  }
+
+  removeAccessories() {
+    this.log.debug('Removing all cached accessories');
+    this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, this.accessories);
+    this.accessories.splice(0, this.accessories.length);
   }
 
   protected startMonitor() {
