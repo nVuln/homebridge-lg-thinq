@@ -77,6 +77,7 @@
 			"title": "Device Type",
 			"type": "string",
 			"enum": [
+			  "AC",
 			  "WASHER",
 			  "WASHER_NEW",
 			  "WASH_TOWER",
@@ -95,6 +96,82 @@
 			"type": "boolean",
 			"condition": {
 			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['WASHER','WASHER_NEW', 'WASH_TOWER'].includes(model.devices[arrayIndices].type);"
+			}
+		  },
+		  "ac_air_quality": {
+			"title": "Enable Air Quality",
+			"description": "if your device supported Air Quality sensor",
+			"type": "boolean",
+			"condition": {
+			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
+			}
+		  },
+		  "ac_mode": {
+			"title": "AC Mode (Heating or Cooling or Both)",
+			"type": "string",
+			"default": "BOTH",
+			"oneOf": [
+			  {
+				"title": "Both Heating and Cooling mode",
+				"enum": ["BOTH"]
+			  },
+			  {
+				"title": "Cooling mode only",
+				"enum": ["COOLING"]
+			  },
+			  {
+				"title": "Heating mode only",
+				"enum": ["HEATING"]
+			  }
+			],
+			"condition": {
+			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
+			}
+		  },
+		  "ac_swing_mode": {
+			"title": "Swing Mode (vertical or horizontal)",
+			"type": "string",
+			"default": "BOTH",
+			"oneOf": [
+			  {
+				"title": "Both vertical and horizontal swing",
+				"enum": ["BOTH"]
+			  },
+			  {
+				"title": "Vertical swing only",
+				"enum": ["VERTICAL"]
+			  },
+			  {
+				"title": "Horizontal swing only",
+				"enum": ["HORIZONTAL"]
+			  }
+			],
+			"condition": {
+			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
+			}
+		  },
+		  "ac_temperature_sensor": {
+			"title": "Current temperature as sensor",
+			"type": "boolean",
+			"default": false,
+			"condition": {
+			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
+			}
+		  },
+		  "ac_led_control": {
+			"title": "Enable led panel control",
+			"type": "boolean",
+			"default": false,
+			"condition": {
+			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
+			}
+		  },
+		  "ac_fan_control": {
+			"title": "Enable separate fan control",
+			"type": "boolean",
+			"default": false,
+			"condition": {
+			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
 			}
 		  }
 		}
