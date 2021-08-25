@@ -32,12 +32,10 @@ export default class Refrigerator extends baseDevice {
     this.serviceLabel.setCharacteristic(Characteristic.ServiceLabelNamespace, Characteristic.ServiceLabelNamespace.DOTS);
 
     this.serviceFridge = this.createThermostat('Fridge', 'fridgeTemp');
-    this.serviceFridge.updateCharacteristic(Characteristic.ServiceLabelIndex, 1);
     this.serviceFridge.updateCharacteristic(Characteristic.TargetTemperature, this.Status.fridgeTemperature);
     this.serviceFridge.addLinkedService(this.serviceLabel);
 
     this.serviceFreezer = this.createThermostat('Freezer', 'freezerTemp');
-    this.serviceFreezer.updateCharacteristic(Characteristic.ServiceLabelIndex, 2);
     this.serviceFreezer.updateCharacteristic(Characteristic.TargetTemperature, this.Status.freezerTemperature);
     this.serviceFreezer.addLinkedService(this.serviceLabel);
 
