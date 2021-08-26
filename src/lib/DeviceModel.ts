@@ -214,7 +214,7 @@ export class DeviceModel {
       for (let i = item.startByte; i < item.startByte + item.length; i++) {
         const v = data[i];
         value = (value << 8) + v;
-        decoded[key] = String(value);
+        decoded[key] = isNaN(value) ? null : String(value);
       }
     }
 
