@@ -25,7 +25,7 @@ export default class Helper {
   /**
    * transform device from thinq1 to thinq2 compatible (with snapshot data)
    */
-  public static transform(device: Device, deviceModel: DeviceModel, monitorData) {
+  public static transform(device: Device, monitorData) {
     if (device.type === PlatformType.ThinQ2) {
       return device;
     }
@@ -33,13 +33,13 @@ export default class Helper {
     switch (device.type) {
       case 'DRYER':
       case 'WASHER':
-        device.data.snapshot = WasherDryer(deviceModel, monitorData || {});
+        device.data.snapshot = WasherDryer(device.deviceModel, monitorData || {});
         break;
       case 'AC':
-        device.data.snapshot = AirState(deviceModel, monitorData || {});
+        device.data.snapshot = AirState(device.deviceModel, monitorData || {});
         break;
       case 'REFRIGERATOR':
-        device.data.snapshot = RefState(deviceModel, monitorData || {});
+        device.data.snapshot = RefState(device.deviceModel, monitorData || {});
         break;
       default:
         // return original device data if not supported

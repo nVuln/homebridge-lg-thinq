@@ -25,10 +25,13 @@ export class API {
   protected username!: string;
   protected password!: string;
 
+  public request: typeof requestClient;
+
   constructor(
     protected country: string = 'US',
     protected language: string = 'en-US',
   ) {
+    this.request = requestClient;
   }
 
   protected get monitorHeaders() {
@@ -111,10 +114,6 @@ export class API {
     }
 
     return devices;
-  }
-
-  public async getDeviceModelInfo(device) {
-    return await requestClient.get(device.modelJsonUri).then(res => res.data);
   }
 
   public async getListHomes() {

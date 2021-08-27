@@ -174,6 +174,11 @@ export class ThinQ {
       return await this.api.sendCommandToDevice(id, values, command, ctrlKey);
     } catch (err) {
       if (err.response) {
+        // submitted same value
+        if (err.response.data.resultCode === '0103') {
+          return false;
+        }
+
         this.log.error(err.response);
       } else {
         this.log.error(err);
