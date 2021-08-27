@@ -4,15 +4,19 @@ import {LGThinQHomebridgePlatform} from '../platform';
 import {Device} from './Device';
 import {PlatformType} from './constants';
 import * as uuid from 'uuid';
+import * as NodePersist from 'node-persist';
+import * as Path from 'path';
 import {DeviceModel} from './DeviceModel';
 import Helper from '../v1/helper';
 import {NotConnectedError, ManualProcessNeeded, MonitorError, TokenExpiredError} from '../errors';
+import {PLUGIN_NAME} from '../settings';
 export type WorkId = typeof uuid['v4'];
 
 export class ThinQ {
   protected api: API;
   protected workIds: Record<string, WorkId> = {};
   protected deviceModel: Record<string, DeviceModel> = {};
+  protected persist;
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
     public readonly config: PlatformConfig,
@@ -25,6 +29,10 @@ export class ThinQ {
     } else if (config.username && config.password) {
       this.api.setUsernamePassword(config.username, config.password);
     }
+
+    this.persist = NodePersist.create({
+      dir: Path.join(this.platform.api.user.storagePath(), PLUGIN_NAME, 'persist', 'devices'),
+    });
   }
 
   public async devices() {
@@ -63,21 +71,26 @@ export class ThinQ {
     });
   }
 
+  public async loadDeviceModel(device: Device) {
+    let deviceModel = await this.persist.getItem(device.id);
+    if (!deviceModel) {
+      this.log.debug('[' + device.id + '] Device model cache missed.');
+      try {
+        deviceModel = await this.api.request.get(device.data.modelJsonUri).then(res => res.data);
+        await this.persist.setItem(device.id, deviceModel);
+      } catch (err) {
+        this.log.error('['+ device.id +'] Unable to get device model - ', err);
+        return false;
+      }
+    }
+
+    this.deviceModel[device.id] = device.deviceModel = new DeviceModel(deviceModel);
+  }
+
   public async startMonitor(device: Device, retry = false) {
     try {
       await this.api.ready();
-      if (!(device.id in this.deviceModel)) {
-        try {
-          this.deviceModel[device.id] = await this.api.getDeviceModelInfo(device.data).then(modelInfo => {
-            return new DeviceModel(modelInfo);
-          });
-        } catch (err) {
-          this.log.error('Unable to get device model ', device.id, ' - ', err);
-          return false;
-        }
-      }
-
-      device.deviceModel = this.deviceModel[device.id];
+      await this.loadDeviceModel(device);
 
       if (device.platform === PlatformType.ThinQ1) {
         this.workIds[device.id] = await this.api.sendMonitorCommand(device.id, 'Start', uuid.v4()).then(data => data.workId);
@@ -111,6 +124,10 @@ export class ThinQ {
   }
 
   public async pollMonitor(device: Device) {
+    if (!device.deviceModel) {
+      device.deviceModel = this.deviceModel[device.id];
+    }
+
     if (device.platform === PlatformType.ThinQ1) {
       let result: any = null;
       try {
@@ -143,7 +160,7 @@ export class ThinQ {
         }
       }
 
-      return Helper.transform(device, this.deviceModel[device.id], result);
+      return Helper.transform(device, result);
     }
 
     return device;
@@ -188,6 +205,7 @@ export class ThinQ {
 
   public async isReady() {
     try {
+      await this.persist.init();
       await this.api.ready();
       return true;
     } catch (err) {
