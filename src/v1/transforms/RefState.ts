@@ -14,7 +14,7 @@ export default function RefState(deviceModel: DeviceModel, monitorData) {
       freezerTemp: decodedMonitor['TempFreezer'] || deviceModel.default('TempFreezer') || '0',
       // eslint-disable-next-line max-len
       atLeastOneDoorOpen: lookupEnumIndex(DoorOpenState, loopupEnum(deviceModel, decodedMonitor, 'DoorOpenState') || deviceModel.default('DoorOpenState')),
-      tempUnit: decodedMonitor['TempUnit'] as number || 1,
+      tempUnit: parseInt(decodedMonitor['TempUnit'] || deviceModel.default('TempUnit')) ? 'CELSIUS' : 'FAHRENHEIT',
     },
   };
 
@@ -32,7 +32,7 @@ export default function RefState(deviceModel: DeviceModel, monitorData) {
   snapshot.refState.freezerTemp = parseInt(snapshot.refState.freezerTemp);
 
   if ('ExpressFridge' in decodedMonitor) {
-    snapshot.refState['expressFridge'] = decodedMonitor['ExpressFridge'] as number;
+    snapshot.refState['expressFridge'] = parseInt(decodedMonitor['ExpressFridge']);
   }
 
   return snapshot;

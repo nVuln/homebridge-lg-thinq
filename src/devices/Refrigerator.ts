@@ -78,8 +78,10 @@ export default class Refrigerator extends baseDevice {
     const {Characteristic} = this.platform;
 
     this.serviceFreezer.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.freezerTemperature);
+    this.serviceFreezer.updateCharacteristic(Characteristic.TargetTemperature, this.Status.freezerTemperature);
 
     this.serviceFridge.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.fridgeTemperature);
+    this.serviceFridge.updateCharacteristic(Characteristic.TargetTemperature, this.Status.fridgeTemperature);
 
     const contactSensorValue = this.Status.isDoorClosed ?
       Characteristic.ContactSensorState.CONTACT_DETECTED : Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
@@ -175,7 +177,7 @@ export default class Refrigerator extends baseDevice {
       });
 
     service.getCharacteristic(Characteristic.TargetTemperature)
-      .onSet((value: CharacteristicValue) => { // value in celsius
+      .onSet(async (value: CharacteristicValue) => { // value in celsius
         let indexValue;
         if (this.Status.tempUnit === 'FAHRENHEIT') {
           indexValue = device.deviceModel.lookupMonitorName(key + '_F', cToF(value as number).toString());
@@ -187,21 +189,26 @@ export default class Refrigerator extends baseDevice {
           throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.INVALID_VALUE_IN_REQUEST);
         }
 
-        this.platform.ThinQ?.deviceControl(device.id, {
-          dataKey: null,
-          dataValue: null,
-          dataSetList: {
-            refState: {
-              [key]: parseInt(indexValue),
-              tempUnit: this.Status.tempUnit,
-            },
-          },
-          dataGetList: null,
-        });
+        await this.setTemperature(key, indexValue);
       })
       .setProps({minValue: Math.min(...values), maxValue: Math.max(...values), minStep: isCelsius ? 1 : 0.1});
 
     return service;
+  }
+
+  async setTemperature(key: string, temp: string) {
+    const device: Device = this.accessory.context.device;
+    await this.platform.ThinQ?.deviceControl(device.id, {
+      dataKey: null,
+      dataValue: null,
+      dataSetList: {
+        refState: {
+          [key]: parseInt(temp),
+          tempUnit: this.Status.tempUnit,
+        },
+      },
+      dataGetList: null,
+    });
   }
 }
 

@@ -9,26 +9,12 @@ export default class Refrigerator extends RefrigeratorV2 {
       freezerTemp: 'TempFreezer',
     };
 
-    const {Characteristic} = this.platform;
-    const serviceThermostat = super.createThermostat(name, keyMap[key] || key);
-    serviceThermostat.getCharacteristic(Characteristic.TargetTemperature)
-      .onSet((value: CharacteristicValue) => {
-        const device: Device = this.accessory.context.device;
-        let indexValue;
-        if (this.Status.tempUnit === 'FAHRENHEIT') {
-          indexValue = device.deviceModel.enumValue(key + '_F', cToF(value as number).toString());
-        } else {
-          indexValue = device.deviceModel.enumValue(key + '_C', value.toString());
-        }
+    return super.createThermostat(name, keyMap[key]);
+  }
 
-        if (!indexValue) {
-          throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.INVALID_VALUE_IN_REQUEST);
-        }
-
-        this.platform.ThinQ?.thinq1DeviceControl(device.id, keyMap[key], indexValue);
-      });
-
-    return serviceThermostat;
+  async setTemperature(key: string, temp: string) {
+    const device: Device = this.accessory.context.device;
+    await this.platform.ThinQ?.thinq1DeviceControl(device.id, key, temp);
   }
 
   async setExpressFridge(value: CharacteristicValue) {
@@ -63,9 +49,5 @@ export class Status extends RefrigeratorStatus {
 
   public get isExpressFridgeOn() {
     return this.data?.expressFridge === this.deviceModel.lookupMonitorName('ExpressFridge', '@CP_ON_EN_W');
-  }
-
-  public get tempUnit() {
-    return this.data?.tempUnit ? 'CELSIUS' : 'FAHRENHEIT';
   }
 }
