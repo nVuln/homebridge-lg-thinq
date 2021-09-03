@@ -483,19 +483,25 @@ export default class AirConditioner extends baseDevice {
     }
 
     const targetTemperatureValue = device.deviceModel.value('airState.tempState.target') as RangeValue;
+    if (targetTemperatureValue) {
+      this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
+        .setProps({
+          minValue: targetTemperatureValue.min,
+          maxValue: targetTemperatureValue.max,
+          minStep: 1,
+        });
+
+      this.service.getCharacteristic(Characteristic.HeatingThresholdTemperature)
+        .setProps({
+          minValue: targetTemperatureValue.min,
+          maxValue: targetTemperatureValue.max,
+          minStep: 1,
+        });
+    }
+
     this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
-      .setProps({
-        minValue: targetTemperatureValue.min,
-        maxValue: targetTemperatureValue.max,
-        minStep: 1,
-      })
       .onSet(this.setTargetTemperature.bind(this));
     this.service.getCharacteristic(Characteristic.HeatingThresholdTemperature)
-      .setProps({
-        minValue: targetTemperatureValue.min,
-        maxValue: targetTemperatureValue.max,
-        minStep: 1,
-      })
       .onSet(this.setTargetTemperature.bind(this));
 
     this.service.getCharacteristic(Characteristic.RotationSpeed)
