@@ -21,12 +21,12 @@ assignees: ''
 **Logs:**
 
 ```
-Show the Homebridge logs here (make sure DEBUG mode in `on`), remove any sensitive information.
+Show the Homebridge logs here (make sure homebridge DEBUG mode is turned `on`), remove any sensitive information.
 ```
 
 **Plugin Config:**
 
-```json
+```
 Show your Homebridge config.json here, remove any sensitive information.
 ```
 

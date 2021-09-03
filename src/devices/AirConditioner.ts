@@ -31,7 +31,6 @@ export default class AirConditioner extends baseDevice {
     super(platform, accessory);
 
     const device: Device = this.accessory.context.device;
-    platform.log.info('AC still in development.If you got problem,plz report at https://github.com/nVuln/homebridge-lg-thinq/issues');
 
     const {
       Service: {
