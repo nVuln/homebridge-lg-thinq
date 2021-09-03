@@ -142,10 +142,10 @@ export default class Dehumidifier extends baseDevice {
     this.serviceDehumidifier.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
     this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentRelativeHumidity, this.Status.humidityCurrent);
     this.serviceDehumidifier.updateCharacteristic(Characteristic.RelativeHumidityDehumidifierThreshold, this.Status.humidityTarget);
-    const currentState = this.Status.isDehumidifying ? DEHUMIDIFYING : (this.Status.isPowerOn ? IDLE : INACTIVE);
+    const currentState = this.Status.isPowerOn ? (this.Status.isDehumidifying ? DEHUMIDIFYING : IDLE) : INACTIVE;
     this.serviceDehumidifier.updateCharacteristic(Characteristic.CurrentHumidifierDehumidifierState, currentState);
-
     this.serviceDehumidifier.updateCharacteristic(Characteristic.RotationSpeed, this.Status.rotationSpeed);
+    this.serviceDehumidifier.updateCharacteristic(Characteristic.WaterLevel, this.Status.isWaterTankFull ? 100 : 0);
 
     this.serviceHumiditySensor.updateCharacteristic(Characteristic.CurrentRelativeHumidity, this.Status.humidityCurrent);
     this.serviceHumiditySensor.updateCharacteristic(Characteristic.StatusActive, this.Status.isPowerOn);
@@ -172,7 +172,7 @@ export class DehumidifierStatus {
   }
 
   public get isDehumidifying() {
-    return this.isPowerOn && [17, 18, 19].includes(this.opMode);
+    return [17, 18, 19, 21].includes(this.opMode) && this.humidityCurrent >= this.humidityTarget;
   }
 
   public get humidityCurrent() {
@@ -186,5 +186,9 @@ export class DehumidifierStatus {
   public get rotationSpeed() {
     const index = Object.keys(RotateSpeed).indexOf(parseInt(this.data['airState.windStrength']).toString());
     return index !== -1 ? index + 1 : Object.keys(RotateSpeed).length / 2;
+  }
+
+  public get isWaterTankFull() {
+    return !!this.data['airState.notificationExt'];
   }
 }
