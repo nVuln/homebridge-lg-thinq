@@ -98,6 +98,14 @@
 			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['WASHER','WASHER_NEW', 'WASH_TOWER'].includes(model.devices[arrayIndices].type);"
 			}
 		  },
+          "washer_door_lock": {
+            "title": "Enable washer door lock status",
+            "type": "boolean",
+            "default": true,
+            "condition": {
+              "functionBody": "return model.devices && model.devices[arrayIndices] && ['WASHER','WASHER_NEW', 'WASH_TOWER'].includes(model.devices[arrayIndices].type);"
+            }
+          },
 		  "ac_air_quality": {
 			"title": "Enable Air Quality",
 			"description": "if your device supported Air Quality sensor",

@@ -50,7 +50,7 @@ export default class WasherDryer extends baseDevice {
     });
 
     // onlu thinq2 support door lock status
-    if (device.platform === PlatformType.ThinQ2 && 'doorLock' in device.snapshot?.washerDryer) {
+    if (this.config.washer_door_lock && device.platform === PlatformType.ThinQ2 && 'doorLock' in device.snapshot?.washerDryer) {
       this.serviceDoorLock = accessory.getService(LockMechanism) || accessory.addService(LockMechanism, device.name + ' - Door');
       this.serviceDoorLock.getCharacteristic(Characteristic.LockCurrentState)
         .onSet(this.setActive.bind(this))
@@ -103,7 +103,7 @@ export default class WasherDryer extends baseDevice {
     this.serviceWasherDryer.updateCharacteristic(Characteristic.InUse, this.Status.isRunning ? 1 : 0);
     this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
 
-    if (this.serviceDoorLock) {
+    if (this.config.washer_door_lock && this.serviceDoorLock) {
       // eslint-disable-next-line max-len
       this.serviceDoorLock.updateCharacteristic(LockCurrentState, this.Status.isDoorLocked ? LockCurrentState.SECURED : LockCurrentState.UNSECURED);
       this.serviceDoorLock.updateCharacteristic(Characteristic.LockTargetState, this.Status.isDoorLocked ? 1 : 0);
@@ -124,6 +124,7 @@ export default class WasherDryer extends baseDevice {
   public get config() {
     return Object.assign({}, {
       washer_trigger: false,
+      washer_door_lock: true,
     }, super.config);
   }
 }
