@@ -104,11 +104,23 @@ export default function AirState(deviceModel: DeviceModel, monitorData) {
     'airState.windStrength': parseInt(decodedMonitor['WindStrength'] || '0') as number,
     'airState.wDir.vStep': parseInt(decodedMonitor['WDirVStep'] || '0') as number,
     'airState.wDir.hStep': parseInt(decodedMonitor['WDirHStep'] || '0') as number,
+    'airState.circulate.rotate': parseInt(decodedMonitor['CirculateDir']),
+    'airState.lightingState.signal': parseInt(decodedMonitor['SignalLighting']),
   };
 
-  // eslint-disable-next-line max-len
-  airState['airState.tempState.current'] = Math.max(airState['airState.tempState.current'], (deviceModel.value('TempCur') as RangeValue).min);
-  airState['airState.tempState.target'] = Math.max(airState['airState.tempState.target'], (deviceModel.value('TempCfg') as RangeValue).min);
+  if (deviceModel.value('TempCur')) {
+    // eslint-disable-next-line max-len
+    airState['airState.tempState.current'] = Math.max(airState['airState.tempState.current'], (deviceModel.value('TempCur') as RangeValue).min);
+  }
+
+  if (deviceModel.value('TempCfg')) {
+    // eslint-disable-next-line max-len
+    airState['airState.tempState.target'] = Math.max(airState['airState.tempState.target'], (deviceModel.value('TempCfg') as RangeValue).min);
+  }
+
+  if (decodedMonitor['TotalAirPolution']) {
+    airState['airState.quality.overall'] = parseInt(decodedMonitor['TotalAirPolution']);
+  }
 
   if (decodedMonitor['SensorMon']) {
     airState['airState.quality.sensorMon'] = parseInt(decodedMonitor['SensorMon']);

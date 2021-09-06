@@ -178,6 +178,10 @@ export class API {
           return null;
         }
 
+        if (workList.format !== 'B64') {
+          console.debug(workList);
+        }
+
         return Buffer.from(workList.returnData, 'base64');
       });
   }

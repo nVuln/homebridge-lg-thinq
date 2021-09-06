@@ -6,6 +6,7 @@ import WasherDryer from './transforms/WasherDryer';
 import {Washer, AC} from './devices';
 import RefState from './transforms/RefState';
 import Refrigerator from './devices/Refrigerator';
+import AirPurifier from './devices/AirPurifier';
 
 export default class Helper {
   public static make(device: Device) {
@@ -17,6 +18,7 @@ export default class Helper {
       case 'WASHER': return Washer;
       case 'AC': return AC;
       case 'REFRIGERATOR': return Refrigerator;
+      case 'AIR_PURIFIER': return AirPurifier;
     }
 
     return null;
@@ -35,6 +37,7 @@ export default class Helper {
       case 'WASHER':
         device.data.snapshot = WasherDryer(device.deviceModel, monitorData || {});
         break;
+      case 'AIR_PURIFIER':
       case 'AC':
         device.data.snapshot = AirState(device.deviceModel, monitorData || {});
         break;

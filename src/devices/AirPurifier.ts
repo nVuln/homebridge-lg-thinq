@@ -3,7 +3,7 @@ import {CharacteristicValue, PlatformAccessory, Service} from 'homebridge';
 import {Device} from '../lib/Device';
 import {baseDevice} from '../baseDevice';
 
-enum RotateSpeed {
+export enum RotateSpeed {
   LOW = 2,
   MEDIUM = 4,
   HIGH = 6,
@@ -107,7 +107,7 @@ export default class AirPurifier extends baseDevice {
     this.platform.log.debug('Set Rotation Speed ->', value);
     const device: Device = this.accessory.context.device;
     const values = Object.keys(RotateSpeed);
-    const windStrength = parseInt(values[Math.round((value as number)) - 1]) || 8;
+    const windStrength = parseInt(values[Math.round((value as number)) - 1]) || RotateSpeed.EXTRA;
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.windStrength',
       dataValue: windStrength,
@@ -135,7 +135,7 @@ export default class AirPurifier extends baseDevice {
 
   async setLight(value: CharacteristicValue) {
     if (!this.Status.isPowerOn) {
-      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.NOT_ALLOWED_IN_CURRENT_STATE);
+      return;
     }
 
     const device: Device = this.accessory.context.device;
@@ -171,11 +171,10 @@ export default class AirPurifier extends baseDevice {
     this.serviceAirPurifier.updateCharacteristic(Characteristic.RotationSpeed, this.Status.rotationSpeed);
 
     // airState.quality.sensorMon = 1 mean sensor always running even device not running
-    if (this.Status.isPowerOn || device.snapshot['airState.quality.sensorMon'] as boolean) {
-      this.serviceAirQuality.updateCharacteristic(Characteristic.AirQuality, this.Status.airQuality.overall);
-      this.serviceAirQuality.updateCharacteristic(Characteristic.PM2_5Density, this.Status.airQuality.PM2);
-      this.serviceAirQuality.updateCharacteristic(Characteristic.PM10Density, this.Status.airQuality.PM10);
-    }
+    this.serviceAirQuality.updateCharacteristic(Characteristic.AirQuality, this.Status.airQuality.overall);
+    this.serviceAirQuality.updateCharacteristic(Characteristic.PM2_5Density, this.Status.airQuality.PM2);
+    this.serviceAirQuality.updateCharacteristic(Characteristic.PM10Density, this.Status.airQuality.PM10);
+    this.serviceAirQuality.updateCharacteristic(Characteristic.StatusActive, this.Status.airQuality.isOn);
 
     this.serviceLight.updateCharacteristic(Characteristic.On, this.Status.isLightOn);
   }
@@ -199,6 +198,7 @@ export class AirPurifierStatus {
 
   public get airQuality() {
     return {
+      isOn: this.isPowerOn || !!this.data['airState.quality.sensorMon'],
       overall: parseInt(this.data['airState.quality.overall']),
       PM2: parseInt(this.data['airState.quality.PM2'] || '0'),
       PM10: parseInt(this.data['airState.quality.PM10'] || '0'),
@@ -207,7 +207,7 @@ export class AirPurifierStatus {
 
   public get rotationSpeed() {
     const index = Object.keys(RotateSpeed).indexOf(parseInt(this.data['airState.windStrength']).toString());
-    return index !== -1 ? index + 1 : 4;
+    return index !== -1 ? index + 1 : Object.keys(RotateSpeed).length / 2;
   }
 
   public get isNormalMode() {
