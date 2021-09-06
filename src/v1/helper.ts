@@ -3,10 +3,8 @@ import {PlatformType} from '../lib/constants';
 import {DeviceModel} from '../lib/DeviceModel';
 import AirState from './transforms/AirState';
 import WasherDryer from './transforms/WasherDryer';
-import {Washer, AC} from './devices';
+import {Washer, AC, Refrigerator, AirPurifier} from './devices';
 import RefState from './transforms/RefState';
-import Refrigerator from './devices/Refrigerator';
-import AirPurifier from './devices/AirPurifier';
 
 export default class Helper {
   public static make(device: Device) {

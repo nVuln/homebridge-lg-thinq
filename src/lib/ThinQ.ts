@@ -9,6 +9,7 @@ import * as Path from 'path';
 import {DeviceModel} from './DeviceModel';
 import Helper from '../v1/helper';
 import {NotConnectedError, ManualProcessNeeded, MonitorError, TokenExpiredError} from '../errors';
+import axios from 'axios';
 import {PLUGIN_NAME} from '../settings';
 export type WorkId = typeof uuid['v4'];
 
@@ -43,7 +44,7 @@ export class ThinQ {
     } catch (err) {
       if (err instanceof NotConnectedError) {
         return [];
-      } else if (err.response?.data?.resultCode === '0110') {
+      } else if (axios.isAxiosError(err) && err.response?.data?.resultCode === '0110') {
         this.log.error('Please open the native LG App and sign in to your account to see what happened, '+
           'maybe new agreement need your accept. Then try restarting Homebridge.');
 
@@ -57,7 +58,7 @@ export class ThinQ {
       } catch (err) {
         // write log if error not is network issue
         if (!(err instanceof NotConnectedError)) {
-          this.log.error(err);
+          this.log.error('Unknown Error: ', err);
         }
 
         return [];
@@ -106,7 +107,7 @@ export class ThinQ {
         await this.startMonitor(device, true);
       }
 
-      this.log.error(err);
+      this.log.error('Unknown Error: ', err);
     }
   }
 
@@ -177,10 +178,10 @@ export class ThinQ {
         try {
           return await this.api.sendControlCommand(id, key, value);
         } catch (err) {
-          this.log.error(err);
+          this.log.error('Unknown Error: ', err);
         }
       } else {
-        this.log.error(err);
+        this.log.error('Unknown Error: ', err);
       }
     }
   }
@@ -190,15 +191,15 @@ export class ThinQ {
       await this.api.ready();
       return await this.api.sendCommandToDevice(id, values, command, ctrlKey);
     } catch (err) {
-      if (err.response) {
+      if (axios.isAxiosError(err) && err.response) {
         // submitted same value
         if (err.response.data.resultCode === '0103') {
           return false;
         }
 
-        this.log.error(err.response);
+        this.log.error('Unknown Error: ', err.response);
       } else {
-        this.log.error(err);
+        this.log.error('Unknown Error: ', err);
       }
     }
   }
@@ -209,7 +210,7 @@ export class ThinQ {
       await this.api.ready();
       return true;
     } catch (err) {
-      this.log.error(err);
+      this.log.error('Unknown Error: ', err);
       return false;
     }
   }
