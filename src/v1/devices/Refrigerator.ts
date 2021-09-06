@@ -17,12 +17,28 @@ export default class Refrigerator extends RefrigeratorV2 {
     await this.platform.ThinQ?.thinq1DeviceControl(device.id, key, temp);
   }
 
+  async setExpressMode(value: CharacteristicValue) {
+    const device: Device = this.accessory.context.device;
+    const On = device.deviceModel.enumValue('IcePlus', '@CP_ON_EN_W');
+    const Off = device.deviceModel.enumValue('IcePlus', '@CP_OFF_EN_W');
+
+    this.platform.ThinQ?.thinq1DeviceControl(device.id, 'IcePlus', value ? On : Off);
+  }
+
   async setExpressFridge(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
     const On = device.deviceModel.enumValue('ExpressFridge', '@CP_ON_EN_W');
     const Off = device.deviceModel.enumValue('ExpressFridge', '@CP_OFF_EN_W');
 
     this.platform.ThinQ?.thinq1DeviceControl(device.id, 'ExpressFridge', value ? On : Off);
+  }
+
+  async setEcoFriendly(value: CharacteristicValue) {
+    const device: Device = this.accessory.context.device;
+    const On = device.deviceModel.enumValue('EcoFriendly', '@CP_ON_EN_W');
+    const Off = device.deviceModel.enumValue('EcoFriendly', '@CP_OFF_EN_W');
+
+    this.platform.ThinQ?.thinq1DeviceControl(device.id, 'EcoFriendly', value ? On : Off);
   }
 
   public get Status() {

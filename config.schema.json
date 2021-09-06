@@ -101,7 +101,6 @@
           "washer_door_lock": {
             "title": "Enable washer door lock status",
             "type": "boolean",
-            "default": true,
             "condition": {
               "functionBody": "return model.devices && model.devices[arrayIndices] && ['WASHER','WASHER_NEW', 'WASH_TOWER'].includes(model.devices[arrayIndices].type);"
             }
@@ -117,7 +116,6 @@
 		  "ac_mode": {
 			"title": "AC Mode (Heating or Cooling or Both)",
 			"type": "string",
-			"default": "BOTH",
 			"oneOf": [
 			  {
 				"title": "Both Heating and Cooling mode",
@@ -139,7 +137,6 @@
 		  "ac_swing_mode": {
 			"title": "Swing Mode (vertical or horizontal)",
 			"type": "string",
-			"default": "BOTH",
 			"oneOf": [
 			  {
 				"title": "Both vertical and horizontal swing",
@@ -161,7 +158,6 @@
 		  "ac_temperature_sensor": {
 			"title": "Current temperature as sensor",
 			"type": "boolean",
-			"default": false,
 			"condition": {
 			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
 			}
@@ -169,7 +165,6 @@
 		  "ac_led_control": {
 			"title": "Enable led panel control",
 			"type": "boolean",
-			"default": false,
 			"condition": {
 			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
 			}
@@ -177,11 +172,31 @@
 		  "ac_fan_control": {
 			"title": "Enable separate fan control",
 			"type": "boolean",
-			"default": false,
 			"condition": {
 			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
 			}
-		  }
+		  },
+          "ref_express_freezer": {
+            "title": "Express Freezer / Ice Plus",
+            "type": "boolean",
+            "condition": {
+              "functionBody": "return model.devices && model.devices[arrayIndices] && ['REFRIGERATOR'].includes(model.devices[arrayIndices].type);"
+            }
+          },
+          "ref_express_fridge": {
+            "title": "Express Fridge",
+            "type": "boolean",
+            "condition": {
+              "functionBody": "return model.devices && model.devices[arrayIndices] && ['REFRIGERATOR'].includes(model.devices[arrayIndices].type);"
+            }
+          },
+          "ref_eco_friendly": {
+            "title": "Eco Friendly",
+            "type": "boolean",
+            "condition": {
+              "functionBody": "return model.devices && model.devices[arrayIndices] && ['REFRIGERATOR'].includes(model.devices[arrayIndices].type);"
+            }
+          }
 		}
 	  }
 	}

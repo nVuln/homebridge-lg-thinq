@@ -31,8 +31,16 @@ export default function RefState(deviceModel: DeviceModel, monitorData) {
   snapshot.refState.fridgeTemp = parseInt(snapshot.refState.fridgeTemp);
   snapshot.refState.freezerTemp = parseInt(snapshot.refState.freezerTemp);
 
+  if ('IcePlus' in decodedMonitor) {
+    snapshot.refState['expressMode'] = decodedMonitor['IcePlus'];
+  }
+
   if ('ExpressFridge' in decodedMonitor) {
-    snapshot.refState['expressFridge'] = parseInt(decodedMonitor['ExpressFridge']);
+    snapshot.refState['expressFridge'] = decodedMonitor['ExpressFridge'];
+  }
+
+  if ('EcoFriendly' in decodedMonitor) {
+    snapshot.refState['ecoFriendly'] = decodedMonitor['EcoFriendly'];
   }
 
   return snapshot;
