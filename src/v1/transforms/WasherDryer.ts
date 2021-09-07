@@ -36,8 +36,7 @@ export enum SoilWash {
   SOILWASH_NORMAL = '@WM_FL24_TITAN_SOIL_HEAVY_W'
 }
 
-export default function WasherDryer(deviceModel: DeviceModel, monitorData) {
-  const decodedMonitor = deviceModel.decodeMonitor(monitorData);
+export default function WasherDryer(deviceModel: DeviceModel, decodedMonitor) {
   return {
     washerDryer: {
       state: lookupEnumIndex(WasherState, loopupEnum(deviceModel, decodedMonitor, 'State')) || 'POWEROFF',

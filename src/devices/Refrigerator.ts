@@ -209,7 +209,8 @@ export default class Refrigerator extends baseDevice {
       maxValue: Characteristic.TemperatureDisplayUnits.FAHRENHEIT,
     }).onGet(this.tempUnit.bind(this));
 
-    const values = Object.values(device.deviceModel.monitoringValueMapping(key + '_C'))
+    const valueMapping = device.deviceModel.monitoringValueMapping(key + '_C') || device.deviceModel.monitoringValueMapping(key);
+    const values = Object.values(valueMapping)
       .map(value => {
         if (value && typeof value === 'object' && 'label' in value) {
           return parseInt(value['label'] as string);
@@ -225,9 +226,11 @@ export default class Refrigerator extends baseDevice {
       .onSet(async (value: CharacteristicValue) => { // value in celsius
         let indexValue;
         if (this.Status.tempUnit === 'FAHRENHEIT') {
-          indexValue = device.deviceModel.lookupMonitorName(key + '_F', cToF(value as number).toString());
+          indexValue = device.deviceModel.lookupMonitorName(key + '_F', cToF(value as number).toString())
+            || device.deviceModel.lookupMonitorName(key, cToF(value as number).toString());
         } else {
-          indexValue = device.deviceModel.lookupMonitorName(key + '_C', value.toString());
+          indexValue = device.deviceModel.lookupMonitorName(key + '_C', value.toString())
+            || device.deviceModel.lookupMonitorName(key, value.toString());
         }
 
         if (!indexValue) {

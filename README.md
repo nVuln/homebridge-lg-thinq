@@ -67,8 +67,8 @@ npm i -g homebridge-lg-thinq
 
 | *Device* | *Implementation* | *Status* | *Control* | *Thinq2* | *Thinq1* |
 | --- | --- | --- | --- | --- | --- |
-| Refrigerator | ✔️ | ✔️ | ✔️ | ✔️ | 🚫 |
-| Air Purifier | ✔️ | ✔️ | ✔️ | ✔️ | 🚫 |
+| Refrigerator | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| Air Purifier | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
 | Washer & Dryer | ✔️ | ✔️ | 🚫 | ✔️ | ✔️ |
 | Dishwasher | ✔️ | ✔️ | ✔️ | ✔️ | 🚫 |
 | Dehumidifier | ✔️ | ✔️ | ⚠️ | ✔️ | 🚫 |

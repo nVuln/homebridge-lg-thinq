@@ -11,6 +11,7 @@ import Helper from '../v1/helper';
 import {NotConnectedError, ManualProcessNeeded, MonitorError, TokenExpiredError} from '../errors';
 import axios from 'axios';
 import {PLUGIN_NAME} from '../settings';
+import {btoa} from "buffer";
 export type WorkId = typeof uuid['v4'];
 
 export class ThinQ {
@@ -167,16 +168,41 @@ export class ThinQ {
     return device;
   }
 
-  public async thinq1DeviceControl(id: string, key: string, value: any) {
+  public async thinq1DeviceControl(device: string | Device, key: string, value: any) {
+    const id = device instanceof Device ? device.id : device;
+    const data: any = {
+      cmd: 'Control',
+      cmdOpt: 'Set',
+      deviceId: id,
+      workId: uuid.v4(),
+    };
+    if (device instanceof Device && device.deviceModel.data.ControlWifi?.type === 'BINARY(BYTE)') {
+      data.value = 'ControlData';
+      const sampleData = device.deviceModel.data.ControlWifi?.action?.SetControl?.data || '[]';
+      const decodedMonitor = device.snapshot.raw || {};
+      decodedMonitor[key] = value;
+      // build data array of byte
+      const byteArray = new Uint8Array(JSON.parse(Object.keys(decodedMonitor).reduce((prev, key) => {
+        return prev.replace(new RegExp('{{'+key+'}}', 'g'), parseInt(decodedMonitor[key] || '0'));
+      }, sampleData)));
+      data.data = btoa(String.fromCharCode(...byteArray));
+      data.format = 'B64';
+    } else {
+      data.value = {
+        [key]: value,
+      };
+      data.data = '';
+    }
+
     try {
       await this.api.ready();
-      return await this.api.sendControlCommand(id, key, value);
+      return await this.api.thinq1PostRequest('rti/rtiControl', data);
     } catch (err) {
       // retry
       if (err instanceof TokenExpiredError) {
         await this.api.refreshNewToken();
         try {
-          return await this.api.sendControlCommand(id, key, value);
+          return await this.api.thinq1PostRequest('rti/rtiControl', data);
         } catch (err) {
           this.log.error('Unknown Error: ', err);
         }

@@ -30,27 +30,33 @@ export default class Helper {
       return device;
     }
 
+    const decodedMonitor = device.deviceModel.decodeMonitor(monitorData || {});
+
     switch (device.type) {
       case 'DRYER':
       case 'WASHER':
-        device.data.snapshot = WasherDryer(device.deviceModel, monitorData || {});
+        device.data.snapshot = WasherDryer(device.deviceModel, decodedMonitor);
         break;
       case 'AIR_PURIFIER':
       case 'AC':
-        device.data.snapshot = AirState(device.deviceModel, monitorData || {});
+        device.data.snapshot = AirState(device.deviceModel, decodedMonitor);
         break;
       case 'REFRIGERATOR':
-        device.data.snapshot = RefState(device.deviceModel, monitorData || {});
+        device.data.snapshot = RefState(device.deviceModel, decodedMonitor);
         break;
       default:
         // return original device data if not supported
         return device;
     }
 
-    if (monitorData && device.data.snapshot) {
-      // mark device online to perform update
-      device.data.online = true;
-      device.data.snapshot.online = true;
+    if (device.data.snapshot) {
+      if (monitorData) {
+        // mark device online to perform update
+        device.data.online = true;
+        device.data.snapshot.online = true;
+      }
+
+      device.data.snapshot.raw = decodedMonitor;
     }
 
     return device;

@@ -136,21 +136,6 @@ export class API {
     }, {headers}).then(resp => resp.data);
   }
 
-  public async sendControlCommand(deviceId: string, key: string, value: any) {
-    const data = {
-      cmd: 'Control',
-      cmdOpt: 'Set',
-      value: {
-        [key]: value,
-      },
-      deviceId,
-      workId: uuid.v4(),
-      data: '',
-    };
-
-    return this.thinq1PostRequest('rti/rtiControl', data);
-  }
-
   public async sendMonitorCommand(deviceId: string, cmdOpt: string, workId: WorkId) {
     const data = {
       cmd: 'Mon',
@@ -239,7 +224,7 @@ export class API {
     await this.auth.getJSessionId(this.session.accessToken);
   }
 
-  private async thinq1PostRequest(endpoint: string, data: any) {
+  async thinq1PostRequest(endpoint: string, data: any) {
     const headers = this.monitorHeaders;
     return await requestClient.post(this._gateway?.thinq1_url + endpoint, {lgedmRoot: data}, {headers})
       .then(res => res.data.lgedmRoot)

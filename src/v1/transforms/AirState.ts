@@ -94,8 +94,7 @@ Debug - AC decoded data:  {
   TwoSetState: '0'
 }
  */
-export default function AirState(deviceModel: DeviceModel, monitorData) {
-  const decodedMonitor = deviceModel.decodeMonitor(monitorData);
+export default function AirState(deviceModel: DeviceModel, decodedMonitor) {
   const airState = {
     'airState.opMode': parseInt(decodedMonitor['OpMode'] || '0') as number,
     'airState.operation': loopupEnum(deviceModel, decodedMonitor, 'Operation') !== ACOperation.OFF,

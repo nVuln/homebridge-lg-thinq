@@ -5,7 +5,7 @@ import {Device} from '../../lib/Device';
 export default class AirPurifier extends V2{
   async setActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
-    await this.platform.ThinQ?.thinq1DeviceControl(device.id, 'Operation', value as boolean ? '1' : '0');
+    await this.platform.ThinQ?.thinq1DeviceControl(device, 'Operation', value as boolean ? '1' : '0');
   }
 
   async setTargetAirPurifierState(value: CharacteristicValue) {
@@ -14,7 +14,7 @@ export default class AirPurifier extends V2{
       return; // just skip it
     }
 
-    await this.platform.ThinQ?.thinq1DeviceControl(device.id, 'OpMode', value as boolean ? '16' : '14');
+    await this.platform.ThinQ?.thinq1DeviceControl(device, 'OpMode', value as boolean ? '16' : '14');
   }
 
   async setRotationSpeed(value: CharacteristicValue) {
@@ -25,7 +25,7 @@ export default class AirPurifier extends V2{
     const device: Device = this.accessory.context.device;
     const values = Object.keys(RotateSpeed);
     const windStrength = parseInt(values[Math.round((value as number)) - 1]) || RotateSpeed.EXTRA;
-    await this.platform.ThinQ?.thinq1DeviceControl(device.id, 'WindStrength', windStrength.toString());
+    await this.platform.ThinQ?.thinq1DeviceControl(device, 'WindStrength', windStrength.toString());
   }
 
   async setSwingMode(value: CharacteristicValue) {
@@ -34,7 +34,7 @@ export default class AirPurifier extends V2{
     }
 
     const device: Device = this.accessory.context.device;
-    await this.platform.ThinQ?.thinq1DeviceControl(device.id, 'CirculateDir', value as boolean ? '1' : '0');
+    await this.platform.ThinQ?.thinq1DeviceControl(device, 'CirculateDir', value as boolean ? '1' : '0');
   }
 
   async setLight(value: CharacteristicValue) {
@@ -43,6 +43,6 @@ export default class AirPurifier extends V2{
     }
 
     const device: Device = this.accessory.context.device;
-    await this.platform.ThinQ?.thinq1DeviceControl(device.id, 'SignalLighting', value as boolean ? '1' : '0');
+    await this.platform.ThinQ?.thinq1DeviceControl(device, 'SignalLighting', value as boolean ? '1' : '0');
   }
 }

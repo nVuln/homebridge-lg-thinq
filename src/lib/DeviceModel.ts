@@ -130,6 +130,10 @@ export class DeviceModel {
   }
 
   public enumValue(key: string, name: string) {
+    if (this.value(key)?.type !== ValueType.Enum) {
+      return null;
+    }
+
     const options = (this.value(key) as EnumValue).options;
     // invert them pa
     const optionsInv = ((obj) => {
@@ -144,6 +148,10 @@ export class DeviceModel {
   }
 
   public enumName(key: string, value: string) {
+    if (this.value(key)?.type !== ValueType.Enum) {
+      return null;
+    }
+
     const options = (this.value(key) as EnumValue).options;
     if (!(value in options)) {
       return null;
@@ -157,20 +165,20 @@ export class DeviceModel {
       return (this.value(key) as EnumValue).options;
     }
 
-    if (!(key in this.monitoringValue)) {
-      return {};
+    if (typeof this.monitoringValue !== 'object' || !(key in this.monitoringValue)) {
+      return null;
     }
 
-    return this.monitoringValue[key].valueMapping || {};
+    return this.monitoringValue[key].valueMapping || null;
   }
 
   public lookupMonitorValue(key: string, name: string, default_value: null | string = null) {
     if (this.data.Value) {
-      return this.enumName(key, name);
+      return this.enumName(key, name) || default_value;
     }
 
     if (!this.monitoringValueMapping(key) || !(name in this.monitoringValueMapping(key))) {
-      return null;
+      return default_value;
     }
 
     return this.monitoringValueMapping(key)[name]?.label || default_value || null;

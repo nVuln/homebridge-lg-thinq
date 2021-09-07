@@ -40,7 +40,7 @@ export default class AC extends AirConditioner {
     const op = isOn ? ACOperation.RIGHT_ON : ACOperation.OFF;
     const opValue = device.deviceModel.enumValue('Operation', op);
 
-    await this.platform.ThinQ?.thinq1DeviceControl(device.id, 'Operation', opValue);
+    await this.platform.ThinQ?.thinq1DeviceControl(device, 'Operation', opValue);
   }
 
   async setTargetTemperature(value: CharacteristicValue) {
@@ -49,7 +49,7 @@ export default class AC extends AirConditioner {
     }
 
     const device: Device = this.accessory.context.device;
-    await this.platform.ThinQ?.thinq1DeviceControl(device.id, 'TempCfg', value as string);
+    await this.platform.ThinQ?.thinq1DeviceControl(device, 'TempCfg', value as string);
     device.data.snapshot['airState.tempState.target'] = value as number;
     this.updateAccessoryCharacteristic(device);
   }
@@ -63,7 +63,7 @@ export default class AC extends AirConditioner {
     const device: Device = this.accessory.context.device;
     const windStrength = Object.keys(FanSpeed)[speedValue - 1] || FanSpeed.HIGH;
 
-    this.platform.ThinQ?.thinq1DeviceControl(device.id, 'WindStrength', windStrength);
+    this.platform.ThinQ?.thinq1DeviceControl(device, 'WindStrength', windStrength);
   }
 
   async setSwingMode(value: CharacteristicValue) {
@@ -76,12 +76,12 @@ export default class AC extends AirConditioner {
     const device: Device = this.accessory.context.device;
 
     if (this.config.ac_swing_mode === 'BOTH' || this.config.ac_swing_mode === 'VERTICAL') {
-      await this.platform.ThinQ?.thinq1DeviceControl(device.id, 'WDirVStep', swingValue);
+      await this.platform.ThinQ?.thinq1DeviceControl(device, 'WDirVStep', swingValue);
       device.data.snapshot['airState.wDir.vStep'] = swingValue;
     }
 
     if (this.config.ac_swing_mode === 'BOTH' || this.config.ac_swing_mode === 'HORIZONTAL') {
-      await this.platform.ThinQ?.thinq1DeviceControl(device.id, 'WDirHStep', swingValue);
+      await this.platform.ThinQ?.thinq1DeviceControl(device, 'WDirHStep', swingValue);
       device.data.snapshot['airState.wDir.hStep'] = swingValue;
     }
 
@@ -90,7 +90,7 @@ export default class AC extends AirConditioner {
 
   async setOpMode(opMode) {
     const device: Device = this.accessory.context.device;
-    await this.platform.ThinQ?.thinq1DeviceControl(device.id, 'OpMode', opMode);
+    await this.platform.ThinQ?.thinq1DeviceControl(device, 'OpMode', opMode);
     device.data.snapshot['airState.opMode'] = opMode;
 
     this.updateAccessoryCharacteristic(device);
