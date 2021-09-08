@@ -158,11 +158,6 @@ export default class AirPurifier extends baseDevice {
       },
     } = this.platform;
 
-    if (!device.online) {
-      // device not online, do not update status
-      return;
-    }
-
     this.serviceAirPurifier.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
     this.serviceAirPurifier.updateCharacteristic(Characteristic.CurrentAirPurifierState, this.Status.isPowerOn ? 2 : 0);
     this.serviceAirPurifier.updateCharacteristic(TargetAirPurifierState,

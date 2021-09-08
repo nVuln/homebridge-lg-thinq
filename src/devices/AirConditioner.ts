@@ -131,11 +131,6 @@ export default class AirConditioner extends baseDevice {
   public updateAccessoryCharacteristic(device: Device) {
     this.accessory.context.device = device;
 
-    if (!device.online) {
-      // device not online, do not update status
-      return;
-    }
-
     const {
       Characteristic,
       Characteristic: {

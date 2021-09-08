@@ -89,11 +89,6 @@ export default class WasherDryer extends baseDevice {
   public updateAccessoryCharacteristic(device: Device) {
     super.updateAccessoryCharacteristic(device);
 
-    if (!device.online) {
-      // device not online, do not update status
-      return;
-    }
-
     const {
       Characteristic,
       Characteristic: {

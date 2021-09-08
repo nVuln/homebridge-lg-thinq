@@ -46,8 +46,10 @@
   "author": "",
   "dependencies": {
     "@homebridge/plugin-ui-utils": "^0.0.19",
+    "aws-iot-device-sdk": "^2.2.11",
     "axios": "^0.21.1",
     "luxon": "^2.0.1",
+    "node-forge": "^0.10.0",
     "node-persist": "^0.0.11",
     "qs": "^6.10.1",
     "uuid": "^8.3.2"

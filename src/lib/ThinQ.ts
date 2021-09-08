@@ -2,15 +2,19 @@ import {Logger, PlatformConfig} from 'homebridge';
 import {API} from './API';
 import {LGThinQHomebridgePlatform} from '../platform';
 import {Device} from './Device';
-import {PlatformType} from './constants';
+import {PlatformType, API_CLIENT_ID} from './constants';
 import * as uuid from 'uuid';
-import * as NodePersist from 'node-persist';
 import * as Path from 'path';
+import * as forge from 'node-forge';
 import {DeviceModel} from './DeviceModel';
 import Helper from '../v1/helper';
-import {NotConnectedError, ManualProcessNeeded, MonitorError, TokenExpiredError} from '../errors';
+import {NotConnectedError, ManualProcessNeeded, MonitorError, TokenExpiredError, AuthenticationError} from '../errors';
 import axios from 'axios';
 import {PLUGIN_NAME} from '../settings';
+import {device as awsIotDevice} from 'aws-iot-device-sdk';
+import {URL} from 'url';
+import Persist from './Persist';
+
 export type WorkId = typeof uuid['v4'];
 
 export class ThinQ {
@@ -31,9 +35,13 @@ export class ThinQ {
       this.api.setUsernamePassword(config.username, config.password);
     }
 
-    this.persist = NodePersist.create({
-      dir: Path.join(this.platform.api.user.storagePath(), PLUGIN_NAME, 'persist', 'devices'),
-    });
+    this.persist = new Persist(Path.join(this.platform.api.user.storagePath(), PLUGIN_NAME, 'persist', 'devices'));
+  }
+
+  public async device(id) {
+    const devices = await this.devices();
+
+    return devices.find(device => device.id === id);
   }
 
   public async devices() {
@@ -42,21 +50,12 @@ export class ThinQ {
     try {
       listDevices = await this.api.getListDevices();
     } catch (err) {
-      if (err instanceof NotConnectedError) {
-        return [];
-      } else if (axios.isAxiosError(err) && err.response?.data?.resultCode === '0110') {
+      if (axios.isAxiosError(err) && err.response?.data?.resultCode === '0110') {
         this.log.error('Please open the native LG App and sign in to your account to see what happened, '+
           'maybe new agreement need your accept. Then try restarting Homebridge.');
 
         throw new ManualProcessNeeded();
-      }
-
-      // retry it 1 times, resultCode 0102 = token expired
-      try {
-        await this.api.refreshNewToken();
-        listDevices = await this.api.getListDevices();
-      } catch (err) {
-        // write log if error not is network issue
+      } else {
         if (!(err instanceof NotConnectedError)) {
           this.log.error('Unknown Error: ', err);
         }
@@ -77,7 +76,7 @@ export class ThinQ {
     if (!deviceModel) {
       this.log.debug('[' + device.id + '] Device model cache missed.');
       try {
-        deviceModel = await this.api.getRequest(device.data.modelJsonUri).then(res => res.data);
+        deviceModel = await this.api.getRequest(device.data.modelJsonUri);
         await this.persist.setItem(device.id, deviceModel);
       } catch (err) {
         this.log.error('['+ device.id +'] Unable to get device model - ', err);
@@ -229,13 +228,105 @@ export class ThinQ {
     }
   }
 
+  public async registerMQTTListener(callback: (data: any) => void) {
+    const ttl = 86400000; // 1 day
+    const route = await this.persist.cache('route', ttl, async () => {
+      return await this.api.getRequest('https://common.lgthinq.com/route').then(data => data.result);
+    });
+
+    // key-pair
+    const keys = await this.persist.cacheForever('keys', async () => {
+      this.log.debug('Generating 2048-bit key-pair...');
+      const keys = forge.pki.rsa.generateKeyPair(2048);
+
+      return {
+        privateKey: forge.pki.privateKeyToPem(keys.privateKey),
+        publicKey: forge.pki.publicKeyToPem(keys.publicKey),
+      };
+    });
+
+    // CSR
+    const csr = await this.persist.cacheForever('csr', async () => {
+      this.log.debug('Creating certification request (CSR)...');
+      const csr = forge.pki.createCertificationRequest();
+      csr.publicKey = forge.pki.publicKeyFromPem(keys.publicKey);
+      csr.setSubject([
+        {
+          shortName: 'CN',
+          value: 'AWS IoT Certificate',
+        },
+        {
+          shortName: 'O',
+          value: 'Amazon',
+        },
+      ]);
+      csr.sign(forge.pki.privateKeyFromPem(keys.privateKey), forge.md.sha256.create());
+
+      return forge.pki.certificationRequestToPem(csr);
+    });
+
+    const submitCSR = () => {
+      return this.api.postRequest('service/users/client/certificate', {
+        csr: csr.replace(/-----(BEGIN|END) CERTIFICATE REQUEST-----/g, '').replace(/(\r\n|\r|\n)/g, ''),
+      }).then(data => data.result);
+    };
+
+    // get trusted cer root
+    const rootCA = await this.persist.cache('rootCA', ttl, async () => {
+      const rootCA = await this.api.getRequest('https://good.sca1a.amazontrust.com/');
+      return rootCA.match(/-----BEGIN CERTIFICATE-----([\s\S]*?)-----END CERTIFICATE-----/)[0];
+    });
+
+    const urls = new URL(route.mqttServer);
+
+    const connectToMqtt = async () => {
+      // submit csr
+      const certificate = await submitCSR();
+
+      const connectData = {
+        caCert: Buffer.from(rootCA, 'utf-8'),
+        privateKey: Buffer.from(keys.privateKey, 'utf-8'),
+        clientCert: Buffer.from(certificate.certificatePem, 'utf-8'),
+        clientId: API_CLIENT_ID,
+        host: urls.hostname,
+      };
+
+      const device = awsIotDevice(connectData);
+
+      device.on('error', (err) => {
+        this.log.error('mqtt err:', err);
+      });
+      device.on('connect', () => {
+        this.log.debug('mqtt connecting:', route.mqttServer);
+        for (const subscription of certificate.subscriptions) {
+          device.subscribe(subscription);
+        }
+      });
+      device.on('message', (topic, payload) => {
+        callback(JSON.parse(payload.toString()));
+        this.log.debug('mqtt message received:', payload.toString());
+      });
+      device.on('offline', () => {
+        device.end();
+
+        this.log.info('MQTT disconnected, retrying in 60 seconds!');
+        setTimeout(async () => {
+          await connectToMqtt();
+        }, 60000);
+      });
+    };
+
+    // first call
+    await connectToMqtt();
+  }
+
   public async isReady() {
     try {
       await this.persist.init();
       await this.api.ready();
       return true;
     } catch (err) {
-      if (err instanceof Error) {
+      if (err instanceof AuthenticationError) {
         this.log.error(err.message);
       } else {
         this.log.error('Unknown Error: ', err);
