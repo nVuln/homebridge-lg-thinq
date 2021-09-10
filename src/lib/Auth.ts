@@ -39,26 +39,38 @@ export class Auth {
     };
 
     const hash = crypto.createHash('sha512');
-    const data = {
+    const preLoginData = {
       'user_auth2': hash.update(password).digest('hex'),
+      'log_param': 'login request / user_id : ndhan@live.com / third_party : null / svc_list : SVC202,SVC710 / 3rd_service : ',
+    };
+    const preLogin = await requestClient.post(this.gateway.login_base_url + 'preLogin', qs.stringify(preLoginData), { headers })
+      .then(res => res.data)
+      .catch(err => {
+        if (!err.response) {
+          throw err;
+        }
+
+        const {code, message} = err.response.data.error;
+        if (code === 'MS.001.03') {
+          throw new AuthenticationError('Double-check your country in configuration');
+        }
+
+        throw new AuthenticationError(message);
+      });
+
+    headers['X-Signature'] = preLogin.signature;
+    headers['X-Timestamp'] = preLogin.tStamp;
+
+    const data = {
+      'user_auth2': preLogin.encrypted_pw,
       'itg_terms_use_flag': 'Y',
+      'password_hash_prameter_flag': 'Y',
       'svc_list': 'SVC202,SVC710', // SVC202=LG SmartHome, SVC710=EMP OAuth
     };
 
     // try login with username and hashed password
     const loginUrl = this.gateway.emp_base_url + 'emp/v2.0/account/session/' + encodeURIComponent(username);
-    const res = await requestClient.post(loginUrl, qs.stringify(data), { headers }).then(res => res.data).catch(err => {
-      if (!err.response) {
-        throw err;
-      }
-
-      const {code, message} = err.response.data.error;
-      if (code === 'MS.001.03') {
-        throw new AuthenticationError('Double-check your country in configuration');
-      }
-
-      throw new AuthenticationError(message);
-    });
+    const account = await requestClient.post(loginUrl, qs.stringify(data), { headers }).then(res => res.data.account);
 
     // dynamic get secret key for emp signature
     const empSearchKeyUrl = this.gateway.login_base_url + 'searchKey?key_name=OAUTH_SECRETKEY&sever_type=OP';
@@ -66,17 +78,17 @@ export class Auth {
 
     const timestamp = DateTime.utc().toRFC2822();
     const empData = {
-      account_type: res.account.userIDType,
+      account_type: account.userIDType,
       client_id: constants.CLIENT_ID,
-      country_code: res.account.country,
-      username: res.account.userID,
+      country_code: account.country,
+      username: account.userID,
     };
     const empUrl = '/emp/oauth2/token/empsession' + qs.stringify(empData, { addQueryPrefix: true });
     const signature = this.signature(`${empUrl}\n${timestamp}`, secretKey);
     const empHeaders = {
       'lgemp-x-app-key': constants.OAUTH_CLIENT_KEY,
       'lgemp-x-date': timestamp,
-      'lgemp-x-session-key': res.account.loginSessionID,
+      'lgemp-x-session-key': account.loginSessionID,
       'lgemp-x-signature': signature,
       'Accept': 'application/json',
       'X-Device-Type': 'M01',
