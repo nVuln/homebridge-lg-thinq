@@ -361,7 +361,7 @@
 
       // watch for change events
       configForm.onChange((change) => {
-        Object.assign(configuration, change);
+        Object.assign(configuration, {devices: []}, change);
         homebridge.updatePluginConfig([configuration]);
       });
 
