@@ -5,6 +5,8 @@ import {Device} from '../lib/Device';
 import {PlatformType} from '../lib/constants';
 import {DeviceModel} from '../lib/DeviceModel';
 
+const RUNNING_STATUS = ['DETECTING', 'RUNNING', 'RINSING', 'SPINNING', 'DRYING', 'COOLING', 'WASH_REFRESHING', 'STEAMSOFTENING'];
+
 export default class WasherDryer extends baseDevice {
   public isRunning = false;
   public stopTime = 0;
@@ -96,7 +98,6 @@ export default class WasherDryer extends baseDevice {
       Characteristic,
       Characteristic: {
         LockCurrentState,
-        OccupancyDetected,
       },
     } = this.platform;
     this.serviceWasherDryer.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
@@ -108,24 +109,38 @@ export default class WasherDryer extends baseDevice {
       this.serviceDoorLock.updateCharacteristic(LockCurrentState, this.Status.isDoorLocked ? LockCurrentState.SECURED : LockCurrentState.UNSECURED);
       this.serviceDoorLock.updateCharacteristic(Characteristic.LockTargetState, this.Status.isDoorLocked ? 1 : 0);
     }
-
-    if (this.config.washer_trigger as boolean && this.serviceEventFinished) {
-      if (this.Status.isRunning && !this.isRunning) {
-        this.isRunning = true; // marked device as running
-        this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_NOT_DETECTED);
-      } else if (!this.Status.isRunning && this.isRunning) {
-        // device may stopped now, put a trigger event
-        this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_DETECTED);
-        this.isRunning = false; // marked device as not running
-      }
-    }
   }
 
   public get config() {
     return Object.assign({}, {
       washer_trigger: false,
-      washer_door_lock: true,
+      washer_door_lock: false,
     }, super.config);
+  }
+
+  public update(snapshot) {
+    // when washer state is changed
+    if (this.config.washer_trigger as boolean && this.serviceEventFinished && 'preState' in snapshot && 'state' in snapshot) {
+      const {
+        Characteristic: {
+          OccupancyDetected,
+        },
+      } = this.platform;
+
+      // detect if washer program in done
+      if (snapshot.state === 'END' && RUNNING_STATUS.includes(snapshot.preState)) {
+        this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_DETECTED);
+        this.isRunning = false; // marked device as not running
+      }
+
+      // detect if washer program is start
+      if (RUNNING_STATUS.includes(snapshot.state) && !this.isRunning) {
+        this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_DETECTED);
+        this.isRunning = true;
+      }
+    }
+
+    super.update(snapshot);
   }
 }
 
@@ -138,8 +153,7 @@ export class WasherDryerStatus {
   }
 
   public get isRunning() {
-    return this.isPowerOn &&
-      ['DETECTING', 'RUNNING', 'RINSING', 'SPINNING', 'DRYING', 'COOLING', 'WASH_REFRESHING', 'STEAMSOFTENING'].includes(this.data?.state);
+    return this.isPowerOn && RUNNING_STATUS.includes(this.data?.state);
   }
 
   public get isRemoteStartEnable() {
