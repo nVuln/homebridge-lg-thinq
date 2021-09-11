@@ -2,6 +2,7 @@ import {LGThinQHomebridgePlatform} from './platform';
 import {PlatformAccessory} from 'homebridge';
 import {Device} from './lib/Device';
 import {EventEmitter} from 'events';
+import {mergeDeep} from './helper';
 
 export class baseDevice extends EventEmitter {
   constructor(
@@ -23,6 +24,12 @@ export class baseDevice extends EventEmitter {
 
   public updateAccessoryCharacteristic(device: Device) {
     this.accessory.context.device = device;
+  }
+
+  public update(snapshot) {
+    const device: Device = this.accessory.context.device;
+    device.data.snapshot = mergeDeep({}, device.snapshot, snapshot);
+    this.updateAccessoryCharacteristic(device);
   }
 
   public get config() {
