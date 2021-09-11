@@ -46,20 +46,22 @@
 	  "default": "en-US",
 	  "required": true
 	},
-	"refresh_interval": {
-	  "title": "Refresh interval (in second)",
-	  "type": "number",
-	  "default": 60,
-	  "required": false
-	},
 	"thinq1": {
 	  "title": "Enable ThinQ1 Support?",
 	  "type": "boolean",
 	  "default": false
 	},
+    "refresh_interval": {
+      "title": "Refresh interval (in second)",
+      "type": "number",
+      "default": 60,
+      "condition": {
+        "functionBody": "return !!model.thinq1;"
+      }
+    },
 	"devices": {
 	  "title": "Devices",
-	  "description": "leave it empty to enable all device",
+	  "description": "leave it empty to enable all device in account",
 	  "type": "array",
 	  "items": {
 		"type": "object",
@@ -93,25 +95,16 @@
 		  },
 		  "washer_trigger": {
 			"title": "Enable washer program finished trigger?",
-			"type": "boolean",
-			"condition": {
-			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['WASHER','WASHER_NEW', 'WASH_TOWER'].includes(model.devices[arrayIndices].type);"
-			}
+			"type": "boolean"
 		  },
           "washer_door_lock": {
             "title": "Enable washer door lock status",
-            "type": "boolean",
-            "condition": {
-              "functionBody": "return model.devices && model.devices[arrayIndices] && ['WASHER','WASHER_NEW', 'WASH_TOWER'].includes(model.devices[arrayIndices].type);"
-            }
+            "type": "boolean"
           },
 		  "ac_air_quality": {
 			"title": "Enable Air Quality",
 			"description": "if your device supported Air Quality sensor",
-			"type": "boolean",
-			"condition": {
-			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
-			}
+			"type": "boolean"
 		  },
 		  "ac_mode": {
 			"title": "AC Mode (Heating or Cooling or Both)",
@@ -129,10 +122,7 @@
 				"title": "Heating mode only",
 				"enum": ["HEATING"]
 			  }
-			],
-			"condition": {
-			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
-			}
+			]
 		  },
 		  "ac_swing_mode": {
 			"title": "Swing Mode (vertical or horizontal)",
@@ -150,55 +140,122 @@
 				"title": "Horizontal swing only",
 				"enum": ["HORIZONTAL"]
 			  }
-			],
-			"condition": {
-			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
-			}
+			]
 		  },
 		  "ac_temperature_sensor": {
 			"title": "Current temperature as sensor",
-			"type": "boolean",
-			"condition": {
-			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
-			}
+			"type": "boolean"
 		  },
 		  "ac_led_control": {
 			"title": "Enable led panel control",
-			"type": "boolean",
-			"condition": {
-			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
-			}
+			"type": "boolean"
 		  },
 		  "ac_fan_control": {
 			"title": "Enable separate fan control",
-			"type": "boolean",
-			"condition": {
-			  "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
-			}
+			"type": "boolean"
 		  },
           "ref_express_freezer": {
             "title": "Express Freezer / Ice Plus",
-            "type": "boolean",
-            "condition": {
-              "functionBody": "return model.devices && model.devices[arrayIndices] && ['REFRIGERATOR'].includes(model.devices[arrayIndices].type);"
-            }
+            "type": "boolean"
           },
           "ref_express_fridge": {
             "title": "Express Fridge",
-            "type": "boolean",
-            "condition": {
-              "functionBody": "return model.devices && model.devices[arrayIndices] && ['REFRIGERATOR'].includes(model.devices[arrayIndices].type);"
-            }
+            "type": "boolean"
           },
           "ref_eco_friendly": {
             "title": "Eco Friendly",
-            "type": "boolean",
-            "condition": {
-              "functionBody": "return model.devices && model.devices[arrayIndices] && ['REFRIGERATOR'].includes(model.devices[arrayIndices].type);"
-            }
+            "type": "boolean"
           }
 		}
 	  }
 	}
-  }
+  },
+  "layout": [
+    "auth_mode",
+    {
+      "type": "flex",
+      "flex-flow": "row wrap",
+      "items": [
+        "username",
+        {
+          "key": "password",
+          "type": "password"
+        }
+      ]
+    },
+    "refresh_token",
+    {
+      "type": "flex",
+      "flex-flow": "row wrap",
+      "items": [
+        "country",
+        "language"
+      ]
+    },
+    "thinq1",
+    "refresh_interval",
+    {
+      "key": "devices",
+      "type": "tabarray",
+      "title": "{{ value.name || 'new device' }}",
+      "items": [
+        "devices[].name",
+        "devices[].id",
+        "devices[].type",
+        {
+          "key": "devices[]",
+          "type": "fieldset",
+          "title": "{{ value.title }}",
+          "items": [
+            {
+              "type": "fieldset",
+              "title": "Washer / Dryer specific settings",
+              "description": "Configure washer/dryer device settings.",
+              "expandable": true,
+              "expanded": false,
+              "items": [
+                "devices[].washer_trigger",
+                "devices[].washer_door_lock"
+              ],
+              "condition": {
+                "functionBody": "return model.devices && model.devices[arrayIndices] && ['WASHER','WASHER_NEW', 'WASH_TOWER'].includes(model.devices[arrayIndices].type);"
+              }
+            },
+            {
+              "type": "fieldset",
+              "title": "Air conditioner specific settings",
+              "description": "Configure AC device settings.",
+              "expandable": true,
+              "expanded": false,
+              "items": [
+                "devices[].ac_air_quality",
+                "devices[].ac_mode",
+                "devices[].ac_swing_mode",
+                "devices[].ac_temperature_sensor",
+                "devices[].ac_fan_control"
+              ],
+              "condition": {
+                "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
+              }
+            },
+            {
+              "type": "fieldset",
+              "title": "Refrigerator specific settings",
+              "description": "Configure refrigerator device settings.",
+              "expandable": true,
+              "expanded": false,
+              "items": [
+                "devices[].ref_express_freezer",
+                "devices[].ref_express_fridge",
+                "devices[].ref_eco_friendly"
+              ],
+              "condition": {
+                "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

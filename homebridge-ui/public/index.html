@@ -334,7 +334,6 @@
     $('#configForm, #loginForm').hide();
 
     if (configuration.refresh_token) {
-      let default_devices = [];
       if (typeof configuration.devices !== 'object' || !configuration.devices || !configuration.devices.length) {
         const resp = await homebridge.request('/get-all-devices', {
           country: configuration.country,
@@ -342,22 +341,11 @@
           refresh_token: configuration.refresh_token
         });
 
-        configuration.devices = null;
-        default_devices = resp.devices;
+        configuration.devices = resp.devices;
       }
 
       const config = await homebridge.getPluginConfigSchema();
-      const configForm = homebridge.createForm({
-        schema: {
-          refresh_token: config.schema.refresh_token,
-          refresh_interval: config.schema.refresh_interval,
-          thinq1: config.schema.thinq1,
-          devices: {
-            ...config.schema.devices,
-            default: default_devices,
-          },
-        }
-      }, configuration);
+      const configForm = homebridge.createForm(config, configuration);
 
       // watch for change events
       configForm.onChange((change) => {
