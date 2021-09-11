@@ -11,7 +11,6 @@ import Helper from '../v1/helper';
 import {NotConnectedError, ManualProcessNeeded, MonitorError, TokenExpiredError} from '../errors';
 import axios from 'axios';
 import {PLUGIN_NAME} from '../settings';
-import {btoa} from "buffer";
 export type WorkId = typeof uuid['v4'];
 
 export class ThinQ {
@@ -236,7 +235,11 @@ export class ThinQ {
       await this.api.ready();
       return true;
     } catch (err) {
-      this.log.error('Unknown Error: ', err);
+      if (err instanceof Error) {
+        this.log.error(err.message);
+      } else {
+        this.log.error('Unknown Error: ', err);
+      }
       return false;
     }
   }
