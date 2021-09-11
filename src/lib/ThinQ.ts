@@ -77,7 +77,7 @@ export class ThinQ {
     if (!deviceModel) {
       this.log.debug('[' + device.id + '] Device model cache missed.');
       try {
-        deviceModel = await this.api.request.get(device.data.modelJsonUri).then(res => res.data);
+        deviceModel = await this.api.getRequest(device.data.modelJsonUri).then(res => res.data);
         await this.persist.setItem(device.id, deviceModel);
       } catch (err) {
         this.log.error('['+ device.id +'] Unable to get device model - ', err);

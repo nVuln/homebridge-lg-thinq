@@ -7,8 +7,7 @@ import {Gateway} from './Gateway';
 import {requestClient} from './request';
 import {Auth} from './Auth';
 import {WorkId} from './ThinQ';
-import {MonitorError, NotConnectedError, TokenError, TokenExpiredError} from '../errors';
-import * as uuid from 'uuid';
+import {MonitorError, TokenExpiredError} from '../errors';
 
 function resolveUrl(from, to) {
   const url = new URL(to, from);
@@ -25,13 +24,37 @@ export class API {
   protected username!: string;
   protected password!: string;
 
-  public request: typeof requestClient;
-
   constructor(
     protected country: string = 'US',
     protected language: string = 'en-US',
-  ) {
-    this.request = requestClient;
+  ) {}
+
+  async getRequest(uri, headers?: any, retry = false) {
+    const url = resolveUrl(this._gateway?.thinq2_url, uri);
+    return await requestClient.get(url, {
+      headers: Object.assign({}, this.defaultHeaders, headers || {}),
+    }).then(res => res.data).catch(async err => {
+      if (err instanceof TokenExpiredError && !retry) {
+        await this.refreshNewToken();
+        return await this.getRequest(uri, headers, true);
+      } else {
+        throw err;
+      }
+    });
+  }
+
+  async postRequest(uri, data, headers?: any, retry = false) {
+    const url = resolveUrl(this._gateway?.thinq2_url, uri);
+    return await requestClient.post(url, data, {
+      headers: Object.assign({}, this.defaultHeaders, headers || {}),
+    }).then(res => res.data).catch(async err => {
+      if (err instanceof TokenExpiredError && !retry) {
+        await this.refreshNewToken();
+        return await this.postRequest(uri, data, headers, true);
+      } else {
+        throw err;
+      }
+    });
   }
 
   protected get monitorHeaders() {
@@ -86,29 +109,24 @@ export class API {
       'x-service-phase': 'OP',
       'x-origin': 'app-native',
       'x-model-name': 'samsung / SM-N950N',
-      'x-os-version': '7.1.2',
-      'x-app-version': '3.5.1721',
+      'x-os-version': 'AOS/7.1.2',
+      'x-app-version': 'LG ThinQ/3.6.12110',
       'x-message-id': random_string(22),
       ...headers,
     };
   }
 
-  public async getDeviceInfo(device_id: string) {
-    const headers = this.defaultHeaders;
-    const deviceUrl = resolveUrl(this._gateway?.thinq2_url, 'service/devices/' + device_id);
-
-    return requestClient.get(deviceUrl, {headers}).then(res => res.data.result);
+  public async getSingleDevice(device_id: string) {
+    return await this.getRequest('service/devices/' + device_id).then(data => data.result);
   }
 
   public async getListDevices() {
     const homes = await this.getListHomes();
-    const headers = this.defaultHeaders;
     const devices: Record<string, any>[] = [];
 
     // get all devices in home
     for (let i = 0; i < homes.length; i++) {
-      const homeUrl = resolveUrl(this._gateway?.thinq2_url, 'service/homes/' + homes[i].homeId);
-      const resp = await requestClient.get(homeUrl, {headers}).then(res => res.data);
+      const resp = await this.getRequest('service/homes/' + homes[i].homeId);
 
       devices.push(...resp.result.devices);
     }
@@ -118,22 +136,18 @@ export class API {
 
   public async getListHomes() {
     if (!this._homes) {
-      const headers = this.defaultHeaders;
-      const homesUrl = resolveUrl(this._gateway?.thinq2_url, 'service/homes');
-      this._homes = await requestClient.get(homesUrl, {headers}).then(res => res.data).then(data => data.result.item);
+      this._homes = await this.getRequest('service/homes').then(data => data.result.item);
     }
 
     return this._homes;
   }
 
   public async sendCommandToDevice(device_id: string, values: Record<string, any>, command: 'Set' | 'Operation', ctrlKey = 'basicCtrl') {
-    const headers = this.defaultHeaders;
-    const controlUrl = resolveUrl(this._gateway?.thinq2_url, 'service/devices/' + device_id + '/control-sync');
-    return requestClient.post(controlUrl, {
+    return await this.postRequest('service/devices/' + device_id + '/control-sync', {
       ctrlKey,
       'command': command,
       ...values,
-    }, {headers}).then(resp => resp.data);
+    });
   }
 
   public async sendMonitorCommand(deviceId: string, cmdOpt: string, workId: WorkId) {
@@ -227,20 +241,6 @@ export class API {
   async thinq1PostRequest(endpoint: string, data: any) {
     const headers = this.monitorHeaders;
     return await requestClient.post(this._gateway?.thinq1_url + endpoint, {lgedmRoot: data}, {headers})
-      .then(res => res.data.lgedmRoot)
-      .then(data => {
-        if ('returnCd' in data) {
-          const code = data.returnCd as string;
-          if (['0106', '0111'].includes(code)) {
-            throw new NotConnectedError(data.returnMsg || '');
-          } else if (code === '0102') {
-            throw new TokenExpiredError(data.returnMsg);
-          } else if (code !== '0000') {
-            throw new TokenError(code + ' - ' + data.returnMsg || '');
-          }
-        }
-
-        return data;
-      });
+      .then(res => res.data.lgedmRoot);
   }
 }
