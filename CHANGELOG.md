@@ -1,5 +1,22 @@
 # Change Log
 
+## v1.2.0
+
+### Changes
+
+* Real-time device data update via MQTT (thinq2 only)
+* More device support
+
+### Bug fixes
+
+* Update login workflow: preLogin step
+
+### Other Changes
+
+* Washer door lock disable by default, need enable it in plugin setting
+* Refrigerator: Express Freezer (Ice Plus), Express Fridge, Eco Friendly
+* UI device list: changed to tabarray
+
 ## v1.1.0
 
 ### Changes
