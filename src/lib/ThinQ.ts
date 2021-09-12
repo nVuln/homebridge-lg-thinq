@@ -230,9 +230,7 @@ export class ThinQ {
 
   public async registerMQTTListener(callback: (data: any) => void) {
     const ttl = 86400000; // 1 day
-    const route = await this.persist.cache('route', ttl, async () => {
-      return await this.api.getRequest('https://common.lgthinq.com/route').then(data => data.result);
-    });
+    const route = await this.api.getRequest('https://common.lgthinq.com/route').then(data => data.result);
 
     // key-pair
     const keys = await this.persist.cacheForever('keys', async () => {
@@ -265,8 +263,9 @@ export class ThinQ {
       return forge.pki.certificationRequestToPem(csr);
     });
 
-    const submitCSR = () => {
-      return this.api.postRequest('service/users/client/certificate', {
+    const submitCSR = async () => {
+      await this.api.postRequest('service/users/client', {});
+      return await this.api.postRequest('service/users/client/certificate', {
         csr: csr.replace(/-----(BEGIN|END) CERTIFICATE REQUEST-----/g, '').replace(/(\r\n|\r|\n)/g, ''),
       }).then(data => data.result);
     };

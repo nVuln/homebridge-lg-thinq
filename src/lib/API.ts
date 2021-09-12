@@ -98,7 +98,7 @@ export class API {
     return {
       'x-api-key': constants.API_KEY,
       'x-client-id': constants.API_CLIENT_ID,
-      'x-thinq-app-ver': '3.5.1700',
+      'x-thinq-app-ver': '3.6.1200',
       'x-thinq-app-type': 'NUTS',
       'x-thinq-app-level': 'PRD',
       'x-thinq-app-os': 'ANDROID',
@@ -108,10 +108,11 @@ export class API {
       'x-language-code': this.language,
       'x-service-phase': 'OP',
       'x-origin': 'app-native',
-      'x-model-name': 'samsung / SM-N950N',
+      'x-model-name': 'samsung/SM-G930L',
       'x-os-version': 'AOS/7.1.2',
       'x-app-version': 'LG ThinQ/3.6.12110',
       'x-message-id': random_string(22),
+      'user-agent': 'okhttp/3.14.9',
       ...headers,
     };
   }

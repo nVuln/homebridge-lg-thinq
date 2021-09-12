@@ -4,7 +4,7 @@ export const CLIENT_ID = 'LGAO221A02';
 export const OAUTH_SECRET_KEY = 'c053c2a6ddeb7ad97cb0eed0dcb31cf8';
 export const OAUTH_CLIENT_KEY = 'LGAO722A02';
 export const API_KEY = 'VGhpblEyLjAgU0VSVklDRQ==';
-export const API_CLIENT_ID = '0396d48364f9a25824a3121758b512686f0ead3a5a4349b5b76f0febcd1809ea';
+export const API_CLIENT_ID = 'c713ea8e50f657534ff8b9d373dfebfc2ed70b88285c26b8ade49868c0b164d9';
 
 export const APPLICATION_KEY = '6V1V8H2BN5P9ZQGOI5DAQ92YZBDO3EK9'; // for spx login
 
