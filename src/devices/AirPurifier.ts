@@ -15,6 +15,7 @@ export default class AirPurifier extends baseDevice {
   protected serviceAirPurifier: Service;
   protected serviceAirQuality: Service;
   protected serviceLight: Service;
+  protected serviceFilterMaintenance;
 
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
@@ -27,6 +28,7 @@ export default class AirPurifier extends baseDevice {
         AirPurifier,
         AirQualitySensor,
         Lightbulb,
+        FilterMaintenance,
       },
       Characteristic,
     } = this.platform;
@@ -61,6 +63,10 @@ export default class AirPurifier extends baseDevice {
 
     this.serviceLight = accessory.getService(Lightbulb) || accessory.addService(Lightbulb, device.name + ' - Light');
     this.serviceLight.getCharacteristic(Characteristic.On).onSet(this.setLight.bind(this));
+
+    if (this.Status.filterMaxTime) {
+      this.serviceFilterMaintenance = accessory.getService(FilterMaintenance) || accessory.addService(FilterMaintenance);
+    }
 
     this.updateAccessoryCharacteristic(device);
   }
@@ -155,6 +161,7 @@ export default class AirPurifier extends baseDevice {
       Characteristic,
       Characteristic: {
         TargetAirPurifierState,
+        FilterChangeIndication,
       },
     } = this.platform;
 
@@ -164,6 +171,12 @@ export default class AirPurifier extends baseDevice {
       this.Status.isNormalMode ? TargetAirPurifierState.MANUAL : TargetAirPurifierState.AUTO);
     this.serviceAirPurifier.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwing ? 1 : 0);
     this.serviceAirPurifier.updateCharacteristic(Characteristic.RotationSpeed, this.Status.rotationSpeed);
+
+    if (this.Status.filterMaxTime && this.serviceFilterMaintenance) {
+      this.serviceFilterMaintenance.updateCharacteristic(Characteristic.FilterLifeLevel, this.Status.filterUsedTimePercent);
+      this.serviceFilterMaintenance.updateCharacteristic(FilterChangeIndication,
+        this.Status.filterUsedTimePercent <= 5 ? FilterChangeIndication.CHANGE_FILTER : FilterChangeIndication.FILTER_OK);
+    }
 
     // airState.quality.sensorMon = 1 mean sensor always running even device not running
     this.serviceAirQuality.updateCharacteristic(Characteristic.AirQuality, this.Status.airQuality.overall);
@@ -207,5 +220,21 @@ export class AirPurifierStatus {
 
   public get isNormalMode() {
     return this.data['airState.opMode'] === 14;
+  }
+
+  public get filterUsedTimePercent() {
+    if (!this.filterMaxTime) {
+      return 0;
+    }
+
+    return Math.round((1 - (this.filterUseTime / this.filterMaxTime)) * 100);
+  }
+
+  public get filterMaxTime() {
+    return this.data['airState.filterMngStates.maxTime'] || 0;
+  }
+
+  public get filterUseTime() {
+    return this.data['airState.filterMngStates.useTime'] || 0;
   }
 }
