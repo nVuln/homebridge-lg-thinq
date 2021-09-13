@@ -158,9 +158,20 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
 
     if (thinq2avaiable) {
       this.log.info('START MQTT listener for thinq2 device');
+      const refreshTimer = setInterval(async () => {
+        const devices: Device[] = await this.ThinQ?.devices();
+        for (const device of devices) {
+          if (device.platform === PlatformType.ThinQ2) {
+            this.events.emit(device.id, device.snapshot);
+          }
+        }
+      }, 600000); // every 10 minute
+
       await this.ThinQ.registerMQTTListener((data) => {
         if ('data' in data && 'deviceId' in data) {
           this.events.emit(data.deviceId, data.data?.state?.reported);
+
+          refreshTimer.refresh();
         }
       });
     }
