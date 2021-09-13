@@ -8,6 +8,7 @@ import {requestClient} from './request';
 import {Auth} from './Auth';
 import {WorkId} from './ThinQ';
 import {MonitorError, TokenExpiredError} from '../errors';
+import crypto from 'crypto';
 
 function resolveUrl(from, to) {
   const url = new URL(to, from);
@@ -23,6 +24,8 @@ export class API {
 
   protected username!: string;
   protected password!: string;
+
+  public client_id!: string;
 
   constructor(
     protected country: string = 'US',
@@ -95,9 +98,10 @@ export class API {
       headers['x-user-no'] = this.userNumber;
     }
 
+    headers['x-client-id'] = this.client_id || constants.API_CLIENT_ID;
+
     return {
       'x-api-key': constants.API_KEY,
-      'x-client-id': constants.API_CLIENT_ID,
       'x-thinq-app-ver': '3.6.1200',
       'x-thinq-app-type': 'NUTS',
       'x-thinq-app-level': 'PRD',
@@ -226,6 +230,11 @@ export class API {
 
     if (!this.userNumber) {
       this.userNumber = await this.auth.getUserNumber(this.session?.accessToken);
+    }
+
+    if (!this.client_id) {
+      const hash = crypto.createHash('sha256');
+      this.client_id = hash.update(this.userNumber + (new Date()).getTime()).digest('hex');
     }
   }
 

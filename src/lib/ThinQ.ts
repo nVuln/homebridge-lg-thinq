@@ -286,7 +286,7 @@ export class ThinQ {
         caCert: Buffer.from(rootCA, 'utf-8'),
         privateKey: Buffer.from(keys.privateKey, 'utf-8'),
         clientCert: Buffer.from(certificate.certificatePem, 'utf-8'),
-        clientId: API_CLIENT_ID,
+        clientId: this.api.client_id,
         host: urls.hostname,
       };
 
