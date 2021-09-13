@@ -83,7 +83,7 @@ export default class WasherDryer extends baseDevice {
   }
 
   async setActive(value: CharacteristicValue) {
-
+    return;
   }
 
   public updateAccessoryCharacteristic(device: Device) {
