@@ -6,6 +6,7 @@ import * as qs from 'qs';
 import crypto from 'crypto';
 import { DateTime } from 'luxon';
 import {TokenError, AuthenticationError} from '../errors';
+import {URL} from 'url';
 
 export class Auth {
   public lgeapi_url: string;
@@ -36,12 +37,15 @@ export class Auth {
       'X-Signature': loginForm.match(/signature\s+:\s+"([^"]+)"/)[1],
       'X-Timestamp': loginForm.match(/tStamp\s+:\s+"([^"]+)"/)[1],
       'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      'Access-Control-Allow-Origin': '*',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Accept-Language': 'en-US,en;q=0.9',
     };
 
     const hash = crypto.createHash('sha512');
     const preLoginData = {
       'user_auth2': hash.update(password).digest('hex'),
-      'log_param': 'login request / user_id : ndhan@live.com / third_party : null / svc_list : SVC202,SVC710 / 3rd_service : ',
+      'log_param': 'login request / user_id : '+ username +' / third_party : null / svc_list : SVC202,SVC710 / 3rd_service : ',
     };
     const preLogin = await requestClient.post(this.gateway.login_base_url + 'preLogin', qs.stringify(preLoginData), { headers })
       .then(res => res.data)
@@ -63,7 +67,6 @@ export class Auth {
 
     const data = {
       'user_auth2': preLogin.encrypted_pw,
-      'itg_terms_use_flag': 'Y',
       'password_hash_prameter_flag': 'Y',
       'svc_list': 'SVC202,SVC710', // SVC202=LG SmartHome, SVC710=EMP OAuth
     };
@@ -81,10 +84,13 @@ export class Auth {
       account_type: account.userIDType,
       client_id: constants.CLIENT_ID,
       country_code: account.country,
+      redirect_uri: loginForm.match(/redirect_uri\s+:\s+"([^"]+)?"/)[1],
+      response_type: 'code',
+      state: '12345',
       username: account.userID,
     };
-    const empUrl = '/emp/oauth2/token/empsession' + qs.stringify(empData, { addQueryPrefix: true });
-    const signature = this.signature(`${empUrl}\n${timestamp}`, secretKey);
+    const empUrl = new URL('https://emp-oauth.lgecloud.com/emp/oauth2/token/empsession' + qs.stringify(empData, { addQueryPrefix: true }));
+    const signature = this.signature(`${empUrl.pathname}${empUrl.search}\n${timestamp}`, secretKey);
     const empHeaders = {
       'lgemp-x-app-key': constants.OAUTH_CLIENT_KEY,
       'lgemp-x-date': timestamp,
@@ -97,9 +103,11 @@ export class Auth {
       'Access-Control-Allow-Origin': '*',
       'Accept-Encoding': 'gzip, deflate, br',
       'Accept-Language': 'en-US,en;q=0.9',
+      // eslint-disable-next-line max-len
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36 Edg/93.0.961.44',
     };
     // create emp session and get access token
-    const token = await requestClient.post('https://emp-oauth.lgecloud.com/emp/oauth2/token/empsession', qs.stringify(empData), {
+    const token = await requestClient.post(empUrl.href, empUrl.search.substring(1), {
       headers: empHeaders,
     }).then(res => res.data).catch(err => {
       throw new AuthenticationError(err.response.data.error.message);
@@ -206,10 +214,12 @@ export class Auth {
       client_id: constants.CLIENT_ID,
       svc_list: constants.SVC_CODE,
       svc_integrated: 'Y',
-      redirect_uri: this.gateway.login_base_url + 'login/iabClose',
+      redirect_uri: 'lgaccount.lgsmartthinq:/',
       show_thirdparty_login: 'LGE,MYLG,GGL,AMZ,FBK,APPL',
-      division: 'ha',
-      callback_url: this.gateway.login_base_url,
+      division: 'ha:T20',
+      callback_url: 'lgaccount.lgsmartthinq:/',
+      oauth2State: '12345',
+      show_select_country: 'N',
     };
 
     return this.gateway.login_base_url + 'login/signIn' + qs.stringify(params, { addQueryPrefix: true });

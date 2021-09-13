@@ -64,8 +64,14 @@ class UiServer extends HomebridgePluginUiServer {
     const gateway = await api.gateway();
     const auth = new Auth(gateway);
 
+    const url = new URL(await auth.getLoginUrl());
+    const origin = url.origin;
+    url.host = 'us.m.lgaccount.com';
+    url.searchParams.set('division', 'ha'); // enable Apple ID
+    url.searchParams.set('redirect_uri', origin + '/login/iabClose');
+    url.searchParams.set('callback_url', origin + '/login/iabClose');
     // google login only accept us.m.lgaccount.com
-    return (await auth.getLoginUrl()).replace(/\/[A-Za-z]{2}\.m\./i, '/us.m.');
+    return url.href;
   }
 }
 
