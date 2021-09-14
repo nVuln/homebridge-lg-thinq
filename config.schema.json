@@ -94,11 +94,11 @@
 			}
 		  },
 		  "washer_trigger": {
-			"title": "Enable washer program finished trigger?",
+			"title": "Enable program finished trigger?",
 			"type": "boolean"
 		  },
           "washer_door_lock": {
-            "title": "Enable washer door lock status",
+            "title": "Enable door lock status",
             "type": "boolean"
           },
 		  "ac_air_quality": {
@@ -218,7 +218,7 @@
                 "devices[].washer_door_lock"
               ],
               "condition": {
-                "functionBody": "return model.devices && model.devices[arrayIndices] && ['WASHER','WASHER_NEW', 'WASH_TOWER'].includes(model.devices[arrayIndices].type);"
+                "functionBody": "return model.devices && model.devices[arrayIndices] && ['WASHER','WASHER_NEW', 'WASH_TOWER', 'DRYER'].includes(model.devices[arrayIndices].type);"
               }
             },
             {
