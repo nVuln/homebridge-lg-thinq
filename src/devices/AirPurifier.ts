@@ -175,7 +175,7 @@ export default class AirPurifier extends baseDevice {
     if (this.Status.filterMaxTime && this.serviceFilterMaintenance) {
       this.serviceFilterMaintenance.updateCharacteristic(Characteristic.FilterLifeLevel, this.Status.filterUsedTimePercent);
       this.serviceFilterMaintenance.updateCharacteristic(FilterChangeIndication,
-        this.Status.filterUsedTimePercent <= 5 ? FilterChangeIndication.CHANGE_FILTER : FilterChangeIndication.FILTER_OK);
+        this.Status.filterUsedTimePercent > 95 ? FilterChangeIndication.CHANGE_FILTER : FilterChangeIndication.FILTER_OK);
     }
 
     // airState.quality.sensorMon = 1 mean sensor always running even device not running
