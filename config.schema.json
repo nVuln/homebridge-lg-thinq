@@ -250,7 +250,7 @@
                 "devices[].ref_eco_friendly"
               ],
               "condition": {
-                "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
+                "functionBody": "return model.devices && model.devices[arrayIndices] && ['REFRIGERATOR'].includes(model.devices[arrayIndices].type);"
               }
             }
           ]
