@@ -5,7 +5,7 @@ import {Device} from '../lib/Device';
 import {PlatformType} from '../lib/constants';
 import {DeviceModel} from '../lib/DeviceModel';
 
-const RUNNING_STATUS = ['DETECTING', 'RUNNING', 'RINSING', 'SPINNING', 'DRYING', 'COOLING', 'WASH_REFRESHING', 'STEAMSOFTENING'];
+export const RUNNING_STATUS = ['DETECTING', 'RUNNING', 'RINSING', 'SPINNING', 'DRYING', 'COOLING', 'WASH_REFRESHING', 'STEAMSOFTENING'];
 
 export default class WasherDryer extends baseDevice {
   public isRunning = false;
@@ -51,9 +51,10 @@ export default class WasherDryer extends baseDevice {
       maxValue: 86400, // 1 day
     });
 
-    // onlu thinq2 support door lock status
+    // only thinq2 support door lock status
+    this.serviceDoorLock = accessory.getService(LockMechanism);
     if (this.config.washer_door_lock && device.platform === PlatformType.ThinQ2 && 'doorLock' in device.snapshot?.washerDryer) {
-      this.serviceDoorLock = accessory.getService(LockMechanism) || accessory.addService(LockMechanism, device.name + ' - Door');
+      this.serviceDoorLock = this.serviceDoorLock || accessory.addService(LockMechanism, device.name + ' - Door');
       this.serviceDoorLock.getCharacteristic(Characteristic.LockCurrentState)
         .onSet(this.setActive.bind(this))
         .setProps({
@@ -66,13 +67,17 @@ export default class WasherDryer extends baseDevice {
         .onSet(this.setActive.bind(this))
         .updateValue(Characteristic.LockTargetState.UNSECURED);
       this.serviceDoorLock.addLinkedService(this.serviceWasherDryer);
+    } else if (this.serviceDoorLock) {
+      accessory.removeService(this.serviceDoorLock);
     }
 
+    this.serviceEventFinished = accessory.getService(OccupancySensor);
     if (this.config.washer_trigger as boolean) {
-      this.serviceEventFinished = accessory.getService(OccupancySensor)
-        || accessory.addService(OccupancySensor, device.name + ' - Program Finished');
+      this.serviceEventFinished = this.serviceEventFinished || accessory.addService(OccupancySensor, device.name + ' - Program Finished');
       // eslint-disable-next-line max-len
       this.serviceEventFinished.updateCharacteristic(Characteristic.OccupancyDetected, Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED);
+    } else if (this.serviceEventFinished) {
+      accessory.removeService(this.serviceEventFinished);
     }
 
     this.updateAccessoryCharacteristic(device);

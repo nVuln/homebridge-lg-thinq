@@ -44,12 +44,16 @@ export default class AirConditioner extends baseDevice {
 
     if (this.config?.ac_air_quality as boolean && this.Status.airQuality) {
       this.createAirQualityService();
+    } else if (this.serviceAirQuality) {
+      accessory.removeService(this.serviceAirQuality);
     }
 
     if (this.config.ac_temperature_sensor as boolean) {
       this.serviceSensor = accessory.getService(TemperatureSensor) || accessory.addService(TemperatureSensor);
       this.serviceSensor.updateCharacteristic(platform.Characteristic.StatusActive, false);
       this.serviceSensor.addLinkedService(this.service);
+    } else if (this.serviceSensor) {
+      accessory.removeService(this.serviceSensor);
     }
 
     if (this.config.ac_led_control as boolean) {
@@ -58,6 +62,8 @@ export default class AirConditioner extends baseDevice {
         .onSet(this.setLight.bind(this))
         .updateValue(false); // off as default
       this.serviceLight.addLinkedService(this.service);
+    } else if (this.serviceLight) {
+      accessory.removeService(this.serviceLight);
     }
 
     // more feature
@@ -80,6 +86,8 @@ export default class AirConditioner extends baseDevice {
 
     if (this.config.ac_fan_control as boolean) {
       this.createFanService();
+    } else if (this.serviceFanV2) {
+      accessory.removeService(this.serviceFanV2);
     }
 
     this.serviceAutoMode = accessory.getService(Switch) || accessory.addService(Switch, 'Auto Mode');
