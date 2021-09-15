@@ -358,7 +358,7 @@
     else {
       $('#loginForm').show();
 
-      homebridge.request('/getLoginUrl', {
+      homebridge.request('/get-login-url', {
         country: configuration.country,
         language: configuration.language,
       }).then(loginUrl => {
@@ -411,23 +411,25 @@
       }
       else {
         btn.html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
-        const urlObject = new URL($('.redirected-url').val());
+        homebridge.request('/extract-token-from-url', {
+          url: $('.redirected-url').val(),
+        }).then(async data => {
+          if (typeof data.success === 'undefined' || data.success === false) {
+            homebridge.toast.error('error: ' + data.error, 'Error');
+            btn.prop('disabled', false).html("GET TOKEN");
+          }
+          else {
+            configuration.refresh_token = data.token;
 
-        if (urlObject.searchParams.get('refresh_token')) {
-          configuration.refresh_token = urlObject.searchParams.get('refresh_token');
+            await homebridge.updatePluginConfig([configuration]);
+            await homebridge.savePluginConfig();
 
-          await homebridge.updatePluginConfig([configuration]);
-          await homebridge.savePluginConfig();
+            btn.html('Login success! Restart homebridge to apply.').prop('disabled', true);
+            homebridge.toast.success('Login success', 'Success');
 
-          btn.html('Login success! Restart homebridge to apply.').prop('disabled', true);
-          homebridge.toast.success('Login success', 'Success');
-
-          await init(configuration);
-        }
-        else {
-          homebridge.toast.error('Redirect URL invalid.', 'Error');
-          btn.html('GET TOKEN');
-        }
+            await init(configuration);
+          }
+        })
       }
     })
 
@@ -440,7 +442,7 @@
         var btn = $(this);
         btn.prop('disabled', true).html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
 
-        homebridge.request('/loginByUserPass', {
+        homebridge.request('/login-by-user-pass', {
           country: configuration.country,
           language: configuration.language,
           username: username,

@@ -22,7 +22,12 @@ export class Auth {
 
   public async login(username: string, password: string) {
     // get signature and timestamp in login form
-    const loginForm = await requestClient.get(await this.getLoginUrl()).then(res => res.data);
+    const hash = crypto.createHash('sha512');
+
+    return this.loginStep2(username, hash.update(password).digest('hex'));
+  }
+
+  public async loginStep2(username, encrypted_password, extra_headers?: any) {
     const headers = {
       'Accept': 'application/json',
       'X-Application-Key': constants.APPLICATION_KEY,
@@ -34,17 +39,14 @@ export class Auth {
       'X-Device-Publish-Flag': 'Y',
       'X-Device-Country': this.gateway.country_code,
       'X-Device-Language': this.gateway.language_code,
-      'X-Signature': loginForm.match(/signature\s+:\s+"([^"]+)"/)[1],
-      'X-Timestamp': loginForm.match(/tStamp\s+:\s+"([^"]+)"/)[1],
       'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
       'Access-Control-Allow-Origin': '*',
       'Accept-Encoding': 'gzip, deflate, br',
       'Accept-Language': 'en-US,en;q=0.9',
     };
 
-    const hash = crypto.createHash('sha512');
     const preLoginData = {
-      'user_auth2': hash.update(password).digest('hex'),
+      'user_auth2': encrypted_password,
       'log_param': 'login request / user_id : '+ username +' / third_party : null / svc_list : SVC202,SVC710 / 3rd_service : ',
     };
     const preLogin = await requestClient.post(this.gateway.login_base_url + 'preLogin', qs.stringify(preLoginData), { headers })
@@ -57,6 +59,7 @@ export class Auth {
       'user_auth2': preLogin.encrypted_pw,
       'password_hash_prameter_flag': 'Y',
       'svc_list': 'SVC202,SVC710', // SVC202=LG SmartHome, SVC710=EMP OAuth
+      ...extra_headers,
     };
 
     // try login with username and hashed password

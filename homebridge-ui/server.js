@@ -8,12 +8,63 @@ class UiServer extends HomebridgePluginUiServer {
     // super must be called first
     super();
 
-    this.onRequest('/getLoginUrl', this.getLoginUrl.bind(this));
-    this.onRequest('/loginByUserPass', this.loginByUserPass.bind(this));
+    this.onRequest('/get-login-url', this.getLoginUrl.bind(this));
+    this.onRequest('/login-by-user-pass', this.loginByUserPass.bind(this));
     this.onRequest('/get-all-devices', this.getAllDevices.bind(this));
+    this.onRequest('/extract-token-from-url', this.extractToken.bind(this));
 
     // this.ready() must be called to let the UI know you are ready to accept api calls
     this.ready();
+  }
+
+  async extractToken(params) {
+    const url = new URL(params.url);
+
+    const refresh_token = url.searchParams.get('refresh_token');
+    if (refresh_token) {
+      return {
+        success: true,
+        token: refresh_token,
+      };
+    }
+
+    const country = url.searchParams.get('country'),
+      language = url.searchParams.get('language'),
+      username = url.searchParams.get('user_id'),
+      thirdparty_token = url.searchParams.get('user_thirdparty_token'),
+      id_type = url.searchParams.get('user_id_type');
+
+    const thirdparty = {
+      APPL: 'apple',
+      FBK: 'facebook',
+      GGL: 'google',
+      AMZ: 'amazon',
+    };
+    if (!username || !thirdparty_token || typeof thirdparty[id_type] === 'undefined') {
+      return {
+        success: false,
+        error: 'this url not valid, please try again or use LG account method',
+      }
+    }
+
+    const api = new API(country, language);
+    const gateway = await api.gateway();
+    const auth = new Auth(gateway);
+    try {
+      const session = await auth.loginStep2(username, thirdparty_token, {
+        third_party: thirdparty[id_type]
+      })
+
+      return {
+        success: true,
+        token: session.refreshToken,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        error: err.message,
+      }
+    }
   }
 
   async getAllDevices(params) {
