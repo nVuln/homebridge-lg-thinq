@@ -65,7 +65,7 @@ npm i -g homebridge-lg-thinq
 
 ## Device specific configuration
 
-* See [Wiki](https://github.com/nVuln/homebridge-lg-thinq/wiki/Wiki)
+* See [Wiki](https://github.com/nVuln/homebridge-lg-thinq/wiki)
 
 ## Implementation Status
 
