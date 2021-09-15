@@ -229,6 +229,24 @@ export class ThinQ {
   }
 
   public async registerMQTTListener(callback: (data: any) => void) {
+    const delayMs = ms => new Promise(res => setTimeout(res, ms))
+
+    let tried = 5;
+    while(tried > 0) {
+      try {
+        await this._registerMQTTListener(callback);
+        return;
+      } catch (err) {
+        tried--;
+        this.log.debug('Cannot start MQTT, retrying in 5s.');
+        await delayMs(5000);
+      }
+    }
+
+    this.log.error('Cannot start MQTT!');
+  }
+
+  protected async _registerMQTTListener(callback: (data: any) => void) {
     const ttl = 86400000; // 1 day
     const route = await this.api.getRequest('https://common.lgthinq.com/route').then(data => data.result);
 

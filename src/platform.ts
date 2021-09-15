@@ -111,11 +111,11 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       if (existingAccessory) {
         accessoriesToRemoveUUID.splice(accessoriesToRemoveUUID.indexOf(device.id), 1);
 
-        this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
+        this.log.info('Restoring existing accessory from cache:', device.name, '-', device.id);
         existingAccessory.context.device = deviceWithSnapshot;
         lgThinQDevice = new accessoryType(this, existingAccessory);
       } else {
-        this.log.info('Adding new accessory:', device.name);
+        this.log.info('Adding new accessory:', device.name, '-', device.id);
 
         const category = Helper.category(device);
         // create a new accessory
