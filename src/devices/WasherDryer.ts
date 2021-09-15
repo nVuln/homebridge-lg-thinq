@@ -119,8 +119,11 @@ export default class WasherDryer extends baseDevice {
   }
 
   public update(snapshot) {
+    super.update(snapshot);
+
+    const washerDryer = snapshot.washerDryer;
     // when washer state is changed
-    if (this.config.washer_trigger as boolean && this.serviceEventFinished && 'preState' in snapshot && 'state' in snapshot) {
+    if (this.config.washer_trigger as boolean && this.serviceEventFinished && 'preState' in washerDryer && 'state' in washerDryer) {
       const {
         Characteristic: {
           OccupancyDetected,
@@ -128,19 +131,18 @@ export default class WasherDryer extends baseDevice {
       } = this.platform;
 
       // detect if washer program in done
-      if (snapshot.state === 'END' && RUNNING_STATUS.includes(snapshot.preState)) {
+      if ((washerDryer.state === 'END' && RUNNING_STATUS.includes(washerDryer.preState))
+        || (this.isRunning && !this.Status.isRunning)) {
         this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_DETECTED);
         this.isRunning = false; // marked device as not running
       }
 
       // detect if washer program is start
-      if (RUNNING_STATUS.includes(snapshot.state) && !this.isRunning) {
-        this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_DETECTED);
+      if (this.Status.isRunning && !this.isRunning) {
+        this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_NOT_DETECTED);
         this.isRunning = true;
       }
     }
-
-    super.update(snapshot);
   }
 }
 

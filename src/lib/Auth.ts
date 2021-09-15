@@ -48,19 +48,7 @@ export class Auth {
       'log_param': 'login request / user_id : '+ username +' / third_party : null / svc_list : SVC202,SVC710 / 3rd_service : ',
     };
     const preLogin = await requestClient.post(this.gateway.login_base_url + 'preLogin', qs.stringify(preLoginData), { headers })
-      .then(res => res.data)
-      .catch(err => {
-        if (!err.response) {
-          throw err;
-        }
-
-        const {code, message} = err.response.data.error;
-        if (code === 'MS.001.03') {
-          throw new AuthenticationError('Double-check your country in configuration');
-        }
-
-        throw new AuthenticationError(message);
-      });
+      .then(res => res.data);
 
     headers['X-Signature'] = preLogin.signature;
     headers['X-Timestamp'] = preLogin.tStamp;
@@ -73,7 +61,18 @@ export class Auth {
 
     // try login with username and hashed password
     const loginUrl = this.gateway.emp_base_url + 'emp/v2.0/account/session/' + encodeURIComponent(username);
-    const account = await requestClient.post(loginUrl, qs.stringify(data), { headers }).then(res => res.data.account);
+    const account = await requestClient.post(loginUrl, qs.stringify(data), { headers }).then(res => res.data.account).catch(err => {
+      if (!err.response) {
+        throw err;
+      }
+
+      const {code, message} = err.response.data.error;
+      if (code === 'MS.001.03') {
+        throw new AuthenticationError('Double-check your country in configuration');
+      }
+
+      throw new AuthenticationError(message);
+    });
 
     // dynamic get secret key for emp signature
     const empSearchKeyUrl = this.gateway.login_base_url + 'searchKey?key_name=OAUTH_SECRETKEY&sever_type=OP';
@@ -84,9 +83,6 @@ export class Auth {
       account_type: account.userIDType,
       client_id: constants.CLIENT_ID,
       country_code: account.country,
-      redirect_uri: loginForm.match(/redirect_uri\s+:\s+"([^"]+)?"/)[1],
-      response_type: 'code',
-      state: '12345',
       username: account.userID,
     };
     const empUrl = new URL('https://emp-oauth.lgecloud.com/emp/oauth2/token/empsession' + qs.stringify(empData, { addQueryPrefix: true }));
@@ -107,7 +103,7 @@ export class Auth {
       'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36 Edg/93.0.961.44',
     };
     // create emp session and get access token
-    const token = await requestClient.post(empUrl.href, empUrl.search.substring(1), {
+    const token = await requestClient.post(empUrl.origin + empUrl.pathname, empUrl.search.substring(1), {
       headers: empHeaders,
     }).then(res => res.data).catch(err => {
       throw new AuthenticationError(err.response.data.error.message);

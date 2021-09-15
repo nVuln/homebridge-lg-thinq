@@ -59,9 +59,13 @@ npm i -g homebridge-lg-thinq
 - `password` Required if `auth_mode` = `account`. LG thinQ password
 - `country` Required. Your account [country alpha-2 code](https://www.countrycode.org/), e.g., US for the USA.
 - `language` Required. Your account language code, e.g., en-US, vi-VN.
-- `devices` List devices you want add to homebridge, leave it empty if you want add all devices.
+- `devices` List devices you want add to homebridge, leave it empty if you want add all devices. See [Wiki](https://github.com/nVuln/homebridge-lg-thinq/wiki/Wiki) for specific device configuration.
 - `thinq1` Optional. Enable thinq1 device support
 - `platform` value always `LGThinQ`
+
+## Device specific configuration
+
+* See [Wiki](https://github.com/nVuln/homebridge-lg-thinq/wiki/Wiki)
 
 ## Implementation Status
 
@@ -78,5 +82,5 @@ for more device support please open issue request.
 
 ## Support
 
-If you have a question, please [start a discussion](https://github.com/nVuln/homebridge-lg-thinq/discussions/new).  
+If you have a question, please [start a discussion](https://github.com/nVuln/homebridge-lg-thinq/discussions/new) or leave a message at [discord channel](https://discord.gg/wEfQpCDtS7).  
 If you would like to report a bug, please [open an issue](https://github.com/nVuln/homebridge-lg-thinq/issues/new/choose).
