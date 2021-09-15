@@ -2,7 +2,7 @@
 
 import { Command } from 'commander';
 import { API } from './lib/API';
-import { Auth } from "./lib/Auth";
+import { Auth } from './lib/Auth';
 import { URL } from 'url';
 import * as readline from 'readline';
 
@@ -29,26 +29,29 @@ program
   .option('-u, --username <type>', 'Username', options.country)
   .on('option:username', (value) => options.username = value)
   .option('-p, --password <type>', 'Password', options.language)
-  .on('option:password', (value) => options.password = value)
+  .on('option:password', (value) => options.password = value);
 
 program
   .command('login')
   .description('Obtain refresh_token from LG account')
   .action(async () => {
-    console.info('Start login: username =', options.username, 'password =', options.password, 'country =', options.country, 'language =', options.language);
+    // eslint-disable-next-line max-len,no-console
+    console.info('Start login: username =', options.username, ', password =', options.password, ', country =', options.country, ', language =', options.language);
     try {
       const api = new API(options.country, options.language);
       const gateway = await api.gateway();
       const auth = new Auth(gateway);
       const session = await auth.login(options.username, options.password);
 
+      // eslint-disable-next-line no-console
       console.info('Your refresh_token:', session.refreshToken);
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error(err);
     }
 
     process.exit(0);
-  })
+  });
 
 program
   .command('auth')
@@ -65,6 +68,7 @@ program
     loginUrl.searchParams.set('redirect_uri', origin + '/login/iabClose');
     loginUrl.searchParams.set('callback_url', origin + '/login/iabClose');
 
+    // eslint-disable-next-line no-console
     console.info('Log in here:', loginUrl.href);
 
     const callbackUrl = await input('Then paste the URL where the browser is redirected: ');
@@ -73,6 +77,7 @@ program
     const refresh_token = url.searchParams.get('refresh_token');
 
     if (refresh_token) {
+      // eslint-disable-next-line no-console
       console.info('Your refresh_token:', refresh_token);
       process.exit(0);
       return;
@@ -90,6 +95,7 @@ program
     };
 
     if (!username || !thirdparty_token || typeof thirdparty[id_type] === 'undefined') {
+      // eslint-disable-next-line no-console
       console.error('redirected url not valid, please try again or use LG account method');
       process.exit(0);
       return;
@@ -97,15 +103,17 @@ program
 
     try {
       const session = await auth.loginStep2(username, thirdparty_token, {
-        third_party: thirdparty[id_type]
-      })
+        third_party: thirdparty[id_type],
+      });
 
+      // eslint-disable-next-line no-console
       console.info('Your refresh_token:', session.refreshToken);
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error(err);
     }
 
     process.exit(0);
-  })
+  });
 
 program.parse(process.argv);
