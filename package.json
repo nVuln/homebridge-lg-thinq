@@ -19,6 +19,9 @@
     "homebridge": ">=1.3.0"
   },
   "main": "dist/index.js",
+  "bin": {
+    "thinq": "./dist/cli.js"
+  },
   "scripts": {
     "lint": "eslint src/**.ts --max-warnings=0",
     "watch": "npm run build && npm link && nodemon",
@@ -48,6 +51,7 @@
     "@homebridge/plugin-ui-utils": "^0.0.19",
     "aws-iot-device-sdk": "^2.2.11",
     "axios": "^0.21.1",
+    "commander": "^8.2.0",
     "luxon": "^2.0.1",
     "node-forge": "^0.10.0",
     "node-persist": "^0.0.11",

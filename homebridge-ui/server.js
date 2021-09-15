@@ -40,7 +40,7 @@ class UiServer extends HomebridgePluginUiServer {
       GGL: 'google',
       AMZ: 'amazon',
     };
-    if (!username || !thirdparty_token || typeof thirdparty[id_type] === 'undefined') {
+    if (!username || !thirdparty_token || !thirdparty.hasOwnProperty(id_type)) {
       return {
         success: false,
         error: 'this url not valid, please try again or use LG account method',
