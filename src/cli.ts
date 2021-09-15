@@ -89,7 +89,7 @@ program
       AMZ: 'amazon',
     };
 
-    if (!username || !thirdparty_token || !thirdparty.hasOwnProperty(id_type)) {
+    if (!username || !thirdparty_token || typeof thirdparty[id_type] === 'undefined') {
       console.error('redirected url not valid, please try again or use LG account method');
       process.exit(0);
       return;
