@@ -104,14 +104,12 @@ $ thinq
 Usage: thinq [options] [command]
 
 Options:
-  -c, --country <type>   Country code for account (default: "US")
-  -l, --language <type>  Language code for account (default: "en-US")
-  -u, --username <type>  Username (default: "US")
-  -p, --password <type>  Password (default: "en-US")
-  -h, --help             display help for command
+  -c, --country <type>         Country code for account (default: "US")
+  -l, --language <type>        Language code for account (default: "en-US")
+  -h, --help                   display help for command
 
 Commands:
-  login                  Obtain refresh_token from LG account
-  auth                   Obtain refresh_token from account logged by Google Account, Apple ID
-  help [command]         display help for command
+  login <username> <password>  Obtain refresh_token from LG account
+  auth                         Obtain refresh_token from account logged by Google Account, Apple ID
+  help [command]               display help for command
 ```

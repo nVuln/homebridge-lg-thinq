@@ -9,7 +9,6 @@ export const RUNNING_STATUS = ['DETECTING', 'RUNNING', 'RINSING', 'SPINNING', 'D
 
 export default class WasherDryer extends baseDevice {
   public isRunning = false;
-  public stopTime = 0;
   protected serviceWasherDryer;
   protected serviceEventFinished;
   protected serviceDoorLock;
@@ -84,10 +83,14 @@ export default class WasherDryer extends baseDevice {
   }
 
   public get Status() {
-    return new WasherDryerStatus(this.accessory.context.device.snapshot?.washerDryer, this, this.accessory.context.device.deviceModel);
+    return new WasherDryerStatus(this.accessory.context.device.snapshot?.washerDryer, this.accessory.context.device.deviceModel);
   }
 
   async setActive(value: CharacteristicValue) {
+    if (!this.Status.isRemoteStartEnable) {
+      return;
+    }
+
     return;
   }
 
@@ -96,17 +99,17 @@ export default class WasherDryer extends baseDevice {
 
     const {
       Characteristic,
-      Characteristic: {
-        LockCurrentState,
-      },
     } = this.platform;
     this.serviceWasherDryer.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
     this.serviceWasherDryer.updateCharacteristic(Characteristic.InUse, this.Status.isRunning ? 1 : 0);
-    this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
+    const prevRemainDuration = this.serviceWasherDryer.getCharacteristic(Characteristic.RemainingDuration).value;
+    if (this.Status.remainDuration !== prevRemainDuration) {
+      this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
+    }
 
     if (this.config.washer_door_lock && this.serviceDoorLock) {
-      // eslint-disable-next-line max-len
-      this.serviceDoorLock.updateCharacteristic(LockCurrentState, this.Status.isDoorLocked ? LockCurrentState.SECURED : LockCurrentState.UNSECURED);
+      this.serviceDoorLock.updateCharacteristic(Characteristic.LockCurrentState,
+        this.Status.isDoorLocked ? Characteristic.LockCurrentState.SECURED : Characteristic.LockCurrentState.UNSECURED);
       this.serviceDoorLock.updateCharacteristic(Characteristic.LockTargetState, this.Status.isDoorLocked ? 1 : 0);
     }
   }
@@ -147,7 +150,7 @@ export default class WasherDryer extends baseDevice {
 }
 
 export class WasherDryerStatus {
-  constructor(protected data, protected accessory, protected deviceModel: DeviceModel) {
+  constructor(protected data, protected deviceModel: DeviceModel) {
   }
 
   public get isPowerOn() {
@@ -167,24 +170,16 @@ export class WasherDryerStatus {
   }
 
   public get remainDuration() {
-    const currentTimestamp = Math.floor(Date.now() / 1000);
-    if (!this.isRunning || !this.isPowerOn
-      || (this.accessory.stopTime && (currentTimestamp - this.accessory.stopTime) >= currentTimestamp)) {
-      this.accessory.stopTime = 0;
-      return 0;
-    }
-
     const {
       remainTimeHour = 0,
       remainTimeMinute = 0,
     } = this.data;
 
-    const stopTime = remainTimeHour * 3600 + remainTimeMinute * 60;
-
-    if (!this.accessory.stopTime || Math.abs(stopTime - this.accessory.stopTime) > 120 /* 2 min different */) {
-      this.accessory.stopTime = stopTime;
+    let remainingDuration = 0;
+    if (this.isRunning) {
+      remainingDuration = remainTimeHour * 3600 + remainTimeMinute * 60;
     }
 
-    return this.accessory.stopTime;
+    return remainingDuration;
   }
 }

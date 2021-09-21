@@ -66,6 +66,7 @@ export default class AirPurifier extends baseDevice {
 
     if (this.Status.filterMaxTime) {
       this.serviceFilterMaintenance = accessory.getService(FilterMaintenance) || accessory.addService(FilterMaintenance);
+      this.serviceFilterMaintenance.updateCharacteristic(Characteristic.Name, 'Filter Maintenance');
     }
 
     this.updateAccessoryCharacteristic(device);

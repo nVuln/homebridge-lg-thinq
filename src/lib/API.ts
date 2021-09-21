@@ -27,33 +27,36 @@ export class API {
 
   public client_id!: string;
 
+  public httpClient = requestClient;
+
   constructor(
     protected country: string = 'US',
     protected language: string = 'en-US',
   ) {}
 
-  async getRequest(uri, headers?: any, retry = false) {
-    const url = resolveUrl(this._gateway?.thinq2_url, uri);
-    return await requestClient.get(url, {
-      headers: Object.assign({}, this.defaultHeaders, headers || {}),
-    }).then(res => res.data).catch(async err => {
-      if (err instanceof TokenExpiredError && !retry) {
-        await this.refreshNewToken();
-        return await this.getRequest(uri, headers, true);
-      } else {
-        throw err;
-      }
-    });
+  async getRequest(uri, headers?: any) {
+    return await this.request('get', uri, headers);
   }
 
-  async postRequest(uri, data, headers?: any, retry = false) {
+  async postRequest(uri, data, headers?: any) {
+    return await this.request('post', uri, data, headers);
+  }
+
+  protected async request(method, uri: string, data?: any, headers?: any, retry = false) {
+    let requestHeaders = headers || this.defaultHeaders;
+    if (this._gateway?.thinq1_url && uri.startsWith(this._gateway.thinq1_url)) {
+      requestHeaders = headers || this.monitorHeaders;
+    }
+
     const url = resolveUrl(this._gateway?.thinq2_url, uri);
-    return await requestClient.post(url, data, {
-      headers: Object.assign({}, this.defaultHeaders, headers || {}),
+
+    return await this.httpClient.request({
+      method, url, data,
+      headers: requestHeaders,
     }).then(res => res.data).catch(async err => {
       if (err instanceof TokenExpiredError && !retry) {
         await this.refreshNewToken();
-        return await this.postRequest(uri, data, headers, true);
+        return await this.request(method, uri, data, headers, true);
       } else {
         throw err;
       }
@@ -182,10 +185,6 @@ export class API {
           return null;
         }
 
-        if (workList.format !== 'B64') {
-          console.debug(workList);
-        }
-
         return Buffer.from(workList.returnData, 'base64');
       });
   }
@@ -221,11 +220,7 @@ export class API {
     }
 
     if (!this.session.hasValidToken() && !!this.session.refreshToken) {
-      this.session = await this.auth.refreshNewToken(this.session);
-    }
-
-    if (!this.auth.jsessionId) {
-      this.auth.jsessionId = await this.auth.getJSessionId(this.session?.accessToken);
+      await this.refreshNewToken(this.session);
     }
 
     if (!this.userNumber) {
@@ -238,19 +233,17 @@ export class API {
     }
   }
 
-  public async refreshNewToken() {
-    if (!this.session || !this.auth) {
-      throw Error('API session not ready, try it again.');
-    }
-
-    await this.auth.refreshNewToken(this.session);
+  public async refreshNewToken(session: Session | null = null) {
+    session = session || this.session;
+    this.session = await this.auth.refreshNewToken(session);
     // get new jsessionid
     await this.auth.getJSessionId(this.session.accessToken);
   }
 
   async thinq1PostRequest(endpoint: string, data: any) {
     const headers = this.monitorHeaders;
-    return await requestClient.post(this._gateway?.thinq1_url + endpoint, {lgedmRoot: data}, {headers})
-      .then(res => res.data.lgedmRoot);
+    return await this.postRequest(this._gateway?.thinq1_url + endpoint, {
+      lgedmRoot: data,
+    }, headers).then(data => data.lgedmRoot);
   }
 }

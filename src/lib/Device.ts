@@ -37,6 +37,10 @@ export class Device {
     return this.data.snapshot || null;
   }
 
+  public set snapshot(value) {
+    this.data.snapshot = value;
+  }
+
   public get platform() {
     return this.data.platformType;
   }

@@ -28,6 +28,7 @@ export class baseDevice extends EventEmitter {
 
   public update(snapshot) {
     const device: Device = this.accessory.context.device;
+    this.platform.log.debug('['+device.name+'] Received snapshot: ', JSON.stringify(snapshot));
     device.data.snapshot = mergeDeep({}, device.snapshot, snapshot);
     this.updateAccessoryCharacteristic(device);
   }

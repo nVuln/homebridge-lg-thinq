@@ -5,6 +5,7 @@ import AirState from './transforms/AirState';
 import WasherDryer from './transforms/WasherDryer';
 import {Washer, AC, Refrigerator, AirPurifier} from './devices';
 import RefState from './transforms/RefState';
+import * as uuid from 'uuid';
 
 export default class Helper {
   public static make(device: Device) {
@@ -26,10 +27,6 @@ export default class Helper {
    * transform device from thinq1 to thinq2 compatible (with snapshot data)
    */
   public static transform(device: Device, monitorData) {
-    if (device.type === PlatformType.ThinQ2) {
-      return device;
-    }
-
     const decodedMonitor = device.deviceModel.decodeMonitor(monitorData || {});
 
     switch (device.type) {
@@ -60,6 +57,37 @@ export default class Helper {
     }
 
     return device;
+  }
+
+  public static prepareControlData(device: Device, key: string, value: string) {
+    const data: any = {
+      cmd: 'Control',
+      cmdOpt: 'Set',
+      deviceId: device.id,
+      workId: uuid.v4(),
+    };
+
+    if (device.deviceModel.data.ControlWifi?.type === 'BINARY(BYTE)') {
+      const sampleData = device.deviceModel.data.ControlWifi?.action?.SetControl?.data || '[]';
+      const decodedMonitor = device.snapshot.raw || {};
+      decodedMonitor[key] = value;
+      // build data array of byte
+      const byteArray = new Uint8Array(JSON.parse(Object.keys(decodedMonitor).reduce((prev, key) => {
+        return prev.replace(new RegExp('{{'+key+'}}', 'g'), parseInt(decodedMonitor[key] || '0'));
+      }, sampleData)));
+      Object.assign(data, {
+        value: 'ControlData',
+        data: Buffer.from(String.fromCharCode(...byteArray)).toString('base64'),
+        format: 'B64',
+      });
+    } else {
+      data.value = {
+        [key]: value,
+      };
+      data.data = '';
+    }
+
+    return data;
   }
 }
 

@@ -71,7 +71,7 @@ export class Auth {
 
       const {code, message} = err.response.data.error;
       if (code === 'MS.001.03') {
-        throw new AuthenticationError('Double-check your country in configuration');
+        throw new AuthenticationError('Your account was already used to registered in '+ message +'.');
       }
 
       throw new AuthenticationError(message);
@@ -142,20 +142,25 @@ export class Auth {
   }
 
   public async refreshNewToken(session: Session) {
-    const gateway = await requestClient.post('https://kic.lgthinq.com:46030/api/common/gatewayUriList', {
-      lgedmRoot: {
-        countryCode: this.gateway.country_code,
-        langCode: this.gateway.language_code,
-      },
-    }, {
-      headers: {
-        'Accept': 'application/json',
-        'x-thinq-application-key': 'wideq',
-        'x-thinq-security-key': 'nuts_securitykey',
-      },
-    }).then(res => res.data.lgedmRoot);
+    try {
+      const gateway = await requestClient.post('https://kic.lgthinq.com:46030/api/common/gatewayUriList', {
+        lgedmRoot: {
+          countryCode: this.gateway.country_code,
+          langCode: this.gateway.language_code,
+        },
+      }, {
+        headers: {
+          'Accept': 'application/json',
+          'x-thinq-application-key': 'wideq',
+          'x-thinq-security-key': 'nuts_securitykey',
+        },
+      }).then(res => res.data.lgedmRoot);
 
-    this.lgeapi_url = gateway.oauthUri + '/';
+      this.lgeapi_url = gateway.oauthUri + '/';
+    } catch (err) {
+      // ignore this error
+    }
+
     const tokenUrl = this.lgeapi_url + 'oauth2/token';
     const data = {
       grant_type: 'refresh_token',

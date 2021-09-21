@@ -296,9 +296,8 @@
                 <div class="card-body">
                     <p>Click button below to login, Then paste the URL where the browser is redirected to "Redirect URL" input</p>
                     <div class="text-center">
-                        <a class="btn btn-primary btn-login-other-method" target="_blank">
+                        <a class="btn btn-primary btn-login-other-method" target="_blank" href="#">
                             <div class="spinner-border" role="status"></div>
-                            <span>Loading...</span>
                         </a>
                     </div>
                     <div class="form-group">
@@ -317,6 +316,18 @@
 <script>
   const homebridge = window.homebridge;
   const $ = jQuery = window.jQuery;
+
+  function get3rdLoginUrl(configuration) {
+    const btn = $('.btn-login-other-method');
+    btn.addClass('disabled').html(`<div class="spinner-border" role="status"></div>`);
+    homebridge.request('/get-login-url', {
+      country: configuration.country,
+      language: configuration.language,
+    }).then(loginUrl => {
+      btn.removeClass('disabled').attr('href', loginUrl).html("Click here to login");
+      homebridge.hideSpinner();
+    });
+  }
 
   async function init(configuration) {
     homebridge.showSpinner();
@@ -358,14 +369,7 @@
     else {
       $('#loginForm').show();
 
-      homebridge.request('/get-login-url', {
-        country: configuration.country,
-        language: configuration.language,
-      }).then(loginUrl => {
-        $('.btn-login-other-method').attr('href', loginUrl).html("Click here to login");
-      });
-
-      homebridge.hideSpinner();
+      get3rdLoginUrl(configuration);
     }
   }
 
@@ -401,6 +405,7 @@
       configuration.country = $(selected).data('country');
       configuration.language = $(selected).data('language');
       await homebridge.updatePluginConfig([configuration]);
+      get3rdLoginUrl(configuration);
     });
 
     $('.btn-token-from-url').on('click', async function (e) {

@@ -6,7 +6,6 @@ import {WasherDryerStatus} from './WasherDryer';
 
 export default class Dishwasher extends baseDevice {
   protected serviceDishwasher;
-  public stopTime;
 
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
@@ -46,13 +45,16 @@ export default class Dishwasher extends baseDevice {
 
     const {Characteristic} = this.platform;
 
-    this.serviceDishwasher.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
+    const prevRemainDuration = this.serviceDishwasher.getCharacteristic(Characteristic.RemainingDuration).value;
+    if (this.Status.remainDuration !== prevRemainDuration) {
+      this.serviceDishwasher.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
+    }
     this.serviceDishwasher.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
     this.serviceDishwasher.updateCharacteristic(Characteristic.InUse, this.Status.isRunning ? 1 : 0);
   }
 
   public get Status() {
-    return new DishwasherStatus(this.accessory.context.device.snapshot?.dishwasher, this, this.accessory.context.device.deviceModel);
+    return new DishwasherStatus(this.accessory.context.device.snapshot?.dishwasher, this.accessory.context.device.deviceModel);
   }
 }
 

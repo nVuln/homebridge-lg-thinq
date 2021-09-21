@@ -203,6 +203,8 @@ export class DeviceModel {
   public decodeMonitor(data: any) {
     if (this.data.Monitoring.type === 'BINARY(BYTE)') {
       return this.decodeMonitorBinary(data);
+    } else if (this.data.Monitoring.type === 'BINARY(HEX)') {
+      return this.decodeMonitorBinary(data, 16);
     }
 
     try {
@@ -212,7 +214,7 @@ export class DeviceModel {
     }
   }
 
-  private decodeMonitorBinary(data: any) {
+  private decodeMonitorBinary(data: any, length = 8) {
     const decoded: { [key: string]: any } = {};
 
     for (const item of this.data.Monitoring.protocol) {
@@ -221,7 +223,7 @@ export class DeviceModel {
 
       for (let i = item.startByte; i < item.startByte + item.length; i++) {
         const v = data[i];
-        value = (value << 8) + v;
+        value = (value << length) + v;
         decoded[key] = isNaN(value) ? null : String(value);
       }
     }

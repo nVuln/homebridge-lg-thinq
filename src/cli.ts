@@ -16,32 +16,27 @@ const program = new Command();
 const options = {
   country: 'US',
   language: 'en-US',
-  refreshToken: '',
-  username: '',
-  password: '',
 };
 
 program
   .option('-c, --country <type>', 'Country code for account', options.country)
   .on('option:country', (value) => options.country = value)
   .option('-l, --language <type>', 'Language code for account', options.language)
-  .on('option:language', (value) => options.language = value)
-  .option('-u, --username <type>', 'Username', options.country)
-  .on('option:username', (value) => options.username = value)
-  .option('-p, --password <type>', 'Password', options.language)
-  .on('option:password', (value) => options.password = value);
+  .on('option:language', (value) => options.language = value);
 
 program
   .command('login')
   .description('Obtain refresh_token from LG account')
-  .action(async () => {
+  .argument('<username>', 'LG username')
+  .argument('<password>', 'LG password')
+  .action(async (username, password) => {
     // eslint-disable-next-line max-len,no-console
-    console.info('Start login: username =', options.username, ', password =', options.password, ', country =', options.country, ', language =', options.language);
+    console.info('Start login: username =', username, ', password =', password, ', country =', options.country, ', language =', options.language);
     try {
       const api = new API(options.country, options.language);
       const gateway = await api.gateway();
       const auth = new Auth(gateway);
-      const session = await auth.login(options.username, options.password);
+      const session = await auth.login(username, password);
 
       // eslint-disable-next-line no-console
       console.info('Your refresh_token:', session.refreshToken);
