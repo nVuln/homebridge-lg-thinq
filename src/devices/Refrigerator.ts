@@ -76,8 +76,6 @@ export default class Refrigerator extends baseDevice {
     } else if (this.serviceEcoFriendly) {
       accessory.getService(this.serviceEcoFriendly);
     }
-
-    this.updateAccessoryCharacteristic(device);
   }
 
   public get config() {

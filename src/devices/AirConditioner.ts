@@ -108,8 +108,6 @@ export default class AirConditioner extends baseDevice {
           await this.setTargetState(this.currentTargetState);
         }
       });
-
-    this.updateAccessoryCharacteristic(this.accessory.context.device);
   }
 
   public get config() {

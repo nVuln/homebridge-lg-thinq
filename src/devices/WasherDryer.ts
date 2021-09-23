@@ -78,8 +78,6 @@ export default class WasherDryer extends baseDevice {
     } else if (this.serviceEventFinished) {
       accessory.removeService(this.serviceEventFinished);
     }
-
-    this.updateAccessoryCharacteristic(device);
   }
 
   public get Status() {

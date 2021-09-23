@@ -32,8 +32,6 @@ export default class Dishwasher extends baseDevice {
     this.serviceDishwasher.getCharacteristic(Characteristic.RemainingDuration).setProps({
       maxValue: 86400, // 1 day
     });
-
-    this.updateAccessoryCharacteristic(device);
   }
 
   public setActive() {

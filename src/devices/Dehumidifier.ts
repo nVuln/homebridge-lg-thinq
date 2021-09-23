@@ -68,8 +68,6 @@ export default class Dehumidifier extends baseDevice {
 
     this.serviceHumiditySensor = accessory.getService(HumiditySensor) || accessory.addService(HumiditySensor);
     this.serviceHumiditySensor.addLinkedService(this.serviceDehumidifier);
-
-    this.updateAccessoryCharacteristic(device);
   }
 
   async setActive(value: CharacteristicValue) {

@@ -68,8 +68,6 @@ export default class AirPurifier extends baseDevice {
       this.serviceFilterMaintenance = accessory.getService(FilterMaintenance) || accessory.addService(FilterMaintenance);
       this.serviceFilterMaintenance.updateCharacteristic(Characteristic.Name, 'Filter Maintenance');
     }
-
-    this.updateAccessoryCharacteristic(device);
   }
 
   public get Status() {
