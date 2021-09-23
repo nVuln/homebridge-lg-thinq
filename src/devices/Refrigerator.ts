@@ -100,14 +100,20 @@ export default class Refrigerator extends baseDevice {
 
     const {Characteristic} = this.platform;
 
+    const tempBetween = (props, value) => {
+      return Math.min(Math.max(props.minValue, value), props.maxValue);
+    };
+
     if (this.serviceFreezer) {
-      this.serviceFreezer.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.freezerTemperature);
-      this.serviceFreezer.updateCharacteristic(Characteristic.TargetTemperature, this.Status.freezerTemperature);
+      const t = tempBetween(this.serviceFreezer.getCharacteristic(Characteristic.TargetTemperature).props, this.Status.freezerTemperature);
+      this.serviceFreezer.updateCharacteristic(Characteristic.CurrentTemperature, t);
+      this.serviceFreezer.updateCharacteristic(Characteristic.TargetTemperature, t);
     }
 
     if (this.serviceFridge) {
-      this.serviceFridge.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.fridgeTemperature);
-      this.serviceFridge.updateCharacteristic(Characteristic.TargetTemperature, this.Status.fridgeTemperature);
+      const t = tempBetween(this.serviceFridge.getCharacteristic(Characteristic.TargetTemperature).props, this.Status.fridgeTemperature);
+      this.serviceFridge.updateCharacteristic(Characteristic.CurrentTemperature, t);
+      this.serviceFridge.updateCharacteristic(Characteristic.TargetTemperature, t);
     }
 
     const contactSensorValue = this.Status.isDoorClosed ?
