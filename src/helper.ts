@@ -8,6 +8,7 @@ import Dehumidifier from './devices/Dehumidifier';
 import {default as V1helper} from './v1/helper';
 import {PlatformType} from './lib/constants';
 import AirConditioner from './devices/AirConditioner';
+import Oven from './devices/Oven';
 
 /**
  * Platform Accessory
@@ -40,6 +41,7 @@ export class Helper {
       case 'DISHWASHER': return Dishwasher;
       case 'DEHUMIDIFIER': return Dehumidifier;
       case 'AC': return AirConditioner;
+      case 'OVEN': return Oven;
     }
 
     return null;
