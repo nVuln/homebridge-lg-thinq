@@ -105,6 +105,9 @@ export default class WasherDryer extends baseDevice {
       this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
     }
 
+    this.serviceWasherDryer.updateCharacteristic(Characteristic.StatusFault,
+      this.Status.isError ? Characteristic.StatusFault.GENERAL_FAULT : Characteristic.StatusFault.NO_FAULT);
+
     if (this.config.washer_door_lock && this.serviceDoorLock) {
       this.serviceDoorLock.updateCharacteristic(Characteristic.LockCurrentState,
         this.Status.isDoorLocked ? Characteristic.LockCurrentState.SECURED : Characteristic.LockCurrentState.UNSECURED);
@@ -123,6 +126,10 @@ export default class WasherDryer extends baseDevice {
     super.update(snapshot);
 
     const washerDryer = snapshot.washerDryer;
+    if (!washerDryer) {
+      return;
+    }
+
     // when washer state is changed
     if (this.config.washer_trigger as boolean && this.serviceEventFinished && 'preState' in washerDryer && 'state' in washerDryer) {
       const {
@@ -157,6 +164,10 @@ export class WasherDryerStatus {
 
   public get isRunning() {
     return this.isPowerOn && RUNNING_STATUS.includes(this.data?.state);
+  }
+
+  public get isError() {
+    return this.data?.state === 'ERROR';
   }
 
   public get isRemoteStartEnable() {
