@@ -8,6 +8,7 @@ import Dehumidifier from './devices/Dehumidifier';
 import {default as V1helper} from './v1/helper';
 import {PlatformType} from './lib/constants';
 import AirConditioner from './devices/AirConditioner';
+import {allModels} from './models';
 
 /**
  * Platform Accessory
@@ -16,6 +17,11 @@ import AirConditioner from './devices/AirConditioner';
  */
 export class Helper {
   public static make(device: Device) {
+    const modelClass = allModels.find(model => model.model() === device.model);
+    if (modelClass) {
+      return modelClass;
+    }
+
     if (device.snapshot === null) {
       return null;
     }
