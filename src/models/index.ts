@@ -1,6 +1,8 @@
 /**
  * all available model
  */
-export const allModels = [
+import {baseDevice} from '../baseDevice';
+
+export const allModels: typeof baseDevice[] = [
 
 ];
