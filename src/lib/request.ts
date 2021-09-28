@@ -1,5 +1,5 @@
 import axios, {AxiosInstance} from 'axios';
-import {ManualProcessNeeded, NotConnectedError, TokenError, TokenExpiredError} from '../errors';
+import {ManualProcessNeeded, MonitorError, NotConnectedError, TokenExpiredError} from '../errors';
 import axiosRetry from 'axios-retry';
 
 const client = axios.create();
@@ -28,7 +28,7 @@ client.interceptors.response.use((response) => {
     } else if (code === '0102') {
       throw new TokenExpiredError(data.returnMsg);
     } else if (code !== '0000') {
-      throw new TokenError(code + ' - ' + data.returnMsg || '');
+      throw new MonitorError(code + ' - ' + data.returnMsg || '');
     }
   }
 

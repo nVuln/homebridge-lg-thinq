@@ -6,6 +6,7 @@ import WasherDryer from './transforms/WasherDryer';
 import {Washer, AC, Refrigerator, AirPurifier} from './devices';
 import RefState from './transforms/RefState';
 import * as uuid from 'uuid';
+import AirPurifierState from './transforms/AirPurifierState';
 
 export default class Helper {
   public static make(device: Device) {
@@ -35,6 +36,8 @@ export default class Helper {
         device.data.snapshot = WasherDryer(device.deviceModel, decodedMonitor);
         break;
       case 'AIR_PURIFIER':
+        device.data.snapshot = AirPurifierState(device.deviceModel, decodedMonitor);
+        break;
       case 'AC':
         device.data.snapshot = AirState(device.deviceModel, decodedMonitor);
         break;

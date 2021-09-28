@@ -12,9 +12,9 @@ export enum RotateSpeed {
 
 // opMode = 14 => normal mode, can rotate speed
 export default class AirPurifier extends baseDevice {
-  protected serviceAirPurifier: Service;
-  protected serviceAirQuality: Service;
-  protected serviceLight: Service;
+  protected serviceAirPurifier;
+  protected serviceAirQuality;
+  protected serviceLight;
   protected serviceFilterMaintenance;
 
   constructor(
@@ -57,7 +57,7 @@ export default class AirPurifier extends baseDevice {
     this.serviceAirPurifier.getCharacteristic(Characteristic.SwingMode).onSet(this.setSwingMode.bind(this));
     this.serviceAirPurifier.getCharacteristic(Characteristic.RotationSpeed)
       .onSet(this.setRotationSpeed.bind(this))
-      .setProps({minValue: 1, maxValue: 4, minStep: 1});
+      .setProps({minValue: 1, maxValue: 4, minStep: 0.1});
 
     this.serviceAirQuality = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
 
