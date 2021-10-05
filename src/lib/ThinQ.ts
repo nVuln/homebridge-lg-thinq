@@ -169,6 +169,7 @@ export class ThinQ {
       } catch (err) {
         tried--;
         this.log.debug('Cannot start MQTT, retrying in 5s.');
+        this.log.debug('mqtt err:', err);
         await delayMs(5000);
       }
     }
@@ -177,7 +178,6 @@ export class ThinQ {
   }
 
   protected async _registerMQTTListener(callback: (data: any) => void) {
-    const ttl = 86400000; // 1 day
     const route = await this.api.getRequest('https://common.lgthinq.com/route').then(data => data.result);
 
     // key-pair
@@ -218,13 +218,22 @@ export class ThinQ {
       }).then(data => data.result);
     };
 
-    // get trusted cer root
-    const rootCA = await this.persist.cache('rootCA', ttl, async () => {
-      const rootCA = await this.api.getRequest('https://good.sca1a.amazontrust.com/');
-      return rootCA.match(/-----BEGIN CERTIFICATE-----([\s\S]*?)-----END CERTIFICATE-----/)[0];
-    });
-
     const urls = new URL(route.mqttServer);
+    // get trusted cer root based on hostname
+    let rootCAUrl;
+    if (urls.hostname.match(/^([^.]+)-ats.iot.([^.]+).amazonaws.com$/g)) {
+      // ats endpoint
+      rootCAUrl = 'https://www.amazontrust.com/repository/AmazonRootCA1.pem';
+    } else if (urls.hostname.match(/^([^.]+).iot.ruic.lgthinq.com$/g)) {
+      // LG owned certificate - Comodo CA
+      rootCAUrl = 'http://www.tbs-x509.com/Comodo_AAA_Certificate_Services.crt';
+    } else {
+      // use legacy VeriSign cert for other endpoint
+      // eslint-disable-next-line max-len
+      rootCAUrl = 'https://www.websecurity.digicert.com/content/dam/websitesecurity/digitalassets/desktop/pdfs/roots/VeriSign-Class%203-Public-Primary-Certification-Authority-G5.pem';
+    }
+
+    const rootCA = await this.api.getRequest(rootCAUrl);
 
     const connectToMqtt = async () => {
       // submit csr
@@ -238,6 +247,7 @@ export class ThinQ {
         host: urls.hostname,
       };
 
+      this.log.debug('open mqtt connection to', route.mqttServer);
       const device = awsIotDevice(connectData);
 
       device.on('error', (err) => {
