@@ -5,7 +5,8 @@ import {Device} from '../lib/Device';
 import {PlatformType} from '../lib/constants';
 import {DeviceModel} from '../lib/DeviceModel';
 
-export const RUNNING_STATUS = ['DETECTING', 'RUNNING', 'RINSING', 'SPINNING', 'DRYING', 'COOLING', 'WASH_REFRESHING', 'STEAMSOFTENING'];
+export const NOT_RUNNING_STATUS = ['COOLDOWN', 'POWEROFF', 'POWERFAIL', 'INITIAL', 'PAUSE', 'AUDIBLE_DIAGNOSIS', 'FIRMWARE',
+  'COURSE_DOWNLOAD', 'ERROR'];
 
 export default class WasherDryer extends baseDevice {
   public isRunning = false;
@@ -84,6 +85,13 @@ export default class WasherDryer extends baseDevice {
     return new WasherDryerStatus(this.accessory.context.device.snapshot?.washerDryer, this.accessory.context.device.deviceModel);
   }
 
+  public get config() {
+    return Object.assign({}, {
+      washer_trigger: false,
+      washer_door_lock: false,
+    }, super.config);
+  }
+
   async setActive(value: CharacteristicValue) {
     if (!this.Status.isRemoteStartEnable) {
       return;
@@ -115,13 +123,6 @@ export default class WasherDryer extends baseDevice {
     }
   }
 
-  public get config() {
-    return Object.assign({}, {
-      washer_trigger: false,
-      washer_door_lock: false,
-    }, super.config);
-  }
-
   public update(snapshot) {
     super.update(snapshot);
 
@@ -139,7 +140,7 @@ export default class WasherDryer extends baseDevice {
       } = this.platform;
 
       // detect if washer program in done
-      if ((washerDryer.state === 'END' && RUNNING_STATUS.includes(washerDryer.preState))
+      if ((washerDryer.state === 'END' && !NOT_RUNNING_STATUS.includes(washerDryer.preState))
         || (this.isRunning && !this.Status.isRunning)) {
         this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_DETECTED);
         this.isRunning = false; // marked device as not running
@@ -163,7 +164,7 @@ export class WasherDryerStatus {
   }
 
   public get isRunning() {
-    return this.isPowerOn && RUNNING_STATUS.includes(this.data?.state);
+    return this.isPowerOn && !NOT_RUNNING_STATUS.includes(this.data?.state);
   }
 
   public get isError() {
