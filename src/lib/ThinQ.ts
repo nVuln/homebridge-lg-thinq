@@ -61,7 +61,9 @@ export class ThinQ {
     // load device model
     device.deviceModel = await this.loadDeviceModel(device);
 
-    if (device.deviceModel.data.Monitoring === undefined && device.deviceModel.data.MonitoringValue === undefined) {
+    if (device.deviceModel.data.Monitoring === undefined
+      && device.deviceModel.data.MonitoringValue === undefined
+      && device.deviceModel.data.Value === undefined) {
       this.log.warn('['+device.name+'] This device may not "smart" device. Ignore it!');
     }
 
