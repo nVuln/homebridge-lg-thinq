@@ -144,6 +144,11 @@ export default class WasherDryer extends baseDevice {
         || (this.isRunning && !this.Status.isRunning)) {
         this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_DETECTED);
         this.isRunning = false; // marked device as not running
+
+        // turn it off after 10 minute
+        setTimeout(() => {
+          this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_NOT_DETECTED);
+        }, 10000 * 60);
       }
 
       // detect if washer program is start
