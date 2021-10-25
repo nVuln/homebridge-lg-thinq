@@ -71,8 +71,8 @@ export default class Refrigerator extends baseDevice {
     this.serviceEcoFriendly = accessory.getService('Eco Friendly');
     if (this.config.ref_eco_friendly && 'ecoFriendly' in device.snapshot?.refState) {
       this.serviceEcoFriendly = this.serviceEcoFriendly || accessory.addService(Switch, 'Eco Friendly', 'Eco Friendly');
-      this.serviceExpressFridge.getCharacteristic(Characteristic.On).onSet(this.setEcoFriendly.bind(this));
-      this.serviceExpressFridge.addLinkedService(this.serviceLabel);
+      this.serviceEcoFriendly.getCharacteristic(Characteristic.On).onSet(this.setEcoFriendly.bind(this));
+      this.serviceEcoFriendly.addLinkedService(this.serviceLabel);
     } else if (this.serviceEcoFriendly) {
       accessory.getService(this.serviceEcoFriendly);
     }
