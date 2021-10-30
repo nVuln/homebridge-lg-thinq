@@ -29,10 +29,14 @@ export class API {
 
   public httpClient = requestClient;
 
+  public logger;
+
   constructor(
     protected country: string = 'US',
     protected language: string = 'en-US',
-  ) {}
+  ) {
+    this.logger = console;
+  }
 
   async getRequest(uri, headers?: any) {
     return await this.request('get', uri, headers);
@@ -55,10 +59,13 @@ export class API {
       headers: requestHeaders,
     }).then(res => res.data).catch(async err => {
       if (err instanceof TokenExpiredError && !retry) {
-        await this.refreshNewToken();
-        return await this.request(method, uri, data, headers, true);
+        return await this.refreshNewToken().then(async () => {
+          return await this.request(method, uri, data, headers, true);
+        }).catch((err) => {
+          this.logger.debug('refresh new token error: ', err);
+        });
       } else {
-        throw err;
+        this.logger.debug('retried request error: ', err);
       }
     });
   }

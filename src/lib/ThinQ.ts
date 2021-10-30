@@ -27,6 +27,7 @@ export class ThinQ {
     public readonly log: Logger,
   ) {
     this.api = new API(this.config.country, this.config.language);
+    this.api.logger = log;
     this.api.httpClient.interceptors.response.use(response => {
       this.log.debug('[request]', response.config.method, response.config.url);
       return response;
