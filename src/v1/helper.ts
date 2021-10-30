@@ -15,6 +15,7 @@ export default class Helper {
     }
 
     switch (device.type) {
+      case 'DRYER':
       case 'WASHER': return Washer;
       case 'AC': return AC;
       case 'REFRIGERATOR': return Refrigerator;

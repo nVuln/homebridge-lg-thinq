@@ -22,10 +22,6 @@ export class Helper {
       return modelClass;
     }
 
-    if (device.snapshot === null) {
-      return null;
-    }
-
     if (device.platform === PlatformType.ThinQ1) {
       // check if thinq1 available
       const deviceClass = V1helper.make(device);
