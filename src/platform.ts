@@ -221,7 +221,9 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
           const device: Device = accessory.context.device;
           if (device.platform === PlatformType.ThinQ1 && this.enable_thinq1) {
             const deviceWithSnapshot = await ThinQ.pollMonitor(device);
-            this.events.emit(device.id, deviceWithSnapshot.snapshot);
+            if (Object.keys(deviceWithSnapshot.snapshot.raw || {}).length !== 0) {
+              this.events.emit(device.id, deviceWithSnapshot.snapshot);
+            }
           }
         }
       } catch (err) {
