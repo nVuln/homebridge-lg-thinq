@@ -52,6 +52,7 @@ npm i -g homebridge-lg-thinq
   ],
   "platform": "LGThinQ"
 }
+
 ```
 - `auth_mode` Required. You can choose between `token` and `account`
 - `refresh_token` Required if `auth_mode` = `token`. The `refresh_token` of your account.
@@ -63,21 +64,13 @@ npm i -g homebridge-lg-thinq
 - `thinq1` Optional. Enable thinq1 device support
 - `platform` value always `LGThinQ`
 
-## Obtain `refresh_token` logged by Google Account, Apple ID
+## Plugin Authorization Setting
 
-```
-$ npm install -g homebridge-lg-thinq
-
-$ thinq auth -c US -l en-US
-Log in here: xxxxxx <- visit this url and select Google or Apple ID to login
-Then paste the URL where the browser is redirected: <- then paste redirected url here
-
-Your refresh_token: <- your refresh_token will be displayed here
-```
+* See [Wiki - Plugin Authorization Setting](https://github.com/nVuln/homebridge-lg-thinq/wiki/Plugin-Authorization-Setting)
 
 ## Device specific configuration
 
-* See [Wiki](https://github.com/nVuln/homebridge-lg-thinq/wiki)
+* See [Wiki - Device Configuration](https://github.com/nVuln/homebridge-lg-thinq/wiki/Device-Configuration)
 
 ## Implementation Status
 

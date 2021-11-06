@@ -201,9 +201,9 @@ export class DeviceModel {
   }
 
   public decodeMonitor(data: any) {
-    if (this.data.Monitoring.type === 'BINARY(BYTE)') {
+    if (this.data.Monitoring?.type === 'BINARY(BYTE)') {
       return this.decodeMonitorBinary(data);
-    } else if (this.data.Monitoring.type === 'BINARY(HEX)') {
+    } else if (this.data.Monitoring?.type === 'BINARY(HEX)') {
       return this.decodeMonitorBinary(data, 16);
     }
 

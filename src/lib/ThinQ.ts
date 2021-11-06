@@ -81,7 +81,7 @@ export class ThinQ {
   }
 
   public async unregister(device: Device) {
-    if (device.platform === PlatformType.ThinQ1 && device.id in this.workIds) {
+    if (device.platform === PlatformType.ThinQ1 && device.id in this.workIds && this.workIds[device.id] !== null) {
       try {
         await this.api.sendMonitorCommand(device.id, 'Stop', this.workIds[device.id]);
       } catch (err) {
@@ -93,7 +93,13 @@ export class ThinQ {
   }
 
   protected async registerWorkId(device) {
-    this.workIds[device.id] = await this.api.sendMonitorCommand(device.id, 'Start', uuid.v4()).then(data => data.workId);
+    this.workIds[device.id] = await this.api.sendMonitorCommand(device.id, 'Start', uuid.v4()).then(data => {
+      if (data !== undefined && 'workId' in data) {
+        return data.workId;
+      }
+
+      return null;
+    });
   }
 
   protected async loadDeviceModel(device: Device) {

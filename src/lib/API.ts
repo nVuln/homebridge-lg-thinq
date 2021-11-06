@@ -7,7 +7,7 @@ import {Gateway} from './Gateway';
 import {requestClient} from './request';
 import {Auth} from './Auth';
 import {WorkId} from './ThinQ';
-import {MonitorError, TokenExpiredError} from '../errors';
+import {MonitorError, NotConnectedError, TokenExpiredError} from '../errors';
 import crypto from 'crypto';
 
 function resolveUrl(from, to) {
@@ -63,9 +63,14 @@ export class API {
           return await this.request(method, uri, data, headers, true);
         }).catch((err) => {
           this.logger.debug('refresh new token error: ', err);
+          return {};
         });
       } else {
-        this.logger.debug('retried request error: ', err);
+        if (!(err instanceof NotConnectedError)) {
+          this.logger.debug('request error: ', err);
+        }
+
+        return {};
       }
     });
   }
@@ -224,6 +229,8 @@ export class API {
 
     if (!this.session.hasToken() && this.username && this.password) {
       this.session = await this.auth.login(this.username, this.password);
+      // get new jsessionid
+      await this.auth.getJSessionId(this.session.accessToken);
     }
 
     if (!this.session.hasValidToken() && !!this.session.refreshToken) {
