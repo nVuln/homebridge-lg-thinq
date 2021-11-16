@@ -57,7 +57,7 @@ export default class Helper {
         device.data.snapshot.online = true;
       }
 
-      device.data.snapshot.raw = decodedMonitor;
+      device.data.snapshot.raw = monitorData === null ? null : decodedMonitor;
     }
 
     return device;

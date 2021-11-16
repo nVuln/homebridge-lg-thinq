@@ -179,7 +179,10 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       setInterval(() => {
         this.ThinQ.devices().then((devices) => {
           devices.filter(device => device.platform === PlatformType.ThinQ2).forEach(device => {
-            this.events.emit('refresh.'+device.id, device.snapshot);
+            // only emit if device online
+            if (device.snapshot.online) {
+              this.events.emit('refresh.'+device.id, device.snapshot);
+            }
           });
         });
       }, 600000); // every 10 minute
@@ -221,7 +224,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
           const device: Device = accessory.context.device;
           if (device.platform === PlatformType.ThinQ1 && this.enable_thinq1) {
             const deviceWithSnapshot = await ThinQ.pollMonitor(device);
-            if (Object.keys(deviceWithSnapshot.snapshot.raw || {}).length !== 0) {
+            if (deviceWithSnapshot.snapshot.raw !== null) {
               this.events.emit(device.id, deviceWithSnapshot.snapshot);
             }
           }

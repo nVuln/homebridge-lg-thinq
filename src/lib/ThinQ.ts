@@ -93,7 +93,7 @@ export class ThinQ {
   }
 
   protected async registerWorkId(device) {
-    this.workIds[device.id] = await this.api.sendMonitorCommand(device.id, 'Start', uuid.v4()).then(data => {
+    return this.workIds[device.id] = await this.api.sendMonitorCommand(device.id, 'Start', uuid.v4()).then(data => {
       if (data !== undefined && 'workId' in data) {
         return data.workId;
       }
@@ -118,6 +118,15 @@ export class ThinQ {
 
     if (device.platform === PlatformType.ThinQ1) {
       let result: any = null;
+      // check if work id is registered
+      if (!(device.id in this.workIds) || this.workIds[device.id] === null) {
+        // register work id
+        const workId = await this.registerWorkId(device);
+        if (workId === undefined || workId === null) { // device may not connected
+          return Helper.transform(device, result);
+        }
+      }
+
       try {
         result = await this.api.getMonitorResult(device.id, this.workIds[device.id]);
       } catch (err) {
