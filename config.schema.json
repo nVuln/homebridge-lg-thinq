@@ -93,6 +93,10 @@
 			  "functionBody": "return false;"
 			}
 		  },
+          "serial_number": {
+            "title": "Serial Number (optional)",
+            "type": "string"
+          },
 		  "washer_trigger": {
 			"title": "Enable program finished trigger?",
 			"type": "boolean"
@@ -202,6 +206,7 @@
         "devices[].name",
         "devices[].id",
         "devices[].type",
+        "devices[].serial_number",
         {
           "key": "devices[]",
           "type": "fieldset",

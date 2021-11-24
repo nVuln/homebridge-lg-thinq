@@ -19,7 +19,7 @@ export class baseDevice extends EventEmitter {
     serviceAccessoryInformation
       .setCharacteristic(this.platform.Characteristic.Manufacturer, 'LG')
       .setCharacteristic(this.platform.Characteristic.Model, device.model || 'Unknown')
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, device.serialNumber || 'Unknown');
+      .setCharacteristic(this.platform.Characteristic.SerialNumber, this.config.serial_number || device.serialNumber || 'Unknown');
   }
 
   public updateAccessoryCharacteristic(device: Device) {
