@@ -294,19 +294,7 @@
             </div>
             <div aria-labelledby="headingTwo" class="collapse" data-parent="#accordion" id="collapseTwo">
                 <div class="card-body">
-                    <p>Click button below to login, Then paste the URL where the browser is redirected to "Redirect URL" input</p>
-                    <div class="text-center">
-                        <a class="btn btn-primary btn-login-other-method" target="_blank" href="#">
-                            <div class="spinner-border" role="status"></div>
-                        </a>
-                    </div>
-                    <div class="form-group">
-                        <label for="userNameInput">Redirected URL</label>
-                        <input class="form-control redirected-url" required type="text">
-                    </div>
-                    <div class="text-center">
-                        <button class="btn btn-primary btn-token-from-url" type="button">Get Token</button>
-                    </div>
+                    <p>Please follow wiki <a href="https://github.com/nVuln/homebridge-lg-thinq/wiki/Plugin-Authorization-Setting"><b>Plugin Authorization Setting</b></a></p>
                 </div>
             </div>
         </div>
@@ -316,18 +304,6 @@
 <script>
   const homebridge = window.homebridge;
   const $ = jQuery = window.jQuery;
-
-  function get3rdLoginUrl(configuration) {
-    const btn = $('.btn-login-other-method');
-    btn.addClass('disabled').html(`<div class="spinner-border" role="status"></div>`);
-    homebridge.request('/get-login-url', {
-      country: configuration.country,
-      language: configuration.language,
-    }).then(loginUrl => {
-      btn.removeClass('disabled').attr('href', loginUrl).html("Click here to login");
-      homebridge.hideSpinner();
-    });
-  }
 
   async function init(configuration) {
     homebridge.showSpinner();
@@ -368,8 +344,6 @@
     }
     else {
       $('#loginForm').show();
-
-      get3rdLoginUrl(configuration);
     }
   }
 
@@ -405,38 +379,7 @@
       configuration.country = $(selected).data('country');
       configuration.language = $(selected).data('language');
       await homebridge.updatePluginConfig([configuration]);
-      get3rdLoginUrl(configuration);
     });
-
-    $('.btn-token-from-url').on('click', async function (e) {
-      e.preventDefault();
-      var btn = $(this);
-      if (!$('.redirected-url').val()) {
-        homebridge.toast.error('A Redirect URL must be provided.', 'Error');
-      }
-      else {
-        btn.html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
-        homebridge.request('/extract-token-from-url', {
-          url: $('.redirected-url').val(),
-        }).then(async data => {
-          if (typeof data.success === 'undefined' || data.success === false) {
-            homebridge.toast.error('error: ' + data.error, 'Error');
-            btn.prop('disabled', false).html("GET TOKEN");
-          }
-          else {
-            configuration.refresh_token = data.token;
-
-            await homebridge.updatePluginConfig([configuration]);
-            await homebridge.savePluginConfig();
-
-            btn.html('Login success! Restart homebridge to apply.').prop('disabled', true);
-            homebridge.toast.success('Login success', 'Success');
-
-            await init(configuration);
-          }
-        })
-      }
-    })
 
     $('.btn-login').on('click', function (e) {
       e.preventDefault();
