@@ -7,7 +7,7 @@ import {Gateway} from './Gateway';
 import {requestClient} from './request';
 import {Auth} from './Auth';
 import {WorkId} from './ThinQ';
-import {MonitorError, NotConnectedError, TokenExpiredError} from '../errors';
+import {ManualProcessNeeded, MonitorError, NotConnectedError, TokenExpiredError} from '../errors';
 import crypto from 'crypto';
 
 function resolveUrl(from, to) {
@@ -66,7 +66,9 @@ export class API {
           return {};
         });
       } else {
-        if (!(err instanceof NotConnectedError)) {
+        if (err instanceof ManualProcessNeeded) {
+          this.logger.warn(err.message);
+        } else if (!(err instanceof NotConnectedError)) {
           this.logger.debug('request error: ', err);
         }
 
