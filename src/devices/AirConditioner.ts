@@ -437,6 +437,8 @@ export default class AirConditioner extends baseDevice {
 
     this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
       .setProps({
+        minValue: Math.min(...targetStates),
+        maxValue: Math.max(...targetStates),
         validValues: targetStates,
       })
       .onSet(this.setTargetState.bind(this));

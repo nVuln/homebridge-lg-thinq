@@ -158,6 +158,9 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       }
 
       this.events.on(device.id, lgThinQDevice.update.bind(lgThinQDevice));
+
+      // first time update
+      lgThinQDevice.updateAccessoryCharacteristic(device);
     }
 
     const accessoriesToRemove = this.accessories.filter(accessory => accessoriesToRemoveUUID.includes(accessory.UUID));
@@ -232,7 +235,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       } catch (err) {
         if (err instanceof ManualProcessNeeded) {
           this.log.info('Stop polling device data.');
-          this.log.info(err.message);
+          this.log.warn(err.message);
           clearInterval(interval);
           return; // stop plugin here
         }

@@ -44,12 +44,6 @@ export class ThinQ {
     this.persist = new Persist(Path.join(this.platform.api.user.storagePath(), PLUGIN_NAME, 'persist', 'devices'));
   }
 
-  public async device(id) {
-    const devices = await this.devices();
-
-    return devices.find(device => device.id === id);
-  }
-
   public async devices() {
     const listDevices = await this.api.getListDevices().catch(() => {
       return [];
