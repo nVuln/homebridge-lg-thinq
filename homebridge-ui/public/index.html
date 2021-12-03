@@ -339,12 +339,12 @@
         Object.assign(configuration, {devices: []}, change);
         homebridge.updatePluginConfig([configuration]);
       });
-
-      homebridge.hideSpinner();
     }
     else {
       $('#loginForm').show();
     }
+
+    homebridge.hideSpinner();
   }
 
   (async () => {
