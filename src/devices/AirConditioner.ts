@@ -16,10 +16,12 @@ export default class AirConditioner extends baseDevice {
   protected service;
   protected serviceAirQuality;
   protected serviceSensor;
+  protected serviceSwitch;
   protected serviceLight;
   protected serviceFanV2;
   protected serviceAutoMode;
 
+  protected jetModeModels = ['RAC_056905_CA', 'RAC_056905_WW'];
   protected currentTargetState;
 
   constructor(
@@ -64,6 +66,14 @@ export default class AirConditioner extends baseDevice {
       accessory.removeService(this.serviceLight);
     }
 
+    // more feature
+    if (this.isJetModeEnabled(device)) {
+      this.serviceSwitch = accessory.getService(Switch) || accessory.addService(Switch, 'Jet Mode');
+      this.serviceSwitch.updateCharacteristic(platform.Characteristic.Name, 'Jet Mode');
+      this.serviceSwitch.getCharacteristic(platform.Characteristic.On)
+        .onSet(this.setJetModeActive.bind(this));
+    }
+
     if (this.config.ac_fan_control as boolean) {
       this.createFanService();
     } else if (this.serviceFanV2) {
@@ -103,6 +113,20 @@ export default class AirConditioner extends baseDevice {
 
   public get Status() {
     return new ACStatus(this.accessory.context.device.snapshot, this.accessory.context.device.deviceModel);
+  }
+
+  async setJetModeActive(value: CharacteristicValue) {
+    const device: Device = this.accessory.context.device;
+
+    if (this.Status.isPowerOn && this.Status.opMode === 0) {
+      this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: 'airState.wMode.jet',
+        dataValue: value ? 1 : 0,
+      }).then(() => {
+        device.data.snapshot['airState.wMode.jet'] = value ? 1 : 0;
+        this.updateAccessoryCharacteristic(device);
+      });
+    }
   }
 
   async setFanMode(value: CharacteristicValue) {
@@ -197,6 +221,11 @@ export default class AirConditioner extends baseDevice {
 
     if (this.config.ac_led_control as boolean && this.serviceLight) {
       this.serviceLight.updateCharacteristic(Characteristic.On, this.Status.isLightOn);
+    }
+
+    // more feature
+    if (this.isJetModeEnabled(device) && this.serviceSwitch) {
+      this.serviceSwitch.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.wMode.jet']);
     }
 
     // auto mode
@@ -344,6 +373,10 @@ export default class AirConditioner extends baseDevice {
       device.data.snapshot['airState.opMode'] = opMode;
       this.updateAccessoryCharacteristic(device);
     });
+  }
+
+  protected isJetModeEnabled(device: Device) {
+    return this.jetModeModels.includes(device.model) && this.Status.opMode === 0; // cool mode only
   }
 
   protected createFanService() {
