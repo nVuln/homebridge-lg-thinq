@@ -52,5 +52,9 @@ export default function AirState(deviceModel: DeviceModel, decodedMonitor) {
     airState['airState.quality.PM10'] = parseInt(decodedMonitor['SensorPM10']);
   }
 
+  if (decodedMonitor['Jet']) {
+    airState['airState.wMode.jet'] = parseInt(decodedMonitor['Jet']);
+  }
+
   return airState;
 }
