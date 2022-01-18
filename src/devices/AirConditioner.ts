@@ -129,13 +129,22 @@ export default class AirConditioner extends baseDevice {
     }
   }
 
-  async setFanMode(value: CharacteristicValue) {
+  async setFanState(value: CharacteristicValue) {
     if (!this.Status.isPowerOn) {
       return;
     }
 
-    const windStrength = value ? 8 : FanSpeed.HIGH; // 8 mean fan auto mode
-    await this.setFanSpeed(windStrength);
+    const device: Device = this.accessory.context.device;
+    const { TargetFanState } = this.platform.Characteristic;
+
+    const windStrength = value === TargetFanState.AUTO ? 8 : FanSpeed.HIGH; // 8 mean fan auto mode
+    return this.platform.ThinQ?.deviceControl(device.id, {
+      dataKey: 'airState.windStrength',
+      dataValue: windStrength,
+    }).then(() => {
+      device.data.snapshot['airState.windStrength'] = windStrength;
+      this.updateAccessoryCharacteristic(device);
+    });
   }
 
   public updateAccessoryCharacteristic(device: Device) {
@@ -312,7 +321,7 @@ export default class AirConditioner extends baseDevice {
 
     this.platform.log.info('Set fan speed = ', speedValue);
     const device: Device = this.accessory.context.device;
-    const windStrength = Object.keys(FanSpeed)[speedValue - 1] || FanSpeed.HIGH;
+    const windStrength = parseInt(Object.keys(FanSpeed)[speedValue - 1]) || FanSpeed.HIGH;
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.windStrength',
       dataValue: windStrength,
@@ -376,7 +385,7 @@ export default class AirConditioner extends baseDevice {
   }
 
   protected isJetModeEnabled(device: Device) {
-    return this.jetModeModels.includes(device.model) && this.Status.opMode === 0; // cool mode only
+    return this.jetModeModels.includes(device.model); // cool mode only
   }
 
   protected createFanService() {
@@ -418,7 +427,7 @@ export default class AirConditioner extends baseDevice {
       })
       .updateValue(Characteristic.CurrentFanState.INACTIVE);
     this.serviceFanV2.getCharacteristic(Characteristic.TargetFanState)
-      .onSet(this.setFanMode.bind(this));
+      .onSet(this.setFanState.bind(this));
     this.serviceFanV2.getCharacteristic(Characteristic.RotationSpeed)
       .setProps({
         minValue: 0,

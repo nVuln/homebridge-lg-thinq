@@ -9,6 +9,7 @@ import {Auth} from './Auth';
 import {WorkId} from './ThinQ';
 import {ManualProcessNeeded, MonitorError, NotConnectedError, TokenExpiredError} from '../errors';
 import crypto from 'crypto';
+import axios from 'axios';
 
 function resolveUrl(from, to) {
   const url = new URL(to, from);
@@ -68,6 +69,8 @@ export class API {
       } else {
         if (err instanceof ManualProcessNeeded) {
           this.logger.warn(err.message);
+        } else if (axios.isAxiosError(err)) {
+          this.logger.debug('request error: ', err.response);
         } else if (!(err instanceof NotConnectedError)) {
           this.logger.debug('request error: ', err);
         }
