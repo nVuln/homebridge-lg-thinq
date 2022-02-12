@@ -186,10 +186,8 @@ export class WasherDryerStatus {
   }
 
   public get remainDuration() {
-    const {
-      remainTimeHour = 0,
-      remainTimeMinute = 0,
-    } = this.data;
+    const remainTimeHour = this.data?.remainTimeHour || 0,
+      remainTimeMinute = this.data?.remainTimeMinute || 0;
 
     let remainingDuration = 0;
     if (this.isRunning) {
