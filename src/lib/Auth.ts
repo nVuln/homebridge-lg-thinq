@@ -161,7 +161,7 @@ export class Auth {
       // ignore this error
     }
 
-    const tokenUrl = this.lgeapi_url + 'oauth2/token';
+    const tokenUrl = this.lgeapi_url + 'oauth/1.0/oauth2/token';
     const data = {
       grant_type: 'refresh_token',
       refresh_token: session.refreshToken,
@@ -169,13 +169,14 @@ export class Auth {
 
     const timestamp = DateTime.utc().toRFC2822();
 
-    const requestUrl = '/oauth2/token' + qs.stringify(data, { addQueryPrefix: true });
+    const requestUrl = '/oauth/1.0/oauth2/token' + qs.stringify(data, { addQueryPrefix: true });
     const signature = this.signature(`${requestUrl}\n${timestamp}`, constants.OAUTH_SECRET_KEY);
 
     const headers = {
-      'lgemp-x-app-key': constants.CLIENT_ID,
-      'lgemp-x-signature': signature,
-      'lgemp-x-date': timestamp,
+      'x-lge-app-os': 'ADR',
+      'x-lge-appkey': constants.CLIENT_ID,
+      'x-lge-oauth-signature': signature,
+      'x-lge-oauth-date': timestamp,
       'Accept': 'application/json',
       'Content-Type': 'application/x-www-form-urlencoded',
     };
