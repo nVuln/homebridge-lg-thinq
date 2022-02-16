@@ -11,9 +11,6 @@ import {URL} from 'url';
 export class Auth {
   public lgeapi_url: string;
 
-  // prepare thinq v1
-  public jsessionId!: string;
-
   public constructor(
     protected gateway: Gateway,
   ) {
@@ -86,9 +83,12 @@ export class Auth {
       account_type: account.userIDType,
       client_id: constants.CLIENT_ID,
       country_code: account.country,
+      redirect_uri: 'lgaccount.lgsmartthinq:/',
+      response_type: 'code',
+      state: '12345',
       username: account.userID,
     };
-    const empUrl = new URL('https://emp-oauth.lgecloud.com/emp/oauth2/token/empsession' + qs.stringify(empData, { addQueryPrefix: true }));
+    const empUrl = new URL('https://emp-oauth.lgecloud.com/emp/oauth2/authorize/empsession'+qs.stringify(empData, {addQueryPrefix: true}));
     const signature = this.signature(`${empUrl.pathname}${empUrl.search}\n${timestamp}`, secretKey);
     const empHeaders = {
       'lgemp-x-app-key': constants.OAUTH_CLIENT_KEY,
@@ -106,14 +106,37 @@ export class Auth {
       'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36 Edg/93.0.961.44',
     };
     // create emp session and get access token
-    const token = await requestClient.post(empUrl.origin + empUrl.pathname, empUrl.search.substring(1), {
+    const authorize = await requestClient.get(empUrl.href, {
       headers: empHeaders,
     }).then(res => res.data).catch(err => {
       throw new AuthenticationError(err.response.data.error.message);
     });
-    if (token.status !== 1) {
-      throw new TokenError(token.message);
+    if (authorize.status !== 1) {
+      throw new TokenError(authorize.message || authorize);
     }
+
+    const redirect_uri = new URL(authorize.redirect_uri);
+
+    const tokenData = {
+      code: redirect_uri.searchParams.get('code'),
+      grant_type: 'authorization_code',
+      redirect_uri: empData.redirect_uri,
+    };
+
+    const requestUrl = '/oauth/1.0/oauth2/token' + qs.stringify(tokenData, { addQueryPrefix: true });
+
+    const token = await requestClient.post(redirect_uri.searchParams.get('oauth2_backend_url') + 'oauth/1.0/oauth2/token',
+      qs.stringify(tokenData),
+      {
+        headers: {
+          'x-lge-app-os': 'ADR',
+          'x-lge-appkey': constants.CLIENT_ID,
+          'x-lge-oauth-signature': this.signature(`${requestUrl}\n${timestamp}`, constants.OAUTH_SECRET_KEY),
+          'x-lge-oauth-date': timestamp,
+          'Accept': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }).then(res => res.data);
 
     this.lgeapi_url = token.oauth2_backend_url || this.lgeapi_url;
 
@@ -136,7 +159,7 @@ export class Auth {
       token: accessToken,
     };
 
-    return this.jsessionId = await requestClient.post(memberLoginUrl, { lgedmRoot: memberLoginData }, {
+    return await requestClient.post(memberLoginUrl, { lgedmRoot: memberLoginData }, {
       headers: memberLoginHeaders,
     }).then(res => res.data).then(data => data.lgedmRoot.jsessionId);
   }

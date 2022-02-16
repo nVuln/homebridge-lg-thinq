@@ -20,6 +20,7 @@ export class API {
   protected _homes;
   protected _gateway: Gateway | undefined;
   protected session: Session = new Session('', '', 0);
+  protected jsessionId: string = '';
   protected auth!: Auth;
   protected userNumber!: string;
 
@@ -91,8 +92,8 @@ export class API {
       monitorHeaders['x-thinq-token'] = this.session?.accessToken;
     }
 
-    if (typeof this.auth?.jsessionId === 'string') {
-      monitorHeaders['x-thinq-jsessionId'] = this.auth?.jsessionId;
+    if (this.jsessionId) {
+      monitorHeaders['x-thinq-jsessionId'] = this.jsessionId;
     }
 
     return monitorHeaders;
@@ -234,12 +235,16 @@ export class API {
 
     if (!this.session.hasToken() && this.username && this.password) {
       this.session = await this.auth.login(this.username, this.password);
-      // get new jsessionid
-      await this.auth.getJSessionId(this.session.accessToken);
+      await this.refreshNewToken(this.session);
     }
 
     if (!this.session.hasValidToken() && !!this.session.refreshToken) {
       await this.refreshNewToken(this.session);
+    }
+
+    if (!this.jsessionId) {
+      // get new jsessionid
+      this.jsessionId = await this.auth.getJSessionId(this.session.accessToken);
     }
 
     if (!this.userNumber) {
@@ -255,8 +260,9 @@ export class API {
   public async refreshNewToken(session: Session | null = null) {
     session = session || this.session;
     this.session = await this.auth.refreshNewToken(session);
-    // get new jsessionid
-    await this.auth.getJSessionId(this.session.accessToken);
+
+    //unset jsessionid;
+    this.jsessionId = '';
   }
 
   async thinq1PostRequest(endpoint: string, data: any) {
