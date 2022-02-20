@@ -6,7 +6,7 @@ import {PlatformType} from '../lib/constants';
 import {DeviceModel} from '../lib/DeviceModel';
 
 export const NOT_RUNNING_STATUS = ['COOLDOWN', 'POWEROFF', 'POWERFAIL', 'INITIAL', 'PAUSE', 'AUDIBLE_DIAGNOSIS', 'FIRMWARE',
-  'COURSE_DOWNLOAD', 'ERROR'];
+  'COURSE_DOWNLOAD', 'ERROR', 'END'];
 
 export default class WasherDryer extends baseDevice {
   public isRunning = false;
