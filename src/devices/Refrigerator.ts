@@ -3,7 +3,6 @@ import {CharacteristicValue, PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
 import {baseDevice} from '../baseDevice';
 import {DeviceModel} from '../lib/DeviceModel';
-import {PlatformType} from "../lib/constants";
 
 export default class Refrigerator extends baseDevice {
   protected serviceLabel;
@@ -55,7 +54,8 @@ export default class Refrigerator extends baseDevice {
       this.serviceExpressMode.getCharacteristic(Characteristic.On).onSet(this.setExpressMode.bind(this));
       this.serviceExpressMode.addLinkedService(this.serviceLabel);
     } else if (this.serviceExpressMode) {
-      accessory.getService(this.serviceExpressMode);
+      accessory.removeService(this.serviceExpressMode);
+      this.serviceExpressMode = null;
     }
 
     this.serviceExpressFridge = accessory.getService('Express Fridge');
@@ -65,7 +65,8 @@ export default class Refrigerator extends baseDevice {
       this.serviceExpressFridge.getCharacteristic(Characteristic.On).onSet(this.setExpressFridge.bind(this));
       this.serviceExpressFridge.addLinkedService(this.serviceLabel);
     } else if (this.serviceExpressFridge) {
-      accessory.getService(this.serviceExpressFridge);
+      accessory.removeService(this.serviceExpressFridge);
+      this.serviceExpressFridge = null;
     }
 
     this.serviceEcoFriendly = accessory.getService('Eco Friendly');
@@ -74,7 +75,8 @@ export default class Refrigerator extends baseDevice {
       this.serviceEcoFriendly.getCharacteristic(Characteristic.On).onSet(this.setEcoFriendly.bind(this));
       this.serviceEcoFriendly.addLinkedService(this.serviceLabel);
     } else if (this.serviceEcoFriendly) {
-      accessory.getService(this.serviceEcoFriendly);
+      accessory.removeService(this.serviceEcoFriendly);
+      this.serviceEcoFriendly = null;
     }
   }
 
@@ -114,19 +116,21 @@ export default class Refrigerator extends baseDevice {
       this.serviceFridge.updateCharacteristic(Characteristic.TargetTemperature, t);
     }
 
-    const contactSensorValue = this.Status.isDoorClosed ?
-      Characteristic.ContactSensorState.CONTACT_DETECTED : Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
-    this.serviceDoorOpened.updateCharacteristic(Characteristic.ContactSensorState, contactSensorValue);
+    if (this.serviceDoorOpened) {
+      const contactSensorValue = this.Status.isDoorClosed ?
+        Characteristic.ContactSensorState.CONTACT_DETECTED : Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
+      this.serviceDoorOpened.updateCharacteristic(Characteristic.ContactSensorState, contactSensorValue);
+    }
 
-    if (this.config.ref_express_freezer && 'expressMode' in device.snapshot?.refState) {
+    if (this.config.ref_express_freezer && 'expressMode' in device.snapshot?.refState && this.serviceExpressMode) {
       this.serviceExpressMode.updateCharacteristic(Characteristic.On, this.Status.isExpressModeOn);
     }
 
-    if (this.config.ref_express_fridge && 'expressFridge' in device.snapshot?.refState) {
+    if (this.config.ref_express_fridge && 'expressFridge' in device.snapshot?.refState && this.serviceExpressFridge) {
       this.serviceExpressFridge.updateCharacteristic(Characteristic.On, this.Status.isExpressFridgeOn);
     }
 
-    if (this.config.ref_eco_friendly && 'ecoFriendly' in device.snapshot?.refState) {
+    if (this.config.ref_eco_friendly && 'ecoFriendly' in device.snapshot?.refState && this.serviceEcoFriendly) {
       this.serviceEcoFriendly.updateCharacteristic(Characteristic.On, this.Status.isEcoFriendlyOn);
     }
   }

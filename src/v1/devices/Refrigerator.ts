@@ -1,8 +1,20 @@
 import {default as RefrigeratorV2, RefrigeratorStatus, fToC, cToF} from '../../devices/Refrigerator';
-import {CharacteristicValue} from 'homebridge';
+import {CharacteristicValue, PlatformAccessory} from 'homebridge';
 import {Device} from '../../lib/Device';
+import {LGThinQHomebridgePlatform} from "../../platform";
 
 export default class Refrigerator extends RefrigeratorV2 {
+  constructor(
+    protected readonly platform: LGThinQHomebridgePlatform,
+    protected readonly accessory: PlatformAccessory,
+  ) {
+    super(platform, accessory);
+
+    // disable door sensor on thinq1
+    accessory.removeService(this.serviceDoorOpened);
+    this.serviceDoorOpened = null;
+  }
+
   protected createThermostat(name: string, key: string) {
     const keyMap = {
       fridgeTemp: 'TempRefrigerator',
