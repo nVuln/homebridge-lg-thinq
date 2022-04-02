@@ -4,8 +4,8 @@ import {requestClient} from './request';
 import * as constants from './constants';
 import * as qs from 'qs';
 import crypto from 'crypto';
-import { DateTime } from 'luxon';
-import {TokenError, AuthenticationError} from '../errors';
+import {DateTime} from 'luxon';
+import {AuthenticationError, TokenError} from '../errors';
 import {URL} from 'url';
 
 export class Auth {
@@ -25,22 +25,7 @@ export class Auth {
   }
 
   public async loginStep2(username, encrypted_password, extra_headers?: any) {
-    const headers = {
-      'Accept': 'application/json',
-      'X-Application-Key': constants.APPLICATION_KEY,
-      'X-Client-App-Key': constants.CLIENT_ID,
-      'X-Lge-Svccode': 'SVC709',
-      'X-Device-Type': 'M01',
-      'X-Device-Platform': 'ADR',
-      'X-Device-Language-Type': 'IETF',
-      'X-Device-Publish-Flag': 'Y',
-      'X-Device-Country': this.gateway.country_code,
-      'X-Device-Language': this.gateway.language_code,
-      'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-      'Access-Control-Allow-Origin': '*',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'Accept-Language': 'en-US,en;q=0.9',
-    };
+    const headers = this.defaultEmpHeaders;
 
     const preLoginData = {
       'user_auth2': encrypted_password,
@@ -141,6 +126,67 @@ export class Auth {
     this.lgeapi_url = token.oauth2_backend_url || this.lgeapi_url;
 
     return new Session(token.access_token, token.refresh_token, token.expires_in);
+  }
+
+  public get defaultEmpHeaders() {
+    return {
+      'Accept': 'application/json',
+      'X-Application-Key': constants.APPLICATION_KEY,
+      'X-Client-App-Key': constants.CLIENT_ID,
+      'X-Lge-Svccode': 'SVC709',
+      'X-Device-Type': 'M01',
+      'X-Device-Platform': 'ADR',
+      'X-Device-Language-Type': 'IETF',
+      'X-Device-Publish-Flag': 'Y',
+      'X-Device-Country': this.gateway.country_code,
+      'X-Device-Language': this.gateway.language_code,
+      'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      'Access-Control-Allow-Origin': '*',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Accept-Language': 'en-US,en;q=0.9',
+    };
+  }
+
+  public async handleNewTerm(accessToken) {
+    const showTermUrl = 'common/showTerms?callback_url=lgaccount.lgsmartthinq:/updateTerms'
+      +'&country=VN&language=en-VN&division=ha:T20&terms_display_type=3&svc_list=SVC202';
+    const showTermHtml = await requestClient.get(this.gateway.login_base_url + showTermUrl, {
+      headers: {
+        'X-Login-Session': accessToken,
+      },
+    }).then(res => res.data);
+
+    const headers = {
+      ...this.defaultEmpHeaders,
+      'X-Login-Session': accessToken,
+      'X-Signature': showTermHtml.match(/signature[\s]+:[\s]+"([^"]+)"/)[1],
+      'X-Timestamp': showTermHtml.match(/tStamp[\s]+:[\s]+"([^"]+)"/)[1],
+    };
+
+    const accountTermUrl = 'emp/v2.0/account/user/terms?opt_term_cond=001&term_data=SVC202&itg_terms_use_flag=Y&dummy_terms_use_flag=Y';
+    const accountTerms = (await requestClient.get(this.gateway.emp_base_url + accountTermUrl, { headers }).then((res) => {
+      return res.data.account?.terms;
+    })).map((term) => {
+      return term.termsID;
+    });
+
+    const termInfoUrl = 'emp/v2.0/info/terms?opt_term_cond=001&only_service_terms_flag=&itg_terms_use_flag=Y&term_data=SVC202';
+    const infoTerms = await requestClient.get(this.gateway.emp_base_url + termInfoUrl, { headers }).then(res => {
+      return res.data.info.terms;
+    });
+
+    const newTermAgreeNeeded = infoTerms.filter((term) => {
+      return accountTerms.indexOf(term.termsID) === -1;
+    }).map(term => {
+      return [term.termsType, term.termsID, term.defaultLang].join(':');
+    }).join(',');
+
+    if (newTermAgreeNeeded) {
+      const updateAccountTermUrl = 'emp/v2.0/account/user/terms';
+      await requestClient.post(this.gateway.emp_base_url + updateAccountTermUrl, qs.stringify({terms: newTermAgreeNeeded}), {
+        headers,
+      });
+    }
   }
 
   public async getJSessionId(accessToken: string) {

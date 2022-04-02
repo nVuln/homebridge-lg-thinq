@@ -69,7 +69,10 @@ export class API {
         });
       } else {
         if (err instanceof ManualProcessNeeded) {
-          this.logger.warn(err.message);
+          this.logger.warn('Handling new term agreement... If you keep getting this message, ' + err.message);
+          await this.auth.handleNewTerm(this.session.accessToken).then(() => {
+            this.logger.info('LG new term agreement is accepted.');
+          });
         } else if (axios.isAxiosError(err)) {
           this.logger.debug('request error: ', err.response);
         } else if (!(err instanceof NotConnectedError)) {
