@@ -16,6 +16,7 @@ export default class AirConditioner extends baseDevice {
   protected service;
   protected serviceAirQuality;
   protected serviceSensor;
+  protected serviceHumiditySensor;
   protected serviceSwitch;
   protected serviceLight;
   protected serviceFanV2;
@@ -35,6 +36,7 @@ export default class AirConditioner extends baseDevice {
     const {
       Service: {
         TemperatureSensor,
+        HumiditySensor,
         Switch,
         Lightbulb,
       },
@@ -48,22 +50,36 @@ export default class AirConditioner extends baseDevice {
       accessory.removeService(this.serviceAirQuality);
     }
 
+    this.serviceSensor = accessory.getService(TemperatureSensor);
     if (this.config.ac_temperature_sensor as boolean) {
-      this.serviceSensor = accessory.getService(TemperatureSensor) || accessory.addService(TemperatureSensor);
+      this.serviceSensor = this.serviceSensor || accessory.addService(TemperatureSensor);
       this.serviceSensor.updateCharacteristic(platform.Characteristic.StatusActive, false);
       this.serviceSensor.addLinkedService(this.service);
     } else if (this.serviceSensor) {
       accessory.removeService(this.serviceSensor);
+      this.serviceSensor = null;
     }
 
+    this.serviceHumiditySensor = accessory.getService(HumiditySensor);
+    if (this.config.ac_humidity_sensor as boolean) {
+      this.serviceHumiditySensor = this.serviceHumiditySensor || accessory.addService(HumiditySensor);
+      this.serviceHumiditySensor.updateCharacteristic(platform.Characteristic.StatusActive, false);
+      this.serviceSensor.addLinkedService(this.service);
+    } else if (this.serviceHumiditySensor) {
+      accessory.removeService(this.serviceHumiditySensor);
+      this.serviceHumiditySensor = null;
+    }
+
+    this.serviceLight = accessory.getService(Lightbulb);
     if (this.config.ac_led_control as boolean) {
-      this.serviceLight = accessory.getService(Lightbulb) || accessory.addService(Lightbulb);
+      this.serviceLight = this.serviceLight || accessory.addService(Lightbulb);
       this.serviceLight.getCharacteristic(platform.Characteristic.On)
         .onSet(this.setLight.bind(this))
         .updateValue(false); // off as default
       this.serviceLight.addLinkedService(this.service);
     } else if (this.serviceLight) {
       accessory.removeService(this.serviceLight);
+      this.serviceLight = null;
     }
 
     // more feature
@@ -106,6 +122,7 @@ export default class AirConditioner extends baseDevice {
       ac_air_quality: false,
       ac_mode: 'BOTH',
       ac_temperature_sensor: false,
+      ac_humidity_sensor: false,
       ac_led_control: false,
       ac_fan_control: false,
     }, super.config);
@@ -218,6 +235,12 @@ export default class AirConditioner extends baseDevice {
     if (this.config.ac_temperature_sensor as boolean && this.serviceSensor) {
       this.serviceSensor.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.currentTemperature);
       this.serviceSensor.updateCharacteristic(Characteristic.StatusActive, this.Status.isPowerOn);
+    }
+
+    // humidity sensor
+    if (this.config.ac_humidity_sensor as boolean && this.serviceHumiditySensor) {
+      this.serviceHumiditySensor.updateCharacteristic(Characteristic.CurrentRelativeHumidity, this.Status.currentRelativeHumidity);
+      this.serviceHumiditySensor.updateCharacteristic(Characteristic.StatusActive, this.Status.isPowerOn);
     }
 
     // handle fan service
@@ -542,6 +565,10 @@ export class ACStatus {
 
   public get isPowerOn() {
     return !!this.data['airState.operation'] as boolean;
+  }
+
+  public get currentRelativeHumidity() {
+    return this.data['airState.humidity.current'] as number;
   }
 
   public get currentTemperature() {

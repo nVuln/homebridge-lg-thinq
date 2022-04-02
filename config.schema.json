@@ -4,53 +4,63 @@
   "singular": true,
   "customUi": true,
   "schema": {
-	"auth_mode": {
-	  "title": "Auth Mode",
-	  "type": "string",
-	  "default": "account",
-	  "oneOf": [
-		{ "title": "LG Account", "enum": ["account"] },
-		{ "title": "Token", "enum": ["token"] }
-	  ]
-	},
-	"username": {
-	  "title": "Username",
-	  "type": "string",
-	  "condition": {
-		"functionBody": "return model.auth_mode === 'account';"
-	  }
-	},
-	"password": {
-	  "title": "Password",
-	  "type": "string",
-	  "condition": {
-		"functionBody": "return model.auth_mode === 'account';"
-	  }
-	},
-	"refresh_token": {
-	  "title": "Refresh Token",
-	  "type": "string",
-	  "condition": {
-		"functionBody": "return model.auth_mode === 'token';"
-	  }
-	},
-	"country": {
-	  "title": "Country",
-	  "type": "string",
-	  "default": "US",
-	  "required": true
-	},
-	"language": {
-	  "title": "Language",
-	  "type": "string",
-	  "default": "en-US",
-	  "required": true
-	},
-	"thinq1": {
-	  "title": "Enable ThinQ1 Support?",
-	  "type": "boolean",
-	  "default": false
-	},
+    "auth_mode": {
+      "title": "Auth Mode",
+      "type": "string",
+      "default": "account",
+      "oneOf": [
+        {
+          "title": "LG Account",
+          "enum": [
+            "account"
+          ]
+        },
+        {
+          "title": "Token",
+          "enum": [
+            "token"
+          ]
+        }
+      ]
+    },
+    "username": {
+      "title": "Username",
+      "type": "string",
+      "condition": {
+        "functionBody": "return model.auth_mode === 'account';"
+      }
+    },
+    "password": {
+      "title": "Password",
+      "type": "string",
+      "condition": {
+        "functionBody": "return model.auth_mode === 'account';"
+      }
+    },
+    "refresh_token": {
+      "title": "Refresh Token",
+      "type": "string",
+      "condition": {
+        "functionBody": "return model.auth_mode === 'token';"
+      }
+    },
+    "country": {
+      "title": "Country",
+      "type": "string",
+      "default": "US",
+      "required": true
+    },
+    "language": {
+      "title": "Language",
+      "type": "string",
+      "default": "en-US",
+      "required": true
+    },
+    "thinq1": {
+      "title": "Enable ThinQ1 Support?",
+      "type": "boolean",
+      "default": false
+    },
     "refresh_interval": {
       "title": "Refresh interval (in second)",
       "type": "number",
@@ -59,105 +69,121 @@
         "functionBody": "return !!model.thinq1;"
       }
     },
-	"devices": {
-	  "title": "Devices",
-	  "description": "leave it empty to enable all device in account",
-	  "type": "array",
-	  "items": {
-		"type": "object",
-		"properties": {
-		  "id": {
-			"title": "Device ID",
-			"type": "string",
-			"required": true
-		  },
-		  "name": {
-			"title": "Device Name",
-			"type": "string"
-		  },
-		  "type": {
-			"title": "Device Type",
-			"type": "string",
-			"enum": [
-			  "AC",
-			  "WASHER",
-			  "WASHER_NEW",
-			  "WASH_TOWER",
-			  "DRYER",
-			  "REFRIGERATOR",
-			  "DISHWASHER",
-			  "AIR_PURIFIER",
-			  "DEHUMIDIFIER"
-			],
-			"condition": {
-			  "functionBody": "return false;"
-			}
-		  },
+    "devices": {
+      "title": "Devices",
+      "description": "leave it empty to enable all device in account",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "title": "Device ID",
+            "type": "string",
+            "required": true
+          },
+          "name": {
+            "title": "Device Name",
+            "type": "string"
+          },
+          "type": {
+            "title": "Device Type",
+            "type": "string",
+            "enum": [
+              "AC",
+              "WASHER",
+              "WASHER_NEW",
+              "WASH_TOWER",
+              "DRYER",
+              "REFRIGERATOR",
+              "DISHWASHER",
+              "AIR_PURIFIER",
+              "DEHUMIDIFIER"
+            ],
+            "condition": {
+              "functionBody": "return false;"
+            }
+          },
           "serial_number": {
             "title": "Serial Number (optional)",
             "type": "string"
           },
-		  "washer_trigger": {
-			"title": "Enable program finished trigger?",
-			"type": "boolean"
-		  },
+          "washer_trigger": {
+            "title": "Enable program finished trigger?",
+            "type": "boolean"
+          },
           "washer_door_lock": {
             "title": "Enable door lock status",
             "type": "boolean"
           },
-		  "ac_air_quality": {
-			"title": "Enable Air Quality",
-			"description": "if your device supported Air Quality sensor",
-			"type": "boolean"
-		  },
-		  "ac_mode": {
-			"title": "AC Mode (Heating or Cooling or Both)",
-			"type": "string",
-			"oneOf": [
-			  {
-				"title": "Both Heating and Cooling mode",
-				"enum": ["BOTH"]
-			  },
-			  {
-				"title": "Cooling mode only",
-				"enum": ["COOLING"]
-			  },
-			  {
-				"title": "Heating mode only",
-				"enum": ["HEATING"]
-			  }
-			]
-		  },
-		  "ac_swing_mode": {
-			"title": "Swing Mode (vertical or horizontal)",
-			"type": "string",
-			"oneOf": [
-			  {
-				"title": "Both vertical and horizontal swing",
-				"enum": ["BOTH"]
-			  },
-			  {
-				"title": "Vertical swing only",
-				"enum": ["VERTICAL"]
-			  },
-			  {
-				"title": "Horizontal swing only",
-				"enum": ["HORIZONTAL"]
-			  }
-			]
-		  },
-		  "ac_temperature_sensor": {
-			"title": "Current temperature as sensor",
-			"type": "boolean"
-		  },
-		  "ac_led_control": {
-			"title": "Enable led panel control",
-			"type": "boolean"
-		  },
-		  "ac_fan_control": {
-			"title": "Enable separate fan control",
-			"type": "boolean"
-		  },
+          "ac_air_quality": {
+            "title": "Enable Air Quality",
+            "description": "if your device supported Air Quality sensor",
+            "type": "boolean"
+          },
+          "ac_mode": {
+            "title": "AC Mode (Heating or Cooling or Both)",
+            "type": "string",
+            "oneOf": [
+              {
+                "title": "Both Heating and Cooling mode",
+                "enum": [
+                  "BOTH"
+                ]
+              },
+              {
+                "title": "Cooling mode only",
+                "enum": [
+                  "COOLING"
+                ]
+              },
+              {
+                "title": "Heating mode only",
+                "enum": [
+                  "HEATING"
+                ]
+              }
+            ]
+          },
+          "ac_swing_mode": {
+            "title": "Swing Mode (vertical or horizontal)",
+            "type": "string",
+            "oneOf": [
+              {
+                "title": "Both vertical and horizontal swing",
+                "enum": [
+                  "BOTH"
+                ]
+              },
+              {
+                "title": "Vertical swing only",
+                "enum": [
+                  "VERTICAL"
+                ]
+              },
+              {
+                "title": "Horizontal swing only",
+                "enum": [
+                  "HORIZONTAL"
+                ]
+              }
+            ]
+          },
+          "ac_temperature_sensor": {
+            "title": "Current temperature as sensor",
+            "type": "boolean"
+          },
+          "ac_humidity_sensor": {
+            "title": "Enable humidity sensor",
+            "type": "boolean"
+          },
+          "ac_led_control": {
+            "title": "Enable led panel control",
+            "type": "boolean"
+          },
+          "ac_fan_control": {
+            "title": "Enable separate fan control",
+            "type": "boolean"
+          },
           "ref_express_freezer": {
             "title": "Express Freezer / Ice Plus",
             "type": "boolean"
@@ -170,9 +196,9 @@
             "title": "Eco Friendly",
             "type": "boolean"
           }
-		}
-	  }
-	}
+        }
+      }
+    }
   },
   "layout": [
     "auth_mode",
@@ -237,6 +263,7 @@
                 "devices[].ac_mode",
                 "devices[].ac_swing_mode",
                 "devices[].ac_temperature_sensor",
+                "devices[].ac_humidity_sensor",
                 "devices[].ac_fan_control"
               ],
               "condition": {
