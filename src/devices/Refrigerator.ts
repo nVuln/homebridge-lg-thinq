@@ -5,7 +5,6 @@ import {baseDevice} from '../baseDevice';
 import {DeviceModel} from '../lib/DeviceModel';
 
 export default class Refrigerator extends baseDevice {
-  protected serviceLabel;
   protected serviceFreezer;
   protected serviceFridge;
   protected serviceDoorOpened;
@@ -29,30 +28,28 @@ export default class Refrigerator extends baseDevice {
     } = this.platform;
     const device: Device = accessory.context.device;
 
-    this.serviceLabel = accessory.getService(ServiceLabel) || accessory.addService(ServiceLabel, device.name);
-    this.serviceLabel.setCharacteristic(Characteristic.ServiceLabelNamespace, Characteristic.ServiceLabelNamespace.DOTS);
+    const serviceLabel = accessory.getService(ServiceLabel);
+    if (serviceLabel) {
+      accessory.removeService(serviceLabel);
+    }
 
     this.serviceFridge = this.createThermostat('Fridge', 'fridgeTemp');
     if (this.serviceFridge) {
       this.serviceFridge.updateCharacteristic(Characteristic.TargetTemperature, this.Status.fridgeTemperature);
-      this.serviceFridge.addLinkedService(this.serviceLabel);
     }
 
     this.serviceFreezer = this.createThermostat('Freezer', 'freezerTemp');
     if (this.serviceFreezer) {
       this.serviceFreezer.updateCharacteristic(Characteristic.TargetTemperature, this.Status.freezerTemperature);
-      this.serviceFreezer.addLinkedService(this.serviceLabel);
     }
 
     // Door open state
     this.serviceDoorOpened = accessory.getService(ContactSensor) || accessory.addService(ContactSensor, 'Refrigerator Door Closed');
-    this.serviceDoorOpened.addLinkedService(this.serviceLabel);
 
     this.serviceExpressMode = accessory.getService('Express Freezer');
     if (this.config.ref_express_freezer && 'expressMode' in device.snapshot?.refState) {
       this.serviceExpressMode = this.serviceExpressMode || accessory.addService(Switch, 'Express Freezer', 'Express Freezer');
       this.serviceExpressMode.getCharacteristic(Characteristic.On).onSet(this.setExpressMode.bind(this));
-      this.serviceExpressMode.addLinkedService(this.serviceLabel);
     } else if (this.serviceExpressMode) {
       accessory.removeService(this.serviceExpressMode);
       this.serviceExpressMode = null;
@@ -63,7 +60,6 @@ export default class Refrigerator extends baseDevice {
       // eslint-disable-next-line max-len
       this.serviceExpressFridge = this.serviceExpressFridge || accessory.addService(Switch, 'Express Fridge', 'Express Fridge');
       this.serviceExpressFridge.getCharacteristic(Characteristic.On).onSet(this.setExpressFridge.bind(this));
-      this.serviceExpressFridge.addLinkedService(this.serviceLabel);
     } else if (this.serviceExpressFridge) {
       accessory.removeService(this.serviceExpressFridge);
       this.serviceExpressFridge = null;
@@ -73,7 +69,6 @@ export default class Refrigerator extends baseDevice {
     if (this.config.ref_eco_friendly && 'ecoFriendly' in device.snapshot?.refState) {
       this.serviceEcoFriendly = this.serviceEcoFriendly || accessory.addService(Switch, 'Eco Friendly', 'Eco Friendly');
       this.serviceEcoFriendly.getCharacteristic(Characteristic.On).onSet(this.setEcoFriendly.bind(this));
-      this.serviceEcoFriendly.addLinkedService(this.serviceLabel);
     } else if (this.serviceEcoFriendly) {
       accessory.removeService(this.serviceEcoFriendly);
       this.serviceEcoFriendly = null;
