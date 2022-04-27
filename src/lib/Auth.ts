@@ -1,20 +1,23 @@
-import {Gateway} from './Gateway';
-import {Session} from './Session';
-import {requestClient} from './request';
-import * as constants from './constants';
-import * as qs from 'qs';
 import crypto from 'crypto';
-import {DateTime} from 'luxon';
-import {AuthenticationError, TokenError} from '../errors';
-import {URL} from 'url';
+import { DateTime } from 'luxon';
+import * as qs from 'qs';
+import { URL } from 'url';
+import { AuthenticationError, ManualProcessNeededErrorCode, MonitorError, TokenError } from '../errors';
+import * as constants from './constants';
+import { Gateway } from './Gateway';
+import { requestClient } from './request';
+import { Session } from './Session';
 
 export class Auth {
   public lgeapi_url: string;
+
+  public logger;
 
   public constructor(
     protected gateway: Gateway,
   ) {
     this.lgeapi_url = `https://${this.gateway.country_code.toLowerCase()}.lgeapi.com/`;
+    this.logger = console;
   }
 
   public async login(username: string, password: string) {
@@ -207,7 +210,20 @@ export class Auth {
 
     return await requestClient.post(memberLoginUrl, { lgedmRoot: memberLoginData }, {
       headers: memberLoginHeaders,
-    }).then(res => res.data).then(data => data.lgedmRoot.jsessionId);
+    })
+    .then(res => res.data)
+    .then(data => data.lgedmRoot.jsessionId)
+    .catch(err => {
+      this.logger.debug(
+        err.message.startsWith(ManualProcessNeededErrorCode)
+          ? "Please open the native LG App and sign in to your account to see what happened, maybe new agreement need your accept. Then try restarting Homebridge."
+          : err.message
+      );
+      this.logger.debug(err);
+      this.logger.info(
+        "Failed to login to old thinq v1 gateway. See debug logs for more details. Continuing anyways."
+      );
+    });
   }
 
   public async refreshNewToken(session: Session) {

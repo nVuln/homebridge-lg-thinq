@@ -234,6 +234,7 @@ export class API {
 
     if (!this.auth) {
       this.auth = new Auth(gateway);
+      this.auth.logger = this.logger;
     }
 
     if (!this.session.hasToken() && this.username && this.password) {
