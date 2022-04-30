@@ -97,7 +97,8 @@
               "REFRIGERATOR",
               "DISHWASHER",
               "AIR_PURIFIER",
-              "DEHUMIDIFIER"
+              "DEHUMIDIFIER",
+              "AERO_TOWER"
             ],
             "condition": {
               "functionBody": "return false;"

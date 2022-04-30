@@ -8,6 +8,7 @@ import Dehumidifier from './devices/Dehumidifier';
 import {default as V1helper} from './v1/helper';
 import {PlatformType} from './lib/constants';
 import AirConditioner from './devices/AirConditioner';
+import AeroTower from './devices/AeroTower';
 
 /**
  * Platform Accessory
@@ -26,6 +27,7 @@ export class Helper {
 
     // thinq2
     switch (device.type) {
+      case 'AERO_TOWER': return AeroTower;
       case 'AIR_PURIFIER': return AirPurifier;
       case 'REFRIGERATOR': return Refrigerator;
       case 'WASHER':

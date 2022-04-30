@@ -48,4 +48,5 @@ export enum DeviceType {
   PURICARE_AIR_DETECTOR = 4004,
   V2PHONE = 6001,
   HOMEROBOT = 9000,
+  AERO_TOWER = 410,
 }
