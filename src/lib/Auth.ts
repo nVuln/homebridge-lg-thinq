@@ -1,12 +1,12 @@
 import crypto from 'crypto';
-import { DateTime } from 'luxon';
+import {DateTime} from 'luxon';
 import * as qs from 'qs';
-import { URL } from 'url';
-import { AuthenticationError, ManualProcessNeededErrorCode, MonitorError, TokenError } from '../errors';
+import {URL} from 'url';
+import {AuthenticationError, ManualProcessNeededErrorCode, TokenError} from '../errors';
 import * as constants from './constants';
-import { Gateway } from './Gateway';
-import { requestClient } from './request';
-import { Session } from './Session';
+import {Gateway} from './Gateway';
+import {requestClient} from './request';
+import {Session} from './Session';
 
 export class Auth {
   public lgeapi_url: string;
@@ -32,9 +32,9 @@ export class Auth {
 
     const preLoginData = {
       'user_auth2': encrypted_password,
-      'log_param': 'login request / user_id : '+ username +' / third_party : null / svc_list : SVC202,SVC710 / 3rd_service : ',
+      'log_param': 'login request / user_id : ' + username + ' / third_party : null / svc_list : SVC202,SVC710 / 3rd_service : ',
     };
-    const preLogin = await requestClient.post(this.gateway.login_base_url + 'preLogin', qs.stringify(preLoginData), { headers })
+    const preLogin = await requestClient.post(this.gateway.login_base_url + 'preLogin', qs.stringify(preLoginData), {headers})
       .then(res => res.data);
 
     headers['X-Signature'] = preLogin.signature;
@@ -49,14 +49,14 @@ export class Auth {
 
     // try login with username and hashed password
     const loginUrl = this.gateway.emp_base_url + 'emp/v2.0/account/session/' + encodeURIComponent(username);
-    const account = await requestClient.post(loginUrl, qs.stringify(data), { headers }).then(res => res.data.account).catch(err => {
+    const account = await requestClient.post(loginUrl, qs.stringify(data), {headers}).then(res => res.data.account).catch(err => {
       if (!err.response) {
         throw err;
       }
 
       const {code, message} = err.response.data.error;
       if (code === 'MS.001.03') {
-        throw new AuthenticationError('Your account was already used to registered in '+ message +'.');
+        throw new AuthenticationError('Your account was already used to registered in ' + message + '.');
       }
 
       throw new AuthenticationError(message);
@@ -76,7 +76,7 @@ export class Auth {
       state: '12345',
       username: account.userID,
     };
-    const empUrl = new URL('https://emp-oauth.lgecloud.com/emp/oauth2/authorize/empsession'+qs.stringify(empData, {addQueryPrefix: true}));
+    const empUrl = new URL('https://emp-oauth.lgecloud.com/emp/oauth2/authorize/empsession?' + qs.stringify(empData));
     const signature = this.signature(`${empUrl.pathname}${empUrl.search}\n${timestamp}`, secretKey);
     const empHeaders = {
       'lgemp-x-app-key': constants.OAUTH_CLIENT_KEY,
@@ -111,7 +111,7 @@ export class Auth {
       redirect_uri: empData.redirect_uri,
     };
 
-    const requestUrl = '/oauth/1.0/oauth2/token' + qs.stringify(tokenData, { addQueryPrefix: true });
+    const requestUrl = '/oauth/1.0/oauth2/token?' + qs.stringify(tokenData);
 
     const token = await requestClient.post(redirect_uri.searchParams.get('oauth2_backend_url') + 'oauth/1.0/oauth2/token',
       qs.stringify(tokenData),
@@ -152,7 +152,7 @@ export class Auth {
 
   public async handleNewTerm(accessToken) {
     const showTermUrl = 'common/showTerms?callback_url=lgaccount.lgsmartthinq:/updateTerms'
-      +'&country=VN&language=en-VN&division=ha:T20&terms_display_type=3&svc_list=SVC202';
+      + '&country=VN&language=en-VN&division=ha:T20&terms_display_type=3&svc_list=SVC202';
     const showTermHtml = await requestClient.get(this.gateway.login_base_url + showTermUrl, {
       headers: {
         'X-Login-Session': accessToken,
@@ -167,14 +167,16 @@ export class Auth {
     };
 
     const accountTermUrl = 'emp/v2.0/account/user/terms?opt_term_cond=001&term_data=SVC202&itg_terms_use_flag=Y&dummy_terms_use_flag=Y';
-    const accountTerms = (await requestClient.get(this.gateway.emp_base_url + accountTermUrl, { headers }).then((res) => {
-      return res.data.account?.terms;
-    })).map((term) => {
-      return term.termsID;
-    });
+    const accountTerms = (await requestClient.get(this.gateway.emp_base_url + accountTermUrl, {headers})
+      .then(res => {
+        return res.data.account?.terms;
+      }))
+      .map(term => {
+        return term.termsID;
+      });
 
     const termInfoUrl = 'emp/v2.0/info/terms?opt_term_cond=001&only_service_terms_flag=&itg_terms_use_flag=Y&term_data=SVC202';
-    const infoTerms = await requestClient.get(this.gateway.emp_base_url + termInfoUrl, { headers }).then(res => {
+    const infoTerms = await requestClient.get(this.gateway.emp_base_url + termInfoUrl, {headers}).then(res => {
       return res.data.info.terms;
     });
 
@@ -208,22 +210,21 @@ export class Auth {
       token: accessToken,
     };
 
-    return await requestClient.post(memberLoginUrl, { lgedmRoot: memberLoginData }, {
+    return await requestClient.post(memberLoginUrl, {lgedmRoot: memberLoginData}, {
       headers: memberLoginHeaders,
     })
-    .then(res => res.data)
-    .then(data => data.lgedmRoot.jsessionId)
-    .catch(err => {
-      this.logger.debug(
-        err.message.startsWith(ManualProcessNeededErrorCode)
-          ? "Please open the native LG App and sign in to your account to see what happened, maybe new agreement need your accept. Then try restarting Homebridge."
-          : err.message
-      );
-      this.logger.debug(err);
-      this.logger.info(
-        "Failed to login to old thinq v1 gateway. See debug logs for more details. Continuing anyways."
-      );
-    });
+      .then(res => res.data)
+      .then(data => data.lgedmRoot.jsessionId)
+      .catch(err => {
+        this.logger.debug(
+          err.message.startsWith(ManualProcessNeededErrorCode)
+            ? 'Please open the native LG App and sign in to your account to see what happened,'
+              +' maybe new agreement need your accept. Then try restarting Homebridge.'
+            : err.message,
+        );
+        this.logger.debug(err);
+        this.logger.info('Failed to login to old thinq v1 gateway. See debug logs for more details. Continuing anyways.');
+      });
   }
 
   public async refreshNewToken(session: Session) {
@@ -254,7 +255,7 @@ export class Auth {
 
     const timestamp = DateTime.utc().toRFC2822();
 
-    const requestUrl = '/oauth/1.0/oauth2/token' + qs.stringify(data, { addQueryPrefix: true });
+    const requestUrl = '/oauth/1.0/oauth2/token' + qs.stringify(data, {addQueryPrefix: true});
     const signature = this.signature(`${requestUrl}\n${timestamp}`, constants.OAUTH_SECRET_KEY);
 
     const headers = {
@@ -265,7 +266,7 @@ export class Auth {
       'Accept': 'application/json',
       'Content-Type': 'application/x-www-form-urlencoded',
     };
-    const resp = await requestClient.post(tokenUrl, qs.stringify(data), { headers }).then(resp => resp.data);
+    const resp = await requestClient.post(tokenUrl, qs.stringify(data), {headers}).then(resp => resp.data);
 
     session.newToken(resp.access_token, parseInt(resp.expires_in));
 
@@ -289,7 +290,7 @@ export class Auth {
       'x-lge-oauth-signature': signature,
     };
 
-    const resp = await requestClient.get(profileUrl, { headers }).then(resp => resp.data);
+    const resp = await requestClient.get(profileUrl, {headers}).then(resp => resp.data);
     if (resp.status === 2) {
       throw new AuthenticationError(resp.message);
     }
@@ -312,7 +313,7 @@ export class Auth {
       show_select_country: 'N',
     };
 
-    return this.gateway.login_base_url + 'login/signIn' + qs.stringify(params, { addQueryPrefix: true });
+    return this.gateway.login_base_url + 'login/signIn' + qs.stringify(params, {addQueryPrefix: true});
   }
 
   protected signature(message, secret) {

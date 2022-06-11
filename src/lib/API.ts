@@ -20,7 +20,7 @@ export class API {
   protected _homes;
   protected _gateway: Gateway | undefined;
   protected session: Session = new Session('', '', 0);
-  protected jsessionId: string = '';
+  protected jsessionId!: string;
   protected auth!: Auth;
   protected userNumber!: string;
 
@@ -67,13 +67,24 @@ export class API {
           this.logger.debug('refresh new token error: ', err);
           return {};
         });
-      } else {
-        if (err instanceof ManualProcessNeeded) {
-          this.logger.warn('Handling new term agreement... If you keep getting this message, ' + err.message);
-          await this.auth.handleNewTerm(this.session.accessToken).then(() => {
-            this.logger.info('LG new term agreement is accepted.');
+      } else if (err instanceof ManualProcessNeeded) {
+        this.logger.warn('Handling new term agreement... If you keep getting this message, ' + err.message);
+        await this.auth.handleNewTerm(this.session.accessToken)
+          .then(() => {
+            this.logger.warn('LG new term agreement is accepted.');
+          })
+          .catch(err => {
+            this.logger.debug(err);
           });
-        } else if (axios.isAxiosError(err)) {
+
+        if (!retry) {
+          // retry 1 times
+          return await this.request(method, uri, data, headers, true);
+        } else {
+          return {};
+        }
+      } else {
+        if (axios.isAxiosError(err)) {
           this.logger.debug('request error: ', err.response);
         } else if (!(err instanceof NotConnectedError)) {
           this.logger.debug('request error: ', err);
