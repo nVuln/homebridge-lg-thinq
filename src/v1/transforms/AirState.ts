@@ -20,6 +20,9 @@ export default function AirState(deviceModel: DeviceModel, decodedMonitor) {
     'airState.wDir.hStep': parseInt(decodedMonitor['WDirHStep'] || '0') as number,
     'airState.circulate.rotate': parseInt(decodedMonitor['CirculateDir']),
     'airState.lightingState.signal': parseInt(decodedMonitor['SignalLighting']),
+    'airState.quality.overall': 0,
+    'airState.quality.sensorMon': 0,
+    'airState.quality.PM1': 0,
   };
 
   if (deviceModel.value('TempCur')) {
