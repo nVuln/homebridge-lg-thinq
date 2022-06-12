@@ -12,6 +12,15 @@ export enum FanSpeed {
   HIGH = 6,
 }
 
+enum OpMode {
+  AUTO = 6,
+  COOL = 0,
+  HEAT = 4,
+  FAN = 2,
+  DRY = 1,
+  AIR_CLEAN = 5,
+}
+
 export default class AirConditioner extends baseDevice {
   protected service;
   protected serviceAirQuality;
@@ -19,15 +28,11 @@ export default class AirConditioner extends baseDevice {
   protected serviceHumiditySensor;
   protected serviceLight;
   protected serviceFanV2;
-  protected serviceAutoMode;
 
   // more feature
   protected serviceSwitch; // jet mode
-  protected serviceSwitch2; // air purification
 
-  protected jetModeModels = ['RAC_056905_CA', 'RAC_056905_WW'];
-  protected airPurifierModels = ['PAC_910604_WW'];
-  protected currentTargetState;
+  protected serviceLabelButtons;
 
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
@@ -94,38 +99,13 @@ export default class AirConditioner extends baseDevice {
         .onSet(this.setJetModeActive.bind(this));
     }
 
-    if (this.isAirPurifierSupported(device)) {
-      this.serviceSwitch2 = accessory.getService('Air Purifier Mode')
-        || accessory.addService(Switch, 'Air Purifier Mode', 'Air Purifier Mode');
-      this.serviceSwitch2.updateCharacteristic(platform.Characteristic.Name, 'Air Purifier Mode');
-      this.serviceSwitch2.getCharacteristic(platform.Characteristic.On)
-        .onSet(this.setAirPurifierActive.bind(this));
-    }
-
     if (this.config.ac_fan_control as boolean) {
       this.createFanService();
     } else if (this.serviceFanV2) {
       accessory.removeService(this.serviceFanV2);
     }
 
-    this.serviceAutoMode = accessory.getService(Switch) || accessory.addService(Switch, 'Auto Mode');
-    this.serviceAutoMode.addLinkedService(this.service);
-    this.serviceAutoMode.updateCharacteristic(platform.Characteristic.Name, 'Auto Mode');
-    this.serviceAutoMode.getCharacteristic(platform.Characteristic.On)
-      .onSet(async (value: CharacteristicValue) => {
-        if (value as boolean) {
-          if (this.Status.opMode !== 6) {
-            await this.setOpMode(6).then(() => {
-              device.data.snapshot['airState.opMode'] = 6;
-              this.updateAccessoryCharacteristic(device);
-            });
-          }
-        } else {
-          device.data.snapshot['airState.opMode'] = -1;
-          this.updateAccessoryCharacteristic(device);
-          await this.setTargetState(this.currentTargetState);
-        }
-      });
+    this.button_setup(device);
   }
 
   public get config() {
@@ -137,15 +117,29 @@ export default class AirConditioner extends baseDevice {
       ac_humidity_sensor: false,
       ac_led_control: false,
       ac_fan_control: false,
+      ac_buttons: [
+        {
+          'name': 'Auto mode',
+          'op_mode': 6,
+        },
+        {
+          'name': 'Dry mode',
+          'op_mode': 1,
+        },
+        {
+          'name': 'Fan mode',
+          'op_mode': 2,
+        },
+        {
+          'name': 'Air clean',
+          'op_mode': 5,
+        },
+      ],
     }, super.config);
   }
 
   public get Status() {
     return new ACStatus(this.accessory.context.device.snapshot, this.accessory.context.device.deviceModel);
-  }
-
-  async setAirPurifierActive(value: CharacteristicValue) {
-    await this.setOpMode(value ? 5 : 0);
   }
 
   async setJetModeActive(value: CharacteristicValue) {
@@ -202,35 +196,23 @@ export default class AirConditioner extends baseDevice {
 
     if (!this.Status.isPowerOn) {
       this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, Characteristic.CurrentHeaterCoolerState.INACTIVE);
-    } else if ([0].includes(this.Status.opMode)) {
+    } else if ([OpMode.COOL].includes(this.Status.opMode)) {
       this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, Characteristic.CurrentHeaterCoolerState.COOLING);
-    } else if ([1, 4].includes(this.Status.opMode)) {
+      this.service.updateCharacteristic(Characteristic.TargetHeaterCoolerState, Characteristic.TargetHeaterCoolerState.COOL);
+    } else if ([OpMode.HEAT].includes(this.Status.opMode)) {
       this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, Characteristic.CurrentHeaterCoolerState.HEATING);
-    } else if ([2, 8].includes(this.Status.opMode)) {
-      this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, Characteristic.CurrentHeaterCoolerState.IDLE);
-    } else if ([6, -1].includes(this.Status.opMode)) {
+      this.service.updateCharacteristic(Characteristic.TargetHeaterCoolerState, Characteristic.TargetHeaterCoolerState.HEAT);
+    } else if ([OpMode.AUTO, -1].includes(this.Status.opMode)) {
       // auto mode, detect based on current & target temperature
       if (this.Status.currentTemperature < this.Status.targetTemperature) {
         this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, Characteristic.CurrentHeaterCoolerState.HEATING);
-      } else {
-        this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, Characteristic.CurrentHeaterCoolerState.COOLING);
-      }
-    } else if ([5].includes(this.Status.opMode)) {
-      // another mode
-    } else {
-      this.platform.log.warn('Unsupported value opMode = ', this.Status.opMode);
-    }
-
-    if (this.Status.opMode === 0) {
-      this.service.updateCharacteristic(Characteristic.TargetHeaterCoolerState, Characteristic.TargetHeaterCoolerState.COOL);
-    } else if ([1, 4].includes(this.Status.opMode)) {
-      this.service.updateCharacteristic(Characteristic.TargetHeaterCoolerState, Characteristic.TargetHeaterCoolerState.HEAT);
-    } else if ([6, -1].includes(this.Status.opMode)) {
-      if (this.Status.currentTemperature < this.Status.targetTemperature) {
         this.service.updateCharacteristic(Characteristic.TargetHeaterCoolerState, Characteristic.TargetHeaterCoolerState.HEAT);
       } else {
+        this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, Characteristic.CurrentHeaterCoolerState.COOLING);
         this.service.updateCharacteristic(Characteristic.TargetHeaterCoolerState, Characteristic.TargetHeaterCoolerState.COOL);
       }
+    } else {
+      // another mode
     }
 
     this.service.updateCharacteristic(Characteristic.RotationSpeed, this.Status.windStrength);
@@ -277,13 +259,6 @@ export default class AirConditioner extends baseDevice {
     if (this.isJetModeEnabled(device) && this.serviceSwitch) {
       this.serviceSwitch.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.wMode.jet']);
     }
-
-    if (this.isAirPurifierSupported(device) && this.serviceSwitch2) {
-      this.serviceSwitch2.updateCharacteristic(Characteristic.On, this.Status.opMode === 5);
-    }
-
-    // auto mode
-    this.serviceAutoMode.updateCharacteristic(Characteristic.On, this.Status.opMode === 6);
   }
 
   async setLight(value: CharacteristicValue) {
@@ -433,10 +408,6 @@ export default class AirConditioner extends baseDevice {
     return this.jetModeModels.includes(device.model); // cool mode only
   }
 
-  protected isAirPurifierSupported(device: Device) {
-    return this.airPurifierModels.includes(device.model);
-  }
-
   protected createFanService() {
     const {
       Service: {
@@ -578,6 +549,57 @@ export default class AirConditioner extends baseDevice {
       .onSet(this.setFanSpeed.bind(this));
     this.service.getCharacteristic(Characteristic.SwingMode)
       .onSet(this.setSwingMode.bind(this));
+  }
+
+  public button_setup(device: Device) {
+    if (!this.config.ac_buttons.length) {
+      return;
+    }
+
+    this.serviceLabelButtons = this.accessory.getService('Buttons')
+      || this.accessory.addService(this.platform.Service.ServiceLabel, 'Buttons', 'Buttons');
+
+    // remove all buttons before
+    for (let i=0; i<this.serviceLabelButtons.linkedServices.length; i++){
+      this.accessory.removeService(this.serviceLabelButtons.linkedServices[i]);
+    }
+
+    for (let i = 0; i < this.config.ac_buttons.length; i++) {
+      this.setup_button_opmode(device, this.config.ac_buttons[i].name, parseInt(this.config.ac_buttons[i].op_mode));
+    }
+  }
+
+  protected setup_button_opmode(device: Device, name, opMode) {
+    const {
+      Service: {
+        Switch,
+      },
+    } = this.platform;
+
+    const serviceButton = this.accessory.getService(name) || this.accessory.addService(Switch, name, name);
+    serviceButton.updateCharacteristic(this.platform.Characteristic.Name, name);
+    serviceButton.getCharacteristic(this.platform.Characteristic.On)
+      .onGet(() => {
+        return this.Status.opMode === opMode;
+      })
+      .onSet(async (value: CharacteristicValue) => {
+        if (value as boolean) {
+          if (this.Status.opMode !== opMode) {
+            await this.setOpMode(opMode).then(() => {
+              device.data.snapshot['airState.opMode'] = opMode;
+              this.updateAccessoryCharacteristic(device);
+            });
+          }
+        } else {
+          await this.setOpMode(OpMode.COOL).then(async () => {
+            device.data.snapshot['airState.opMode'] = OpMode.COOL;
+            this.updateAccessoryCharacteristic(device);
+            await this.setTargetState(this.currentTargetState);
+          });
+        }
+      });
+
+    this.serviceLabelButtons.addLinkedService(serviceButton);
   }
 }
 
