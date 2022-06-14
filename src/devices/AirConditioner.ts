@@ -30,7 +30,13 @@ export default class AirConditioner extends baseDevice {
   protected serviceFanV2;
 
   // more feature
-  protected serviceSwitch; // jet mode
+  protected serviceJetMode; // jet mode
+  protected serviceQuietMode;
+  protected serviceEnergySaveMode;
+  protected jetModeModels = ['RAC_056905_CA', 'RAC_056905_WW', 'WINF_056905_WW'];
+  protected quietModeModels = ['WINF_056905_WW'];
+  protected energySaveModeModels = ['WINF_056905_WW'];
+  protected currentTargetState = 2; // default target: COOL
 
   protected serviceLabelButtons;
 
@@ -91,18 +97,32 @@ export default class AirConditioner extends baseDevice {
       this.serviceLight = null;
     }
 
-    // more feature
-    if (this.isJetModeEnabled(device)) {
-      this.serviceSwitch = accessory.getService('Jet Mode') || accessory.addService(Switch, 'Jet Mode', 'Jet Mode');
-      this.serviceSwitch.updateCharacteristic(platform.Characteristic.Name, 'Jet Mode');
-      this.serviceSwitch.getCharacteristic(platform.Characteristic.On)
-        .onSet(this.setJetModeActive.bind(this));
-    }
-
     if (this.config.ac_fan_control as boolean) {
       this.createFanService();
     } else if (this.serviceFanV2) {
       accessory.removeService(this.serviceFanV2);
+    }
+
+    // more feature
+    if (this.isJetModeEnabled(device)) {
+      this.serviceJetMode = accessory.getService('Jet Mode') || accessory.addService(Switch, 'Jet Mode', 'Jet Mode');
+      this.serviceJetMode.updateCharacteristic(platform.Characteristic.Name, 'Jet Mode');
+      this.serviceJetMode.getCharacteristic(platform.Characteristic.On)
+        .onSet(this.setJetModeActive.bind(this));
+    }
+
+    if (this.quietModeModels.includes(device.model)) {
+      this.serviceQuietMode = accessory.getService('Quiet mode') || accessory.addService(Switch, 'Quiet mode', 'Quiet mode');
+      this.serviceQuietMode.updateCharacteristic(platform.Characteristic.Name, 'Quiet mode');
+      this.serviceQuietMode.getCharacteristic(platform.Characteristic.On)
+        .onSet(this.setQuietModeActive.bind(this));
+    }
+
+    if (this.energySaveModeModels.includes(device.model)) {
+      this.serviceEnergySaveMode = accessory.getService('Energy save') || accessory.addService(Switch, 'Energy save', 'Energy save');
+      this.serviceEnergySaveMode.updateCharacteristic(platform.Characteristic.Name, 'Energy save');
+      this.serviceEnergySaveMode.getCharacteristic(platform.Characteristic.On)
+        .onSet(this.setEnergySaveActive.bind(this));
     }
 
     this.button_setup(device);
@@ -140,6 +160,34 @@ export default class AirConditioner extends baseDevice {
 
   public get Status() {
     return new ACStatus(this.accessory.context.device.snapshot, this.accessory.context.device.deviceModel);
+  }
+
+  async setEnergySaveActive(value: CharacteristicValue) {
+    const device: Device = this.accessory.context.device;
+
+    if (this.Status.isPowerOn && this.Status.opMode === 0) {
+      this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: 'airState.powerSave.basic',
+        dataValue: value ? 1 : 0,
+      }).then(() => {
+        device.data.snapshot['airState.powerSave.basic'] = value ? 1 : 0;
+        this.updateAccessoryCharacteristic(device);
+      });
+    }
+  }
+
+  async setQuietModeActive(value: CharacteristicValue) {
+    const device: Device = this.accessory.context.device;
+
+    if (this.Status.isPowerOn && this.Status.opMode === 0) {
+      this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: 'airState.miscFuncState.silentAWHP',
+        dataValue: value ? 1 : 0,
+      }).then(() => {
+        device.data.snapshot['airState.miscFuncState.silentAWHP'] = value ? 1 : 0;
+        this.updateAccessoryCharacteristic(device);
+      });
+    }
   }
 
   async setJetModeActive(value: CharacteristicValue) {
@@ -256,8 +304,16 @@ export default class AirConditioner extends baseDevice {
     }
 
     // more feature
-    if (this.isJetModeEnabled(device) && this.serviceSwitch) {
-      this.serviceSwitch.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.wMode.jet']);
+    if (this.isJetModeEnabled(device) && this.serviceJetMode) {
+      this.serviceJetMode.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.wMode.jet']);
+    }
+
+    if (this.quietModeModels.includes(device.model) && this.serviceQuietMode) {
+      this.serviceQuietMode.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.miscFuncState.silentAWHP']);
+    }
+
+    if (this.energySaveModeModels.includes(device.model)) {
+      this.serviceEnergySaveMode.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.powerSave.basic']);
     }
   }
 
@@ -278,7 +334,7 @@ export default class AirConditioner extends baseDevice {
 
   async setTargetState(value: CharacteristicValue) {
     this.platform.log.debug('Set target AC mode = ', value);
-    this.currentTargetState = value;
+    this.currentTargetState = value as number;
     const {
       Characteristic: {
         TargetHeaterCoolerState,
@@ -499,8 +555,6 @@ export default class AirConditioner extends baseDevice {
 
     this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
       .setProps({
-        minValue: Math.min(...targetStates),
-        maxValue: Math.max(...targetStates),
         validValues: targetStates,
       })
       .onSet(this.setTargetState.bind(this));

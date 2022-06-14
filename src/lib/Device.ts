@@ -18,7 +18,7 @@ export class Device {
   }
 
   public get model() {
-    return this.data.manufacture?.manufactureModel || this.data.modelName || this.data.modemInfo?.modelName;
+    return this.data.modelName || this.data.modemInfo?.modelName || this.data.manufacture?.manufactureModel;
   }
 
   public get macAddress() {
