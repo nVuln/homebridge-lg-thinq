@@ -13,8 +13,8 @@ export default function AirState(deviceModel: DeviceModel, decodedMonitor) {
   const airState = {
     'airState.opMode': parseInt(decodedMonitor['OpMode'] || '0') as number,
     'airState.operation': loopupEnum(deviceModel, decodedMonitor, 'Operation') !== ACOperation.OFF,
-    'airState.tempState.current': parseInt(decodedMonitor['TempCur'] || '0') as number,
-    'airState.tempState.target': parseInt(decodedMonitor['TempCfg'] || '0') as number,
+    'airState.tempState.current': parseFloat(decodedMonitor['TempCur'] || '0') as number,
+    'airState.tempState.target': parseFloat(decodedMonitor['TempCfg'] || '0') as number,
     'airState.windStrength': parseInt(decodedMonitor['WindStrength'] || '0') as number,
     'airState.wDir.vStep': parseInt(decodedMonitor['WDirVStep'] || '0') as number,
     'airState.wDir.hStep': parseInt(decodedMonitor['WDirHStep'] || '0') as number,

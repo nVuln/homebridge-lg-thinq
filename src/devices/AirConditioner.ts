@@ -36,6 +36,7 @@ export default class AirConditioner extends baseDevice {
   protected jetModeModels = ['RAC_056905_CA', 'RAC_056905_WW', 'WINF_056905_WW', 'RAC_056905_NL'];
   protected quietModeModels = ['WINF_056905_WW'];
   protected energySaveModeModels = ['WINF_056905_WW'];
+  protected halfStepModels = ['WINF_056905_WW'];
   protected currentTargetState = 2; // default target: COOL
 
   protected serviceLabelButtons;
@@ -574,18 +575,23 @@ export default class AirConditioner extends baseDevice {
 
     const targetTemperatureValue = device.deviceModel.value('airState.tempState.target') as RangeValue;
     if (targetTemperatureValue) {
+      let minStep = 1;
+      if (this.halfStepModels.includes(device.model)) {
+        minStep = 0.5;
+      }
+
       this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
         .setProps({
           minValue: targetTemperatureValue.min,
           maxValue: targetTemperatureValue.max,
-          minStep: 1,
+          minStep: minStep,
         });
 
       this.service.getCharacteristic(Characteristic.HeatingThresholdTemperature)
         .setProps({
           minValue: targetTemperatureValue.min,
           maxValue: targetTemperatureValue.max,
-          minStep: 1,
+          minStep: minStep,
         });
     }
 
