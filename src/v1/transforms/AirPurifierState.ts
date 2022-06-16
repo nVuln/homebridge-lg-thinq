@@ -5,6 +5,7 @@ export default function AirPurifierState(deviceModel: DeviceModel, decodedMonito
   const airState = AirState(deviceModel, decodedMonitor);
 
   airState['airState.operation'] = !!parseInt(decodedMonitor['Operation']);
+  airState['airState.miscFuncState.airFast'] = !!parseInt(decodedMonitor['AirFast']);
 
   return airState;
 }

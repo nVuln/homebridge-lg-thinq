@@ -1,5 +1,5 @@
 import {LGThinQHomebridgePlatform} from '../platform';
-import {CharacteristicValue, PlatformAccessory, Service} from 'homebridge';
+import {CharacteristicValue, PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
 import {baseDevice} from '../baseDevice';
 
@@ -16,6 +16,7 @@ export default class AirPurifier extends baseDevice {
   protected serviceAirQuality;
   protected serviceLight;
   protected serviceFilterMaintenance;
+  protected serviceAirFastMode;
 
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
@@ -29,6 +30,7 @@ export default class AirPurifier extends baseDevice {
         AirQualitySensor,
         Lightbulb,
         FilterMaintenance,
+        Switch,
       },
       Characteristic,
     } = this.platform;
@@ -68,10 +70,39 @@ export default class AirPurifier extends baseDevice {
       this.serviceFilterMaintenance = accessory.getService(FilterMaintenance) || accessory.addService(FilterMaintenance);
       this.serviceFilterMaintenance.updateCharacteristic(Characteristic.Name, 'Filter Maintenance');
     }
+
+    if (this.config.air_fast_mode) {
+      this.serviceAirFastMode = accessory.getService('Air Fast') || accessory.addService(Switch, 'Air Fast', 'Air Fast');
+      this.serviceAirFastMode.updateCharacteristic(Characteristic.Name, 'Air Fast');
+      this.serviceAirFastMode.getCharacteristic(Characteristic.On)
+        .onSet(this.setAirFastActive.bind(this));
+    }
   }
 
   public get Status() {
     return new AirPurifierStatus(this.accessory.context.device.snapshot);
+  }
+
+  public get config() {
+    return Object.assign({}, {
+      air_fast_mode: false,
+    }, super.config);
+  }
+
+  async setAirFastActive(value: CharacteristicValue) {
+    if (!this.Status.isPowerOn) {
+      return;
+    }
+
+    const device: Device = this.accessory.context.device;
+    const isOn = value as boolean ? 1 : 0;
+    this.platform.ThinQ?.deviceControl(device.id, {
+      dataKey: 'airState.miscFuncState.airFast',
+      dataValue: isOn as number,
+    }).then(() => {
+      device.data.snapshot['airState.miscFuncState.airFast'] = isOn as number;
+      this.updateAccessoryCharacteristic(device);
+    });
   }
 
   async setActive(value: CharacteristicValue) {
@@ -184,6 +215,10 @@ export default class AirPurifier extends baseDevice {
     this.serviceAirQuality.updateCharacteristic(Characteristic.StatusActive, this.Status.airQuality.isOn);
 
     this.serviceLight.updateCharacteristic(Characteristic.On, this.Status.isLightOn);
+
+    if (this.config.air_fast_mode && this.serviceAirFastMode) {
+      this.serviceAirFastMode.updateCharacteristic(Characteristic.On, this.Status.isAirFastEnable);
+    }
   }
 }
 
@@ -235,5 +270,9 @@ export class AirPurifierStatus {
 
   public get filterUseTime() {
     return this.data['airState.filterMngStates.useTime'] || 0;
+  }
+
+  public get isAirFastEnable() {
+    return this.data['airState.miscFuncState.airFast'] || 0;
   }
 }
