@@ -18,7 +18,12 @@ export class Device {
   }
 
   public get model() {
-    return this.data.modelName || this.data.modemInfo?.modelName || this.data.manufacture?.manufactureModel;
+    const modelName = this.data.modelName || this.data.modemInfo?.modelName || this.data.manufacture?.manufactureModel;
+    if (/^([A-Z]+)_(\d+)_([A-Z]{2})$/.test(modelName)) {
+      return modelName.slice(0, -3);
+    }
+
+    return modelName;
   }
 
   public get macAddress() {

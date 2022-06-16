@@ -33,10 +33,10 @@ export default class AirConditioner extends baseDevice {
   protected serviceJetMode; // jet mode
   protected serviceQuietMode;
   protected serviceEnergySaveMode;
-  protected jetModeModels = ['RAC_056905_CA', 'RAC_056905_WW', 'WINF_056905_WW', 'RAC_056905_NL'];
-  protected quietModeModels = ['WINF_056905_WW'];
-  protected energySaveModeModels = ['WINF_056905_WW'];
-  protected halfStepModels = ['WINF_056905_WW'];
+  protected jetModeModels = ['RAC_056905'];
+  protected quietModeModels = ['WINF_056905'];
+  protected energySaveModeModels = ['WINF_056905'];
+  protected halfStepModels = ['WINF_056905'];
   protected currentTargetState = 2; // default target: COOL
 
   protected serviceLabelButtons;
