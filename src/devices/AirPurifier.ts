@@ -71,11 +71,15 @@ export default class AirPurifier extends baseDevice {
       this.serviceFilterMaintenance.updateCharacteristic(Characteristic.Name, 'Filter Maintenance');
     }
 
+    this.serviceAirFastMode = accessory.getService('Air Fast');
     if (this.config.air_fast_mode) {
-      this.serviceAirFastMode = accessory.getService('Air Fast') || accessory.addService(Switch, 'Air Fast', 'Air Fast');
+      this.serviceAirFastMode = this.serviceAirFastMode || accessory.addService(Switch, 'Air Fast', 'Air Fast');
       this.serviceAirFastMode.updateCharacteristic(Characteristic.Name, 'Air Fast');
       this.serviceAirFastMode.getCharacteristic(Characteristic.On)
         .onSet(this.setAirFastActive.bind(this));
+    } else if (this.serviceAirFastMode) {
+      accessory.removeService(this.serviceAirFastMode);
+      this.serviceAirFastMode = null;
     }
   }
 
