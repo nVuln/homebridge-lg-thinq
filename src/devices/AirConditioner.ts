@@ -138,24 +138,7 @@ export default class AirConditioner extends baseDevice {
       ac_humidity_sensor: false,
       ac_led_control: false,
       ac_fan_control: false,
-      ac_buttons: [
-        {
-          'name': 'Auto mode',
-          'op_mode': 6,
-        },
-        {
-          'name': 'Dry mode',
-          'op_mode': 1,
-        },
-        {
-          'name': 'Fan mode',
-          'op_mode': 2,
-        },
-        {
-          'name': 'Air clean',
-          'op_mode': 5,
-        },
-      ],
+      ac_buttons: [],
     }, super.config);
   }
 

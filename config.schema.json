@@ -197,25 +197,7 @@
                   "type": "integer"
                 }
               }
-            },
-            "default": [
-              {
-                "name": "Auto mode",
-                "op_mode": 6
-              },
-              {
-                "name": "Dry mode",
-                "op_mode": 1
-              },
-              {
-                "name": "Fan mode",
-                "op_mode": 2
-              },
-              {
-                "name": "Air clean",
-                "op_mode": 5
-              }
-            ]
+            }
           },
           "ref_express_freezer": {
             "title": "Express Freezer / Ice Plus",
