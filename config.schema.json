@@ -210,6 +210,10 @@
           "ref_eco_friendly": {
             "title": "Eco Friendly",
             "type": "boolean"
+          },
+          "air_fast_mode": {
+            "title": "Air Fast Mode",
+            "type": "boolean"
           }
         }
       }
@@ -253,6 +257,19 @@
           "type": "fieldset",
           "title": "{{ value.title }}",
           "items": [
+            {
+              "type": "fieldset",
+              "title": "Air purifier specific settings",
+              "description": "Configure air purifier device settings.",
+              "expandable": true,
+              "expanded": false,
+              "items": [
+                "devices[].air_fast_mode"
+              ],
+              "condition": {
+                "functionBody": "return model.devices && model.devices[arrayIndices] && ['AIR_PURIFIER'].includes(model.devices[arrayIndices].type);"
+              }
+            },
             {
               "type": "fieldset",
               "title": "Washer / Dryer specific settings",
