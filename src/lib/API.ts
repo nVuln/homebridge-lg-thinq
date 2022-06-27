@@ -276,8 +276,7 @@ export class API {
     session = session || this.session;
     this.session = await this.auth.refreshNewToken(session);
 
-    //unset jsessionid;
-    this.jsessionId = '';
+    this.jsessionId = await this.auth.getJSessionId(this.session.accessToken);
   }
 
   async thinq1PostRequest(endpoint: string, data: any) {
