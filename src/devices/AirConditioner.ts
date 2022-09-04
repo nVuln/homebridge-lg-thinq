@@ -541,7 +541,8 @@ export default class AirConditioner extends baseDevice {
       .setProps({
         validValues: targetStates,
       })
-      .onSet(this.setTargetState.bind(this));
+      .onSet(this.setTargetState.bind(this))
+      .updateValue(targetStates[0]);
 
     const currentTemperatureValue = device.deviceModel.value('airState.tempState.current') as RangeValue;
     if (currentTemperatureValue) {
