@@ -9,6 +9,7 @@ import {default as V1helper} from './v1/helper';
 import {PlatformType} from './lib/constants';
 import AirConditioner from './devices/AirConditioner';
 import AeroTower from './devices/AeroTower';
+import Styler from './devices/Styler';
 
 /**
  * Platform Accessory
@@ -38,6 +39,7 @@ export class Helper {
       case 'DISHWASHER': return Dishwasher;
       case 'DEHUMIDIFIER': return Dehumidifier;
       case 'AC': return AirConditioner;
+      case 'STYLER': return Styler;
     }
 
     return null;
