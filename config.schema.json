@@ -108,6 +108,10 @@
             "title": "Serial Number (optional)",
             "type": "string"
           },
+          "dishwasher_trigger": {
+            "title": "Enable program finished trigger?",
+            "type": "boolean"
+          },
           "washer_trigger": {
             "title": "Enable program finished trigger?",
             "type": "boolean"
@@ -327,6 +331,19 @@
               ],
               "condition": {
                 "functionBody": "return model.devices && model.devices[arrayIndices] && ['REFRIGERATOR'].includes(model.devices[arrayIndices].type);"
+              }
+            },
+            {
+              "type": "fieldset",
+              "title": "Dishwasher specific settings",
+              "description": "Configure dishwasher device settings.",
+              "expandable": true,
+              "expanded": false,
+              "items": [
+                "devices[].dishwasher_trigger"
+              ],
+              "condition": {
+                "functionBody": "return model.devices && model.devices[arrayIndices] && ['DISHWASHER'].includes(model.devices[arrayIndices].type);"
               }
             }
           ]
