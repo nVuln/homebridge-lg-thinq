@@ -80,7 +80,12 @@ export class DeviceModel {
   }
 
   public value(name: string) {
-    const data = this.data.Value[name];
+    let data = this.data.Value[name];
+    if (data === undefined && this.data.Monitoring?.type === 'THINQ2' && this.data.Monitoring?.protocol[name] !== undefined) {
+      // convert key to thinq2 monitoring value
+      data = this.data.Value[this.data.Monitoring?.protocol[name]];
+    }
+
     if (data === undefined) {
       return null;
     }
