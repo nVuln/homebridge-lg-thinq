@@ -141,8 +141,9 @@ export default class WasherDryer extends baseDevice {
       } = this.platform;
 
       // detect if washer program in done
-      if ((washerDryer.state === 'END' && !NOT_RUNNING_STATUS.includes(washerDryer.preState || washerDryer.processState))
-        || (this.isRunning && !this.Status.isRunning)) {
+      if ((['END', 'COOLDOWN'].includes(washerDryer.state)
+          && !NOT_RUNNING_STATUS.includes(washerDryer.preState || washerDryer.processState))
+          || (this.isRunning && !this.Status.isRunning)) {
         this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_DETECTED);
         this.isRunning = false; // marked device as not running
 
