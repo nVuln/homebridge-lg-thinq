@@ -126,7 +126,7 @@ export default class AirConditioner extends baseDevice {
         .onSet(this.setEnergySaveActive.bind(this));
     }
 
-    this.button_setup(device);
+    this.setupButton(device);
   }
 
   public get config() {
@@ -325,7 +325,15 @@ export default class AirConditioner extends baseDevice {
       },
     } = this.platform;
 
-    if (this.Status.opMode === 6) {
+    // extract all opmode value from ac_buttons configuration
+    let opModeValues = this.config.ac_buttons.map(button => {
+      return button.op_mode;
+    }).filter();
+    if (!opModeValues.length) {
+      opModeValues = [6, 8]; // default opmode list
+    }
+
+    if (opModeValues.includes(this.Status.opMode)) {
       return;
     }
 
@@ -595,7 +603,7 @@ export default class AirConditioner extends baseDevice {
       .onSet(this.setSwingMode.bind(this));
   }
 
-  public button_setup(device: Device) {
+  public setupButton(device: Device) {
     if (!this.config.ac_buttons.length) {
       return;
     }
@@ -609,11 +617,11 @@ export default class AirConditioner extends baseDevice {
     }
 
     for (let i = 0; i < this.config.ac_buttons.length; i++) {
-      this.setup_button_opmode(device, this.config.ac_buttons[i].name, parseInt(this.config.ac_buttons[i].op_mode));
+      this.setupButtonOpmode(device, this.config.ac_buttons[i].name, parseInt(this.config.ac_buttons[i].op_mode));
     }
   }
 
-  protected setup_button_opmode(device: Device, name, opMode) {
+  protected setupButtonOpmode(device: Device, name, opMode) {
     const {
       Service: {
         Switch,
