@@ -59,5 +59,9 @@ export default function AirState(deviceModel: DeviceModel, decodedMonitor) {
     airState['airState.wMode.jet'] = parseInt(decodedMonitor['Jet']);
   }
 
+  if (decodedMonitor['SensorHumidity']) {
+    airState['airState.humidity.current'] = parseInt(decodedMonitor['SensorHumidity']);
+  }
+
   return airState;
 }
