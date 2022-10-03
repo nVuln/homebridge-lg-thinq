@@ -10,6 +10,7 @@ import {PlatformType} from './lib/constants';
 import AirConditioner from './devices/AirConditioner';
 import AeroTower from './devices/AeroTower';
 import Styler from './devices/Styler';
+import RangeHood from './devices/RangeHood';
 
 /**
  * Platform Accessory
@@ -40,6 +41,7 @@ export class Helper {
       case 'DEHUMIDIFIER': return Dehumidifier;
       case 'AC': return AirConditioner;
       case 'STYLER': return Styler;
+      case 'HOOD': return RangeHood;
     }
 
     return null;
