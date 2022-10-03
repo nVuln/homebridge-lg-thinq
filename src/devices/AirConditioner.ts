@@ -471,6 +471,9 @@ export default class AirConditioner extends baseDevice {
     this.serviceFanV2.addLinkedService(this.service);
 
     this.serviceFanV2.getCharacteristic(Characteristic.Active)
+      .onGet(() => {
+        return this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE;
+      })
       .onSet((value: CharacteristicValue) => {
         const isOn = value as boolean;
         if ((this.Status.isPowerOn && isOn) || (!this.Status.isPowerOn && !isOn)) {
