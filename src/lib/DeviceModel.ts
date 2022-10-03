@@ -81,9 +81,101 @@ export class DeviceModel {
 
   public value(name: string) {
     let data = this.data.Value[name];
-    if (data === undefined && this.data.Monitoring?.type === 'THINQ2' && this.data.Monitoring?.protocol[name] !== undefined) {
+    if (data === undefined && this.data.Monitoring?.type === 'THINQ2') {
       // convert key to thinq2 monitoring value
-      data = this.data.Value[this.data.Monitoring?.protocol[name]];
+      const protocol = this.data.Monitoring?.protocol;
+
+      /**
+       * sample: "protocol": {
+       * 			"state": "State",
+       * 			"process": "Process",
+       * 			"error": "Error",
+       * 			"initialTimeHour": "Initial_Time_H",
+       * 			"initialTimeMinute": "Initial_Time_M",
+       * 			"course": "Course",
+       * 			"courseType": "CourseType",
+       * 			"remainTimeHour": "Remain_Time_H",
+       * 			"remainTimeMinute": "Remain_Time_M",
+       * 			"reserveTimeHour": "Reserve_Time_H",
+       * 			"reserveTimeMinute": "Reserve_Time_M",
+       * 			"childLock": "ChildLock",
+       * 			"door": "Door",
+       * 			"rinseRefill": "RinseRefill",
+       * 			"saltRefill": "SaltRefill",
+       * 			"signalLevel": "SignalLevel",
+       * 			"mcReminderSetting": "MCReminderSetting",
+       * 			"cleanLReminder": "CleanLReminder",
+       * 			"nightDry": "NightDry",
+       * 			"delayStart": "DelayStart",
+       * 			"energySaver": "EnergySaver",
+       * 			"extraDry": "ExtraDry",
+       * 			"highTemp": "HighTemp",
+       * 			"dualZone": "DualZone",
+       * 			"halfLoad": "HalfLoad",
+       * 			"autoDoor": "AutoDoor",
+       * 			"preSteam": "PreSteam",
+       * 			"steam": "Steam",
+       * 			"rinseLevel": "RinseLevel",
+       * 			"softeningLevel": "SofteningLevel",
+       * 			"smartCourse": "SmartCourse",
+       * 			"currentDownloadCourse": "CurrentDownloadCourse",
+       * 			"tclCount": "TclCount"
+       * 		}
+       */
+      if (protocol.constructor.name === 'Object' && protocol[name] !== undefined) {
+        data = this.data.Value[this.data.Monitoring?.protocol[name]];
+      }
+      /**
+       * sample: "protocol": [{
+       * 				"_comment": "Hood Operation State(1byte)",
+       * 				"superSet": "hoodState.hoodState",
+       * 				"value": "HoodState"
+       * 			},
+       *      {
+       * 				"_comment": "VentState",
+       * 				"superSet": "hoodState.ventLevel",
+       * 				"value": "VentLevel"
+       * 			},
+       *      {
+       * 				"_comment": "VentMode",
+       * 				"superSet": "hoodState.ventMode",
+       * 				"value": "VentMode"
+       * 			},
+       *      {
+       * 				"_comment": "TimerMin",
+       * 				"superSet": "hoodState.remainTimeMinute",
+       * 				"value": "TimerMin"
+       * 			},
+       *      {
+       * 				"_comment": "TimerSec",
+       * 				"superSet": "hoodState.remainTimeSecond",
+       * 				"value": "TimerSec"
+       * 			},
+       *      {
+       * 				"_comment": "LightState",
+       * 				"superSet": "hoodState.lampLevel",
+       * 				"value": "LampLevel"
+       * 			},
+       *      {
+       * 				"_comment": "Dummy-meaningless",
+       * 				"superSet": "hoodState.dummyData",
+       * 				"value": "Dummy"
+       * 			},
+       *      {
+       * 				"_comment": "HoodStateInfo",
+       * 				"superSet": null,
+       * 				"value": "HoodStateInfo"
+       * 			},
+       *      {
+       * 				"_comment": "WiFi Access Enable",
+       * 				"superSet": null,
+       * 				"value": "WiFiAccess"
+       * 			}
+       *    ]
+       */
+      else if (protocol.constructor.name === 'Array' && protocol.find(p => p.superSet === name) !== undefined) {
+        data = this.data.Value[protocol.find(p => p.superSet === name).value];
+      }
     }
 
     if (data === undefined) {
