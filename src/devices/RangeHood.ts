@@ -1,8 +1,8 @@
 import {baseDevice} from '../baseDevice';
 import {LGThinQHomebridgePlatform} from '../platform';
-import {Characteristic, CharacteristicValue, PlatformAccessory, Service} from 'homebridge';
-import {Device} from "../lib/Device";
-import {ValueType} from "../lib/DeviceModel";
+import {CharacteristicValue, PlatformAccessory} from 'homebridge';
+import {Device} from '../lib/Device';
+import {ValueType} from '../lib/DeviceModel';
 
 export default class RangeHood extends baseDevice {
   protected serviceHood;
@@ -31,7 +31,7 @@ export default class RangeHood extends baseDevice {
     this.serviceHood.getCharacteristic(Characteristic.RotationSpeed)
       .onSet(this.setHoodRotationSpeed.bind(this));
 
-    const ventLevelSpec = device.deviceModel.value('hoodState.ventLevel');
+    const ventLevelSpec = device.deviceModel.value('VentLevel');
     if (ventLevelSpec?.type === ValueType.Range) {
       this.serviceHood.getCharacteristic(Characteristic.RotationSpeed)
         .setProps({
@@ -49,7 +49,7 @@ export default class RangeHood extends baseDevice {
     this.serviceLight.getCharacteristic(Characteristic.Brightness)
       .onSet(this.setLightBrightness.bind(this));
 
-    const ventLightSpec = device.deviceModel.value('hoodState.lampLevel');
+    const ventLightSpec = device.deviceModel.value('LampLevel');
     if (ventLightSpec?.type === ValueType.Range) {
       this.serviceLight.getCharacteristic(Characteristic.Brightness)
         .setProps({
@@ -58,6 +58,8 @@ export default class RangeHood extends baseDevice {
           minStep: ventLightSpec.step,
         });
     }
+
+    this.updateAccessoryCharacteristic(device);
   }
 
   async setHoodActive(value: CharacteristicValue) {
@@ -96,19 +98,21 @@ export default class RangeHood extends baseDevice {
     });
   }
 
-  public update(snapshot) {
-    super.update(snapshot);
+  public updateAccessoryCharacteristic(device: Device) {
+    super.updateAccessoryCharacteristic(device);
 
-    const hoodState = snapshot.hoodState;
+    const hoodState = device.snapshot.hoodState;
+    const isVentOn = hoodState['ventSet'] === device.deviceModel.lookupMonitorName('VentSet', '@CP_ENABLE_W');
+    const isLampOn = hoodState['lampSet'] === device.deviceModel.lookupMonitorName('LampSet', '@CP_ENABLE_W');
 
     const {
       Characteristic,
     } = this.platform;
 
-    this.serviceHood.updateCharacteristic(Characteristic.On, hoodState['ventLevel'] !== 0);
+    this.serviceHood.updateCharacteristic(Characteristic.On, isVentOn);
     this.serviceHood.updateCharacteristic(Characteristic.RotationSpeed, hoodState['ventLevel']);
 
-    this.serviceLight.updateCharacteristic(Characteristic.On, hoodState['lampLevel'] !== 0);
+    this.serviceLight.updateCharacteristic(Characteristic.On, isLampOn);
     this.serviceLight.updateCharacteristic(Characteristic.Brightness, hoodState['lampLevel']);
   }
 }
