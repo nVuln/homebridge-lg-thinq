@@ -568,7 +568,11 @@ export default class AirConditioner extends baseDevice {
       this.service.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.currentTemperature);
     }
 
-    const targetTemperatureValue = device.deviceModel.value('airState.tempState.target') as RangeValue;
+    let targetTemperatureValue = device.deviceModel.value('airState.tempState.limitMin') as RangeValue;
+    if (!targetTemperatureValue) {
+      targetTemperatureValue = device.deviceModel.value('airState.tempState.target') as RangeValue;
+    }
+
     if (targetTemperatureValue) {
       let minStep = 1;
       if (this.halfStepModels.includes(device.model)) {
