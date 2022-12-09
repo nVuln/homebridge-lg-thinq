@@ -328,7 +328,9 @@ export default class AirConditioner extends baseDevice {
     // extract all opmode value from ac_buttons configuration
     let opModeValues = this.config.ac_buttons.map(button => {
       return button.op_mode;
-    }).filter();
+    }).filter(op_mode => {
+      return op_mode !== undefined && op_mode !== null;
+    });
     if (!opModeValues.length) {
       opModeValues = [6, 8]; // default opmode list
     }
