@@ -13,6 +13,7 @@ export default class WasherDryer extends baseDevice {
   protected serviceWasherDryer;
   protected serviceEventFinished;
   protected serviceDoorLock;
+  protected serviceTubCleanMaintenance;
 
   constructor(
     protected readonly platform: LGThinQHomebridgePlatform,
@@ -25,6 +26,7 @@ export default class WasherDryer extends baseDevice {
         OccupancySensor,
         LockMechanism,
         Valve,
+        StatelessProgrammableSwitch,
       },
       Characteristic,
       Characteristic: {
@@ -66,7 +68,6 @@ export default class WasherDryer extends baseDevice {
       this.serviceDoorLock.getCharacteristic(Characteristic.LockTargetState)
         .onSet(this.setActive.bind(this))
         .updateValue(Characteristic.LockTargetState.UNSECURED);
-      this.serviceDoorLock.addLinkedService(this.serviceWasherDryer);
     } else if (this.serviceDoorLock) {
       accessory.removeService(this.serviceDoorLock);
     }
@@ -79,6 +80,16 @@ export default class WasherDryer extends baseDevice {
     } else if (this.serviceEventFinished) {
       accessory.removeService(this.serviceEventFinished);
     }
+
+    // tub clean coach
+    this.serviceTubCleanMaintenance = accessory.getService('Tub Clean Coach')
+      || accessory.addService(StatelessProgrammableSwitch, 'Tub Clean Coach', 'Tub Clean Coach');
+    this.serviceTubCleanMaintenance.updateCharacteristic(Characteristic.Name, 'Tub Clean Coach');
+    this.serviceTubCleanMaintenance.getCharacteristic(Characteristic.ProgrammableSwitchEvent)
+      .setProps({
+        validValues: [0], // single press
+      });
+    this.serviceWasherDryer.addLinkedService(this.serviceTubCleanMaintenance);
   }
 
   public get Status() {
@@ -131,14 +142,16 @@ export default class WasherDryer extends baseDevice {
       return;
     }
 
+    const {
+      Characteristic: {
+        OccupancyDetected,
+        ProgrammableSwitchEvent,
+      },
+    } = this.platform;
+
     // when washer state is changed
     if (this.config.washer_trigger as boolean && this.serviceEventFinished
       && ('preState' in washerDryer || 'processState' in washerDryer) && 'state' in washerDryer) {
-      const {
-        Characteristic: {
-          OccupancyDetected,
-        },
-      } = this.platform;
 
       // detect if washer program in done
       if ((['END', 'COOLDOWN'].includes(washerDryer.state)
@@ -158,6 +171,10 @@ export default class WasherDryer extends baseDevice {
         this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_NOT_DETECTED);
         this.isRunning = true;
       }
+    }
+
+    if ('TCLCount' in washerDryer && this.Status.TCLCount >= 30) {
+      this.serviceTubCleanMaintenance.updateCharacteristic(ProgrammableSwitchEvent, ProgrammableSwitchEvent.SINGLE_PRESS);
     }
   }
 }
@@ -196,5 +213,9 @@ export class WasherDryerStatus {
     }
 
     return remainingDuration;
+  }
+
+  public get TCLCount() {
+    return Math.min(parseInt(this.data?.TCLCount || 0), 30);
   }
 }
