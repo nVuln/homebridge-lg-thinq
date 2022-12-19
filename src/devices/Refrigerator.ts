@@ -3,6 +3,7 @@ import {CharacteristicValue, PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
 import {baseDevice} from '../baseDevice';
 import {DeviceModel} from '../lib/DeviceModel';
+import {cToF, fToC} from '../helper';
 
 export default class Refrigerator extends baseDevice {
   protected serviceFreezer;
@@ -311,12 +312,4 @@ export class RefrigeratorStatus {
   public get tempUnit() {
     return this.data?.tempUnit || 'CELSIUS';
   }
-}
-
-export function fToC(fahrenheit) {
-  return parseFloat(((fahrenheit - 32) * 5 / 9).toFixed(1));
-}
-
-export function cToF(celsius) {
-  return Math.round(celsius * 9 / 5 + 32);
 }
