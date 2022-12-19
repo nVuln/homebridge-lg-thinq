@@ -2,7 +2,8 @@ import {baseDevice} from '../baseDevice';
 import {LGThinQHomebridgePlatform} from '../platform';
 import {CharacteristicValue, PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
-import {DeviceModel, RangeValue} from '../lib/DeviceModel';
+import {RangeValue} from '../lib/DeviceModel';
+import {cToF} from '../helper';
 
 export enum FanSpeed {
   LOW = 2,
@@ -36,7 +37,6 @@ export default class AirConditioner extends baseDevice {
   protected jetModeModels = ['RAC_056905'];
   protected quietModeModels = ['WINF_056905'];
   protected energySaveModeModels = ['WINF_056905'];
-  protected halfStepModels = ['WINF_056905'];
   protected currentTargetState = 2; // default target: COOL
 
   protected serviceLabelButtons;
@@ -143,7 +143,7 @@ export default class AirConditioner extends baseDevice {
   }
 
   public get Status() {
-    return new ACStatus(this.accessory.context.device.snapshot, this.accessory.context.device.deviceModel);
+    return new ACStatus(this.accessory.context.device.snapshot, this.accessory.context.device);
   }
 
   async setEnergySaveActive(value: CharacteristicValue) {
@@ -367,12 +367,13 @@ export default class AirConditioner extends baseDevice {
       return;
     }
 
-    const temperature = value as number;
+    const device: Device = this.accessory.context.device;
+
+    const temperature = this.Status.convertTemperatureCelsiusFromHomekitToLG(value);
     if (temperature === this.Status.targetTemperature) {
       return;
     }
 
-    const device: Device = this.accessory.context.device;
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.tempState.target',
       dataValue: temperature,
@@ -561,8 +562,9 @@ export default class AirConditioner extends baseDevice {
     if (currentTemperatureValue) {
       this.service.getCharacteristic(Characteristic.CurrentTemperature)
         .setProps({
-          minValue: currentTemperatureValue.min,
-          maxValue: currentTemperatureValue.max,
+          minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(currentTemperatureValue.min),
+          maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(currentTemperatureValue.max),
+          minStep: 0.01,
         });
     }
 
@@ -576,23 +578,18 @@ export default class AirConditioner extends baseDevice {
     }
 
     if (targetTemperatureValue) {
-      let minStep = 1;
-      if (this.halfStepModels.includes(device.model)) {
-        minStep = 0.5;
-      }
-
       this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
         .setProps({
-          minValue: targetTemperatureValue.min,
-          maxValue: targetTemperatureValue.max,
-          minStep: minStep,
+          minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.min),
+          maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.max),
+          minStep: 0.01,
         });
 
       this.service.getCharacteristic(Characteristic.HeatingThresholdTemperature)
         .setProps({
-          minValue: targetTemperatureValue.min,
-          maxValue: targetTemperatureValue.max,
-          minStep: minStep,
+          minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.min),
+          maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.max),
+          minStep: 0.01,
         });
     }
 
@@ -665,7 +662,57 @@ export default class AirConditioner extends baseDevice {
 }
 
 export class ACStatus {
-  constructor(protected data, protected deviceModel: DeviceModel) {
+  constructor(protected data, protected device: Device) {
+  }
+
+  /**
+   * detect fahrenheit unit device by timezone
+   */
+  public get isFahrenheitUnit() {
+    return this.device.data.timezoneCode.toLowerCase().startsWith('america/');
+  }
+
+  public convertTemperatureCelsiusFromHomekitToLG(temperatureInCelsius) {
+    if (!this.isFahrenheitUnit) {
+      return temperatureInCelsius;
+    }
+
+    const temperatureInFahrenheit = Math.round(cToF(temperatureInCelsius)); // convert temperature to fahrenheit by normal algorithm
+
+    // lookup celsius value by fahrenheit value from table TempFahToCel
+    const temperature = this.device.deviceModel.lookupMonitorValue('TempFahToCel', temperatureInFahrenheit.toString());
+
+    if (temperature === undefined) {
+      return temperatureInCelsius;
+    }
+
+    return temperature;
+  }
+
+  /**
+   * algorithm conversion LG vs Homekit is different
+   * so we need to handle it before submit to homekit
+   */
+  public convertTemperatureCelsiusFromLGToHomekit(temperatureInCelsius) {
+    if (!this.isFahrenheitUnit) {
+      return temperatureInCelsius;
+    }
+
+    // lookup fahrenheit value by celsius value from table TempFahToCel
+    const temperatureInFahrenheit = parseInt(this.device.deviceModel.lookupMonitorName('TempFahToCel', temperatureInCelsius));
+    if (temperatureInFahrenheit === undefined) {
+      return temperatureInCelsius;
+    }
+
+    // convert F to C, truncate number to 2 decimal places without rounding
+    // custom fToC function, original in helper.ts
+    const celsius = parseFloat(String((temperatureInFahrenheit - 32) * 5 / 9));
+    const withoutRounded = celsius.toString().match(/^-?\d+(?:\.\d{0,2})?/);
+    if (withoutRounded) {
+      return parseFloat(withoutRounded[0]);
+    }
+
+    return celsius.toFixed(2);
   }
 
   public get opMode() {
@@ -681,11 +728,11 @@ export class ACStatus {
   }
 
   public get currentTemperature() {
-    return this.data['airState.tempState.current'] as number;
+    return this.convertTemperatureCelsiusFromLGToHomekit(this.data['airState.tempState.current'] as number);
   }
 
   public get targetTemperature() {
-    return this.data['airState.tempState.target'] as number;
+    return this.convertTemperatureCelsiusFromLGToHomekit(this.data['airState.tempState.target'] as number);
   }
 
   public get airQuality() {
