@@ -1,7 +1,8 @@
-import {default as RefrigeratorV2, RefrigeratorStatus, fToC, cToF} from '../../devices/Refrigerator';
+import {default as RefrigeratorV2, RefrigeratorStatus} from '../../devices/Refrigerator';
 import {CharacteristicValue, PlatformAccessory} from 'homebridge';
 import {Device} from '../../lib/Device';
-import {LGThinQHomebridgePlatform} from "../../platform";
+import {LGThinQHomebridgePlatform} from '../../platform';
+import {fToC} from "../../helper";
 
 export default class Refrigerator extends RefrigeratorV2 {
   constructor(
