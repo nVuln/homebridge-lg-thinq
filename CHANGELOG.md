@@ -1,5 +1,22 @@
 # Change Log
 
+## v1.3.0
+
+### New Device Supported
+
+* Range Hood
+* AeroTower
+
+### Bug fixes
+
+* Air Conditioner fahrenheit unit (US region)
+* Washer/Dryer as water faucet appear again on ios 16
+
+### New feature
+
+* Filter status on Air Purifier
+* Tub clean event on Washer/Dryer (trigger at 30 cycle)
+
 ## v1.2.0
 
 ### Changes
