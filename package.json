@@ -63,10 +63,6 @@
     {
       "type": "paypal",
       "url": "https://paypal.me/ndhan"
-    },
-    {
-      "type": "buymeacoffee",
-      "url": "https://www.buymeacoffee.com/nVuln"
     }
   ]
 }
