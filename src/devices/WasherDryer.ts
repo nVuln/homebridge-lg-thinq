@@ -10,6 +10,8 @@ export const NOT_RUNNING_STATUS = ['COOLDOWN', 'POWEROFF', 'POWERFAIL', 'INITIAL
 
 export default class WasherDryer extends baseDevice {
   public isRunning = false;
+  public isServiceTubCleanMaintenanceTriggered = false;
+
   protected serviceWasherDryer;
   protected serviceEventFinished;
   protected serviceDoorLock;
@@ -173,8 +175,18 @@ export default class WasherDryer extends baseDevice {
       }
     }
 
-    if ('TCLCount' in washerDryer && this.Status.TCLCount >= 30) {
-      this.serviceTubCleanMaintenance.updateCharacteristic(ProgrammableSwitchEvent, ProgrammableSwitchEvent.SINGLE_PRESS);
+    if ('TCLCount' in washerDryer) {
+      // detect if tub clean coach counter is reached
+      if (this.Status.TCLCount >= 30) {
+        // trigger tub clean coach if not triggered yet
+        if (!this.isServiceTubCleanMaintenanceTriggered) {
+          this.serviceTubCleanMaintenance.updateCharacteristic(ProgrammableSwitchEvent, ProgrammableSwitchEvent.SINGLE_PRESS);
+          this.isServiceTubCleanMaintenanceTriggered = true;
+        }
+      } else {
+        // reset tub clean coach trigger flag
+        this.isServiceTubCleanMaintenanceTriggered = false;
+      }
     }
   }
 }
