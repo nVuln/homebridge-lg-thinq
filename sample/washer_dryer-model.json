@@ -1,0 +1,1294 @@
+{
+  "Info": {
+    "productType": "WM",
+    "country": "SG",
+    "modelType": "TL",
+    "model": "G+Good Mini for SG",
+    "modelName": "PF57_F",
+    "networkType": "WIFI",
+    "version": "0.2",
+    "autoConverted": true
+  },
+  "Module": {
+    "WPM": {
+      "GWM_CEN01_Main": "201",
+      "GWM_CRS01_Main": "201",
+      "GWM_CRS02_CourseList": "201",
+      "GWM_CRS03_CourseDetail": "201",
+      "GWM_WCH01_Main": "201",
+      "GWM_WCH01_UserGuide2": "201",
+      "GCM_SDS01_SdsMain": "001",
+      "GWM_SET01_Main": "201",
+      "GWM_SET02_PushList": "201",
+      "GWM_ENM01_Main": "201",
+      "GWM_FOT01_Main": "201"
+    },
+    "Menu": [
+      "GWM_CRS01_Main",
+      "GWM_WCH01_Main",
+      "GWM_ENM01_Main",
+      "GCM_SDS01_SdsMain",
+      "GWM_SET01_Main"
+    ]
+  },
+  "Config": {
+    "downloadPanelLabel": "@WM_TERM_DOWNLOAD_COURSE_KR_W",
+    "expectedStartTime": false,
+    "maxDownloadCourseNum": 1,
+    "defaultCourse": "LIGHT_SOIL",
+    "defaultSmartCourse": "SMART_RINSE",
+    "changeCourseInPause": false,
+    "fota": true,
+    "tubCleanCourseId": "TUB_CLEAN",
+    "remoteStartLabel": "@WM_OPTION_REMOTE_START_W",
+    "SmartCourseCategory": [
+      {
+        "label": "@WM_COURSE_CATEGORY_SAVING_W",
+        "courseIdList": [
+          "COLD_WASH",
+          "LIGHT_SOIL"
+        ]
+      },
+      {
+        "label": "@WM_COURSE_CATEGORY_HYGIENE_W",
+        "courseIdList": [
+          "SKIN_CARE",
+          "SMART_RINSE"
+        ]
+      },
+      {
+        "label": "@WM_COURSE_CATEGORY_CLOTHES_CARE_W",
+        "courseIdList": [
+          "CLOTH_CARE"
+        ]
+      }
+    ],
+    "smartCourseType": "smartCourseMiniGgood",
+    "courseType": "courseMiniGgood",
+    "downloadedCourseType": "downloadedCourseMiniGgood"
+  },
+  "MonitoringValue": {
+    "state": {
+      "dataType": "enum",
+      "label": null,
+      "valueMapping": {
+        "POWEROFF": {
+          "index": 0,
+          "label": "@WM_STATE_POWER_OFF_W"
+        },
+        "INITIAL": {
+          "index": 1,
+          "label": "@WM_STATE_INITIAL_W"
+        },
+        "PAUSE": {
+          "index": 2,
+          "label": "@WM_STATE_PAUSE_W"
+        },
+        "DETECTING": {
+          "index": 3,
+          "label": "@WM_STATE_DETECTING_W"
+        },
+        "SOAKING": {
+          "index": 4,
+          "label": "@WM_STATE_SOAK_W"
+        },
+        "RUNNING": {
+          "index": 5,
+          "label": "@WM_STATE_RUNNING_W"
+        },
+        "RINSING": {
+          "index": 6,
+          "label": "@WM_STATE_RINSING_W"
+        },
+        "SPINNING": {
+          "index": 7,
+          "label": "@WM_STATE_SPINNING_W"
+        },
+        "END": {
+          "index": 8,
+          "label": "@WM_STATE_COMPLETE_W"
+        },
+        "RESERVED": {
+          "index": 9,
+          "label": "@WM_STATE_RESERVE_W"
+        },
+        "FIRMWARE": {
+          "index": 10,
+          "label": "@WM_STATE_FIRMWARE_W"
+        },
+        "DIAGNOSIS": {
+          "index": 11,
+          "label": "@WM_STATE_SMART_DIAGNOSIS_W"
+        }
+      }
+    },
+    "preState": {
+      "dataType": "enum",
+      "label": null,
+      "valueMapping": {
+        "POWEROFF": {
+          "index": 0,
+          "label": "@WM_STATE_POWER_OFF_W"
+        },
+        "INITIAL": {
+          "index": 1,
+          "label": "@WM_STATE_INITIAL_W"
+        },
+        "PAUSE": {
+          "index": 2,
+          "label": "@WM_STATE_PAUSE_W"
+        },
+        "DETECTING": {
+          "index": 3,
+          "label": "@WM_STATE_DETECTING_W"
+        },
+        "SOAKING": {
+          "index": 4,
+          "label": "@WM_STATE_SOAK_W"
+        },
+        "RUNNING": {
+          "index": 5,
+          "label": "@WM_STATE_RUNNING_W"
+        },
+        "RINSING": {
+          "index": 6,
+          "label": "@WM_STATE_RINSING_W"
+        },
+        "SPINNING": {
+          "index": 7,
+          "label": "@WM_STATE_SPINNING_W"
+        },
+        "END": {
+          "index": 8,
+          "label": "@WM_STATE_COMPLETE_W"
+        },
+        "RESERVED": {
+          "index": 9,
+          "label": "@WM_STATE_RESERVE_W"
+        },
+        "FIRMWARE": {
+          "index": 10,
+          "label": "@WM_STATE_FIRMWARE_W"
+        },
+        "DIAGNOSIS": {
+          "index": 11,
+          "label": "@WM_STATE_SMART_DIAGNOSIS_W"
+        }
+      }
+    },
+    "soilWash": {
+      "dataType": "enum",
+      "label": "@WM_OPTION_WASH_W",
+      "valueMapping": {
+        "NO_SOILWASH": {
+          "index": 0,
+          "label": "-"
+        }
+      }
+    },
+    "rinse": {
+      "dataType": "enum",
+      "label": "@WM_OPTION_RINSE_W",
+      "valueMapping": {
+        "NO_RINSE": {
+          "index": 0,
+          "label": "0"
+        },
+        "RINSE_1": {
+          "index": 1,
+          "label": "1"
+        },
+        "RINSE_2": {
+          "index": 2,
+          "label": "2"
+        },
+        "RINSE_3": {
+          "index": 3,
+          "label": "3"
+        },
+        "RINSE_4": {
+          "index": 4,
+          "label": "4"
+        },
+        "RINSE_5": {
+          "index": 5,
+          "label": "5"
+        },
+        "RINSE_6": {
+          "index": 6,
+          "label": "6"
+        }
+      }
+    },
+    "spin": {
+      "dataType": "enum",
+      "label": "@WM_OPTION_SPIN_W",
+      "valueMapping": {
+        "SPIN_OFF": {
+          "index": 0,
+          "label": "OFF"
+        },
+        "SPIN_ON": {
+          "index": 1,
+          "label": "ON"
+        }
+      }
+    },
+    "temp": {
+      "dataType": "enum",
+      "label": "@WM_OPTION_TEMP_W",
+      "valueMapping": {
+        "TEMP_COLD_0": {
+          "index": 0,
+          "label": "-"
+        },
+        "TEMP_COLD": {
+          "index": 1,
+          "label": "@WM_OPTION_TEMP_COLD_W"
+        },
+        "TEMP_30": {
+          "index": 30,
+          "label": "30"
+        },
+        "TEMP_40": {
+          "index": 40,
+          "label": "40"
+        },
+        "TEMP_60": {
+          "index": 60,
+          "label": "60"
+        },
+        "TEMP_90": {
+          "index": 90,
+          "label": "90"
+        },
+        "TEMP_35": {
+          "index": 35,
+          "label": "35"
+        },
+        "TEMP_38": {
+          "index": 38,
+          "label": "38"
+        }
+      }
+    },
+    "waterLevel": {
+      "dataType": "enum",
+      "label": "@WM_OPTION_WLEVEL_W",
+      "valueMapping": {
+        "NOT_SELECTED": {
+          "index": 0,
+          "label": "-"
+        }
+      }
+    },
+    "waterFlow": {
+      "dataType": "enum",
+      "label": "@WM_OPTION_WFLOW_W",
+      "valueMapping": {
+        "NO_WATERFLOW": {
+          "index": 0,
+          "label": "-"
+        }
+      }
+    },
+    "soak": {
+      "dataType": "enum",
+      "label": "@WM_OPTION_SOAK_W",
+      "valueMapping": {
+        "NO_SOAK": {
+          "index": 0,
+          "label": "-"
+        }
+      }
+    },
+    "childLock": {
+      "dataType": "enum",
+      "label": "@WM_OPTION_CHILDLOCK_W",
+      "valueMapping": {
+        "CHILDLOCK_OFF": {
+          "index": 0,
+          "label": "@CP_OFF_EN_W"
+        },
+        "CHILDLOCK_ON": {
+          "index": 1,
+          "label": "@CP_ON_EN_W"
+        }
+      }
+    },
+    "audibleSDS": {
+      "dataType": "enum",
+      "label": "@WM_OPTION_SDON_W####",
+      "valueMapping": {
+        "AUDIBLE_SDS_OFF": {
+          "index": 0,
+          "label": "@CP_OFF_EN_W"
+        },
+        "AUDIBLE_SDS_ON": {
+          "index": 1,
+          "label": "@CP_ON_EN_W"
+        }
+      }
+    },
+    "doorLock": {
+      "dataType": "enum",
+      "label": "@WM_OPTION_DOORLOCK_W",
+      "valueMapping": {
+        "DOOR_LOCK_OFF": {
+          "index": 0,
+          "label": "@CP_OFF_EN_W"
+        },
+        "DOOR_LOCK_ON": {
+          "index": 1,
+          "label": "@CP_ON_EN_W"
+        }
+      }
+    },
+    "remoteStart": {
+      "dataType": "enum",
+      "label": "@WM_OPTION_REMOTE_START_W####",
+      "valueMapping": {
+        "REMOTE_START_OFF": {
+          "index": 0,
+          "label": "@CP_OFF_EN_W"
+        },
+        "REMOTE_START_ON": {
+          "index": 1,
+          "label": "@CP_ON_EN_W"
+        }
+      }
+    },
+    "autoDetect": {
+      "dataType": "enum",
+      "label": "@WM_OPTION_AUTODETECT_W####",
+      "valueMapping": {
+        "AUTODETECT_MANUAL": {
+          "index": 0,
+          "label": "@WM_OPTION_AUTODETECT_"
+        },
+        "AUTODETECT_SEMIAUTO": {
+          "index": 1,
+          "label": "@WM_OPTION_AUTODETECT_"
+        },
+        "AUTODETECT_MANUAL_DEFAULT": {
+          "index": 2,
+          "label": "@WM_OPTION_AUTODETECT_"
+        },
+        "AUTODETECT_AUTO": {
+          "index": 3,
+          "label": "@WM_OPTION_AUTODETECT_"
+        }
+      }
+    },
+    "TCLCount": {
+      "dataType": "range",
+      "valueMapping": {
+        "min": 0,
+        "max": 60
+      }
+    },
+    "wifiSDS": {
+      "dataType": "enum",
+      "label": "WIFISDS",
+      "valueMapping": {
+        "WIFI_SDS_OFF": {
+          "index": 0,
+          "label": "@CP_OFF_EN_W"
+        },
+        "WIFI_SDS_ON": {
+          "index": 1,
+          "label": "@CP_ON_EN_W"
+        }
+      }
+    },
+    "remainTimeHour": {
+      "dataType": "range",
+      "label": null,
+      "valueMapping": {
+        "min": 0,
+        "max": 30
+      }
+    },
+    "remainTimeMinute": {
+      "dataType": "range",
+      "label": null,
+      "valueMapping": {
+        "min": 0,
+        "max": 59
+      }
+    },
+    "initialTimeHour": {
+      "dataType": "range",
+      "label": null,
+      "valueMapping": {
+        "min": 0,
+        "max": 30
+      }
+    },
+    "initialTimeMinute": {
+      "dataType": "range",
+      "label": null,
+      "valueMapping": {
+        "min": 0,
+        "max": 59
+      }
+    },
+    "reserveTimeHour": {
+      "dataType": "range",
+      "label": "@WM_OPTION_RESERVE_W",
+      "valueMapping": {
+        "min": 3,
+        "max": 18
+      }
+    },
+    "reserveTimeMinute": {
+      "dataType": "range",
+      "label": null,
+      "valueMapping": {
+        "min": 0,
+        "max": 59
+      }
+    },
+    "initialBit": {
+      "dataType": "enum",
+      "label": null,
+      "valueMapping": {
+        "INITIAL_BIT_OFF": {
+          "index": 0,
+          "label": "@CP_OFF_EN_W"
+        },
+        "INITIAL_BIT_ON": {
+          "index": 1,
+          "label": "@CP_ON_EN_W"
+        }
+      }
+    },
+    "error": {
+      "dataType": "enum",
+      "valueMapping": {
+        "ERROR_NO": {
+          "_comment": "No Error",
+          "index": 0,
+          "label": "No Error",
+          "title": "No_Error",
+          "content": "No_Error"
+        },
+        "ERROR_IE": {
+          "_comment": "Input Water Error",
+          "index": 1,
+          "label": "@WM_KR_TL_ERROR_IE",
+          "title": "@WM_KR_TL_ERROR_IE_TITLE",
+          "content": "@WM_KR_TL_ERROR_IE_CONTENT"
+        },
+        "ERROR_OE": {
+          "_comment": "Drain Water Error",
+          "index": 2,
+          "label": "@WM_KR_TL_ERROR_OE",
+          "title": "@WM_KR_TL_ERROR_OE_TITLE",
+          "content": "@WM_KR_TL_ERROR_OE_CONTENT"
+        },
+        "ERROR_UE": {
+          "_comment": "Unblance Error",
+          "index": 3,
+          "label": "@WM_KR_TL_ERROR_UE",
+          "title": "@WM_KR_TL_ERROR_UE_TITLE",
+          "content": "@WM_KR_TL_ERROR_UE_CONTENT"
+        },
+        "ERROR_DE1": {
+          "_comment": "Door Open Error",
+          "index": 4,
+          "label": "@WM_KR_TL_ERROR_DE1",
+          "title": "@WM_KR_TL_ERROR_DE1_TITLE",
+          "content": "@WM_KR_TL_ERROR_DE1_CONTENT"
+        },
+        "ERROR_PE": {
+          "_comment": "Water Level Error",
+          "index": 5,
+          "label": "@WM_KR_TL_ERROR_PE",
+          "title": "@WM_KR_TL_ERROR_PE_TITLE",
+          "content": "@WM_KR_TL_ERROR_PE_CONTENT"
+        },
+        "ERROR_DO": {
+          "_comment": "Inner Lid Open Error",
+          "index": 8,
+          "label": "@WM_KR_FL_ERROR_DO_W",
+          "title": "@WM_KR_TL_ERROR_DE3_TITLE",
+          "content": "@WM_KR_TL_ERROR_DE3_CONTENT"
+        },
+        "ERROR_LE": {
+          "_comment": "Motor Lock Error",
+          "index": 9,
+          "label": "@WM_KR_TL_ERROR_LE",
+          "title": "@WM_KR_TL_ERROR_LE_TITLE",
+          "content": "@WM_KR_TL_ERROR_LE_CONTENT"
+        },
+        "ERROR_AE": {
+          "_comment": "Clutch Error",
+          "index": 10,
+          "label": "@WM_KR_TL_ERROR_AE",
+          "title": "@WM_KR_TL_ERROR_AE_TITLE",
+          "content": "@WM_KR_TL_ERROR_AE_CONTENT"
+        },
+        "ERROR_TE": {
+          "_comment": "Thermistor Error",
+          "index": 11,
+          "label": "@WM_KR_TL_ERROR_TE",
+          "title": "@WM_KR_TL_ERROR_TE_TITLE",
+          "content": "@WM_KR_TL_ERROR_TE_CONTENT"
+        },
+        "ERROR_FE": {
+          "_comment": "Over Flow Error",
+          "index": 12,
+          "label": "@WM_KR_TL_ERROR_FE",
+          "title": "@WM_KR_TL_ERROR_FE_TITLE",
+          "content": "@WM_KR_TL_ERROR_FE_CONTENT"
+        },
+        "ERROR_DE2": {
+          "_comment": "Door Lock Error",
+          "index": 16,
+          "label": "@WM_KR_TL_ERROR_DE2",
+          "title": "@WM_KR_TL_ERROR_DE2_TITLE",
+          "content": "@WM_KR_TL_ERROR_DE2_CONTENT"
+        },
+        "ERROR_FF": {
+          "_comment": "Frozen Error",
+          "index": 27,
+          "label": "@WM_KR_TL_ERROR_FF",
+          "title": "@WM_KR_TL_ERROR_FF_TITLE",
+          "content": "@WM_KR_TL_ERROR_FF_CONTENT"
+        },
+        "ERROR_E7": {
+          "_comment": "Stack Error",
+          "index": 36,
+          "label": "@WM_WW_G+_MINI_GOOD_ERROR_E7",
+          "title": "@WM_WW_G+_MINI_GOOD_ERROR_E7_TITLE",
+          "content": "@WM_WW_G+_MINI_GOOD_ERROR_E7_CONTENT"
+        }
+      }
+    },
+    "courseMiniGgood": {
+      "ref": "Course"
+    },
+    "smartCourseMiniGgood": {
+      "ref": "SmartCourse"
+    },
+    "downloadedCourseMiniGgood": {
+      "ref": "SmartCourse"
+    }
+  },
+  "ControlWifi": {
+    "WMStart": {
+      "command": "Set",
+      "data": {
+        "washerDryer": {
+          "Course": "temp",
+          "soilWash": "NO_SOILWASH",
+          "spin": "SPIN_OFF",
+          "temp": "TEMP_COLD_0",
+          "rinse": "NO_RINSE",
+          "waterLevel": "NOT_SELECTED",
+          "waterFlow": "NO_WATERFLOW",
+          "soak": "NO_SOAK",
+          "reserveTimeHour": 0,
+          "reserveTimeMinute": 0,
+          "SmartCourse": "temp",
+          "childLock": "CHILDLOCK_OFF",
+          "audibleSDS": "AUDIBLE_SDS_OFF",
+          "doorLock": "DOOR_LOCK_OFF",
+          "autoDetect": "AUTODETECT_MANUAL",
+          "buzzer": "BUZZER_0",
+          "sterilize": "STERILIZE_OFF",
+          "initialBit": "INITIAL_BIT_OFF",
+          "wifiSDS": "WIFI_SDS_OFF",
+          "remoteStart": "REMOTE_START_OFF"
+        }
+      }
+    },
+    "WMDownload": {
+      "command": "Set",
+      "data": {
+        "washerDryer": {
+          "courseDownloadType": "COURSEDATA",
+          "courseDownloadDataLength": 15,
+          "Course": "temp",
+          "soilWash": "NO_SOILWASH",
+          "spin": "SPIN_OFF",
+          "temp": "TEMP_COLD_0",
+          "rinse": "NO_RINSE",
+          "waterLevel": "NOT_SELECTED",
+          "waterFlow": "NO_WATERFLOW",
+          "soak": "NO_SOAK",
+          "reserveTimeHour": 0,
+          "reserveTimeMinute": 0,
+          "SmartCourse": "temp",
+          "childLock": "CHILDLOCK_OFF",
+          "audibleSDS": "AUDIBLE_SDS_OFF",
+          "doorLock": "DOOR_LOCK_OFF",
+          "autoDetect": "AUTODETECT_MANUAL",
+          "buzzer": "BUZZER_0",
+          "sterilize": "STERILIZE_OFF",
+          "initialBit": "INITIAL_BIT_OFF",
+          "wifiSDS": "WIFI_SDS_OFF",
+          "remoteStart": "REMOTE_START_OFF"
+        }
+      }
+    },
+    "WMOff": {
+      "command": "Set",
+      "data": {
+        "washerDryer": {
+          "controlDataType": "POWEROFF",
+          "controlDataValueLength": 1,
+          "controlDataValue": 0
+        }
+      }
+    },
+    "WMStop": {
+      "command": "Set",
+      "data": {
+        "washerDryer": {
+          "controlDataType": "PAUSE",
+          "controlDataValueLength": 1,
+          "controlDataValue": 0
+        }
+      }
+    },
+    "WMWakeup": {
+      "command": "Set",
+      "data": {
+        "washerDryer": {
+          "controlDataType": "WAKEUP",
+          "controlDataValueLength": 0
+        }
+      }
+    }
+  },
+  "Course": {
+    "LIGHT_SOIL": {
+      "_comment": "�ҷ���Ź",
+      "courseType": "Course",
+      "courseValue": "LIGHT_SOIL",
+      "name": "@WM_KR_TL_G+_MINI_GOOD_COURSE_SMALL_LOAD_W",
+      "controlEnable": true,
+      "imgIndex": 167,
+      "function": [
+        {
+          "value": "soilWash",
+          "default": "NO_SOILWASH",
+          "visibility": "gone"
+        },
+        {
+          "value": "rinse",
+          "default": "RINSE_2",
+          "selectable": [
+            "RINSE_2",
+            "RINSE_3",
+            "RINSE_4",
+            "RINSE_5",
+            "RINSE_6"
+          ]
+        },
+        {
+          "value": "spin",
+          "default": "SPIN_ON"
+        },
+        {
+          "value": "temp",
+          "default": "TEMP_COLD_0"
+        },
+        {
+          "value": "waterLevel",
+          "default": "NOT_SELECTED",
+          "visibility": "gone"
+        },
+        {
+          "value": "waterFlow",
+          "default": "NO_WATERFLOW",
+          "visibility": "gone"
+        },
+        {
+          "value": "soak",
+          "default": "NO_SOAK",
+          "visibility": "gone"
+        }
+      ]
+    },
+    "UNDERWEAR": {
+      "_comment": "�� �ӿ�",
+      "courseType": "Course",
+      "courseValue": "UNDERWEAR",
+      "name": "@WM_KR_TL_G+_MINI_GOOD_COURSE_UNDERWEAR_W",
+      "controlEnable": true,
+      "imgIndex": 168,
+      "function": [
+        {
+          "value": "soilWash",
+          "default": "NO_SOILWASH",
+          "visibility": "gone"
+        },
+        {
+          "value": "rinse",
+          "default": "RINSE_3",
+          "selectable": [
+            "RINSE_3",
+            "RINSE_4",
+            "RINSE_5",
+            "RINSE_6"
+          ]
+        },
+        {
+          "value": "spin",
+          "default": "SPIN_ON"
+        },
+        {
+          "value": "temp",
+          "default": "TEMP_35"
+        },
+        {
+          "value": "waterLevel",
+          "default": "NOT_SELECTED",
+          "visibility": "gone"
+        },
+        {
+          "value": "waterFlow",
+          "default": "NO_WATERFLOW",
+          "visibility": "gone"
+        },
+        {
+          "value": "soak",
+          "default": "NO_SOAK",
+          "visibility": "gone"
+        }
+      ]
+    },
+    "WOOL": {
+      "_comment": "������/��",
+      "courseType": "Course",
+      "courseValue": "WOOL",
+      "name": "@WM_KR_TL_G+_MINI_GOOD_COURSE_WOOL_W",
+      "controlEnable": true,
+      "imgIndex": 169,
+      "function": [
+        {
+          "value": "soilWash",
+          "default": "NO_SOILWASH",
+          "visibility": "gone"
+        },
+        {
+          "value": "rinse",
+          "default": "RINSE_2",
+          "selectable": [
+            "RINSE_2",
+            "RINSE_3",
+            "RINSE_4",
+            "RINSE_5",
+            "RINSE_6"
+          ]
+        },
+        {
+          "value": "spin",
+          "default": "SPIN_ON"
+        },
+        {
+          "value": "temp",
+          "default": "TEMP_COLD_0"
+        },
+        {
+          "value": "waterLevel",
+          "default": "NOT_SELECTED",
+          "visibility": "gone"
+        },
+        {
+          "value": "waterFlow",
+          "default": "NO_WATERFLOW",
+          "visibility": "gone"
+        },
+        {
+          "value": "soak",
+          "default": "NO_SOAK",
+          "visibility": "gone"
+        }
+      ]
+    },
+    "BABY_CARE": {
+      "_comment": "�Ʊ��",
+      "courseType": "Course",
+      "courseValue": "BABY_CARE",
+      "name": "@WM_KR_TL_G+_MINI_GOOD_COURSE_BABYCARE_W",
+      "controlEnable": true,
+      "imgIndex": 172,
+      "function": [
+        {
+          "value": "soilWash",
+          "default": "NO_SOILWASH",
+          "visibility": "gone"
+        },
+        {
+          "value": "rinse",
+          "default": "RINSE_4",
+          "selectable": [
+            "RINSE_4",
+            "RINSE_5",
+            "RINSE_6"
+          ]
+        },
+        {
+          "value": "spin",
+          "default": "SPIN_ON"
+        },
+        {
+          "value": "temp",
+          "default": "TEMP_60"
+        },
+        {
+          "value": "waterLevel",
+          "default": "NOT_SELECTED",
+          "visibility": "gone"
+        },
+        {
+          "value": "waterFlow",
+          "default": "NO_WATERFLOW",
+          "visibility": "gone"
+        },
+        {
+          "value": "soak",
+          "default": "NO_SOAK",
+          "visibility": "gone"
+        }
+      ]
+    },
+    "RINSE_SPIN": {
+      "_comment": "���+Ż��",
+      "courseType": "Course",
+      "courseValue": "RINSE_SPIN",
+      "name": "@WM_KR_TL_G+_MINI_GOOD_COURSE_RINSE_SPIN_W",
+      "controlEnable": true,
+      "imgIndex": 174,
+      "function": [
+        {
+          "value": "soilWash",
+          "default": "NO_SOILWASH",
+          "visibility": "gone"
+        },
+        {
+          "value": "rinse",
+          "default": "RINSE_1",
+          "selectable": [
+            "RINSE_1",
+            "RINSE_2",
+            "RINSE_3",
+            "RINSE_4",
+            "RINSE_5",
+            "RINSE_6"
+          ]
+        },
+        {
+          "value": "spin",
+          "default": "SPIN_ON"
+        },
+        {
+          "value": "temp",
+          "default": "TEMP_COLD_0"
+        },
+        {
+          "value": "waterLevel",
+          "default": "NOT_SELECTED",
+          "visibility": "gone"
+        },
+        {
+          "value": "waterFlow",
+          "default": "NO_WATERFLOW",
+          "visibility": "gone"
+        },
+        {
+          "value": "soak",
+          "default": "NO_SOAK",
+          "visibility": "gone"
+        }
+      ]
+    },
+    "TUB_CLEAN": {
+      "_comment": "����",
+      "courseType": "Course",
+      "courseValue": "TUB_CLEAN",
+      "name": "@WM_KR_TL_G+_MINI_GOOD_COURSE_TUBCLEAN_W",
+      "controlEnable": true,
+      "imgIndex": 152,
+      "function": [
+        {
+          "value": "soilWash",
+          "default": "NO_SOILWASH",
+          "visibility": "gone"
+        },
+        {
+          "value": "rinse",
+          "default": "RINSE_2"
+        },
+        {
+          "value": "spin",
+          "default": "SPIN_ON"
+        },
+        {
+          "value": "temp",
+          "default": "TEMP_60"
+        },
+        {
+          "value": "waterLevel",
+          "default": "NOT_SELECTED",
+          "visibility": "gone"
+        },
+        {
+          "value": "waterFlow",
+          "default": "NO_WATERFLOW",
+          "visibility": "gone"
+        },
+        {
+          "value": "soak",
+          "default": "NO_SOAK",
+          "visibility": "gone"
+        }
+      ]
+    },
+    "SPIN_ONLY": {
+      "_comment": "Ż�� �ܵ�",
+      "courseType": "Course",
+      "courseValue": "SPIN_ONLY",
+      "name": "@WM_KR_TL_G+_MINI_GOOD_COURSE_SPINONLY_W",
+      "controlEnable": true,
+      "imgIndex": 175,
+      "function": [
+        {
+          "value": "soilWash",
+          "default": "NO_SOILWASH",
+          "visibility": "gone"
+        },
+        {
+          "value": "rinse",
+          "default": "NO_RINSE"
+        },
+        {
+          "value": "spin",
+          "default": "SPIN_ON"
+        },
+        {
+          "value": "temp",
+          "default": "TEMP_COLD_0"
+        },
+        {
+          "value": "waterLevel",
+          "default": "NOT_SELECTED",
+          "visibility": "gone"
+        },
+        {
+          "value": "waterFlow",
+          "default": "NO_WATERFLOW",
+          "visibility": "gone"
+        },
+        {
+          "value": "soak",
+          "default": "NO_SOAK",
+          "visibility": "gone"
+        }
+      ]
+    },
+    "SPEED_WASH": {
+      "_comment": "���ǵ� ����",
+      "courseType": "Course",
+      "courseValue": "SPEED_WASH",
+      "name": "@WM_KR_TL_G+_MINI_GOOD_COURSE_SPEEDWASH_W",
+      "controlEnable": true,
+      "imgIndex": 3,
+      "function": [
+        {
+          "value": "soilWash",
+          "default": "NO_SOILWASH",
+          "visibility": "gone"
+        },
+        {
+          "value": "rinse",
+          "default": "RINSE_1",
+          "selectable": [
+            "RINSE_1",
+            "RINSE_2",
+            "RINSE_3",
+            "RINSE_4",
+            "RINSE_5",
+            "RINSE_6"
+          ]
+        },
+        {
+          "value": "spin",
+          "default": "SPIN_ON"
+        },
+        {
+          "value": "temp",
+          "default": "TEMP_COLD_0"
+        },
+        {
+          "value": "waterLevel",
+          "default": "NOT_SELECTED",
+          "visibility": "gone"
+        },
+        {
+          "value": "waterFlow",
+          "default": "NO_WATERFLOW",
+          "visibility": "gone"
+        },
+        {
+          "value": "soak",
+          "default": "NO_SOAK",
+          "visibility": "gone"
+        }
+      ]
+    }
+  },
+  "SmartCourse": {
+    "SKIN_CARE": {
+      "_comment": "��Ų �ɾ�",
+      "courseType": "SmartCourse",
+      "courseValue": "SKIN_CARE",
+      "Course": "UNDERWEAR",
+      "name": "@WM_KR_TL_G+_MINI_GOOD_SMARTCOURSE_SKIN_CARE_W",
+      "script": "@WM_KR_TL_G+_MINI_GOOD_SMARTCOURSE_SKIN_CARE_S",
+      "downloadEnable": true,
+      "controlEnable": true,
+      "imgIndex": 16,
+      "function": [
+        {
+          "value": "soak",
+          "default": "NO_SOAK",
+          "visibility": "gone"
+        },
+        {
+          "value": "soilWash",
+          "default": "NO_SOILWASH",
+          "visibility": "gone"
+        },
+        {
+          "value": "rinse",
+          "default": "RINSE_5"
+        },
+        {
+          "value": "spin",
+          "default": "SPIN_ON"
+        },
+        {
+          "value": "waterFlow",
+          "default": "NO_WATERFLOW",
+          "visibility": "gone"
+        },
+        {
+          "value": "waterLevel",
+          "default": "NOT_SELECTED",
+          "visibility": "gone"
+        },
+        {
+          "value": "temp",
+          "default": "TEMP_35"
+        }
+      ]
+    },
+    "COLD_WASH": {
+      "_comment": "���� ��Ź",
+      "courseType": "SmartCourse",
+      "courseValue": "COLD_WASH",
+      "Course": "LIGHT_SOIL",
+      "name": "@WM_WW_FL_SMARTCOURSE_COLD_WASH_W",
+      "script": "@WM_WW_FL_SMARTCOURSE_COLD_WASH_SCRIPT_S",
+      "downloadEnable": true,
+      "controlEnable": true,
+      "imgIndex": 22,
+      "function": [
+        {
+          "value": "soak",
+          "default": "NO_SOAK",
+          "visibility": "gone"
+        },
+        {
+          "value": "soilWash",
+          "default": "NO_SOILWASH",
+          "visibility": "gone"
+        },
+        {
+          "value": "rinse",
+          "default": "RINSE_2"
+        },
+        {
+          "value": "spin",
+          "default": "SPIN_ON"
+        },
+        {
+          "value": "waterFlow",
+          "default": "NO_WATERFLOW",
+          "visibility": "gone"
+        },
+        {
+          "value": "waterLevel",
+          "default": "NOT_SELECTED",
+          "visibility": "gone"
+        },
+        {
+          "value": "temp",
+          "default": "TEMP_COLD_0"
+        }
+      ]
+    },
+    "CLOTH_CARE": {
+      "_comment": "�ʰ� ��ȣ",
+      "courseType": "SmartCourse",
+      "courseValue": "CLOTH_CARE",
+      "Course": "WOOL",
+      "name": "@WM_KR_TL_G+_MINI_GOOD_SMARTCOURSE_CLOTHS_CARE_W",
+      "script": "@WM_KR_TL_G+_MINI_GOOD_SMARTCOURSE_CLOTHS_CARE_S",
+      "downloadEnable": true,
+      "controlEnable": true,
+      "imgIndex": 31,
+      "function": [
+        {
+          "value": "soak",
+          "default": "NO_SOAK",
+          "visibility": "gone"
+        },
+        {
+          "value": "soilWash",
+          "default": "NO_SOILWASH",
+          "visibility": "gone"
+        },
+        {
+          "value": "rinse",
+          "default": "RINSE_2"
+        },
+        {
+          "value": "spin",
+          "default": "SPIN_ON"
+        },
+        {
+          "value": "waterFlow",
+          "default": "NO_WATERFLOW",
+          "visibility": "gone"
+        },
+        {
+          "value": "waterLevel",
+          "default": "NOT_SELECTED",
+          "visibility": "gone"
+        },
+        {
+          "value": "temp",
+          "default": "TEMP_COLD_0"
+        }
+      ]
+    },
+    "SMART_RINSE": {
+      "_comment": "�Ƚ� ���",
+      "courseType": "SmartCourse",
+      "courseValue": "SMART_RINSE",
+      "Course": "LIGHT_SOIL",
+      "name": "@WM_KR_TL_G+_MINI_GOOD_SMARTCOURSE_SMART_RINSE_W",
+      "script": "@WM_KR_TL_G+_MINI_GOOD_SMARTCOURSE_SMART_RINSE_S",
+      "downloadEnable": true,
+      "controlEnable": true,
+      "imgIndex": 137,
+      "function": [
+        {
+          "value": "soak",
+          "default": "NO_SOAK",
+          "visibility": "gone"
+        },
+        {
+          "value": "soilWash",
+          "default": "NO_SOILWASH",
+          "visibility": "gone"
+        },
+        {
+          "value": "rinse",
+          "default": "RINSE_4"
+        },
+        {
+          "value": "spin",
+          "default": "SPIN_ON"
+        },
+        {
+          "value": "waterFlow",
+          "default": "NO_WATERFLOW",
+          "visibility": "gone"
+        },
+        {
+          "value": "waterLevel",
+          "default": "NOT_SELECTED",
+          "visibility": "gone"
+        },
+        {
+          "value": "temp",
+          "default": "TEMP_COLD_0"
+        }
+      ]
+    },
+    "LIGHT_SOIL": {
+      "_comment": "������ ��Ź",
+      "courseType": "SmartCourse",
+      "courseValue": "LIGHT_SOIL",
+      "Course": "LIGHT_SOIL",
+      "name": "@WM_WW_FL_SMARTCOURSE_LIGHTLY_SOILED_ITEMS_W",
+      "script": "@WM_WW_FL_SMARTCOURSE_LIGHTLY_SOILED_ITEMS_SCRIPT_S",
+      "downloadEnable": true,
+      "controlEnable": true,
+      "imgIndex": 15,
+      "function": [
+        {
+          "value": "soak",
+          "default": "NO_SOAK",
+          "visibility": "gone"
+        },
+        {
+          "value": "soilWash",
+          "default": "NO_SOILWASH",
+          "visibility": "gone"
+        },
+        {
+          "value": "rinse",
+          "default": "RINSE_2"
+        },
+        {
+          "value": "spin",
+          "default": "SPIN_ON"
+        },
+        {
+          "value": "waterFlow",
+          "default": "NO_WATERFLOW",
+          "visibility": "gone"
+        },
+        {
+          "value": "waterLevel",
+          "default": "NOT_SELECTED",
+          "visibility": "gone"
+        },
+        {
+          "value": "temp",
+          "default": "TEMP_COLD_0"
+        }
+      ]
+    }
+  },
+  "Push": [
+    {
+      "category": "PUSH_WM_STATE",
+      "label": "@CP_ALARM_PRODUCT_STATE_W",
+      "groupCode": "20101"
+    }
+  ],
+  "EnergyMonitoring": {
+    "valueMapping": [
+      "rinse",
+      "temp",
+      "spin"
+    ],
+    "powertable": {
+      "1": 1,
+      "2": 2,
+      "3": 3,
+      "4": 4,
+      "5": 5,
+      "6": 6
+    }
+  }
+}
