@@ -42,8 +42,8 @@ export default class AirConditioner extends baseDevice {
   protected serviceLabelButtons;
 
   constructor(
-    protected readonly platform: LGThinQHomebridgePlatform,
-    protected readonly accessory: PlatformAccessory,
+    public readonly platform: LGThinQHomebridgePlatform,
+    public readonly accessory: PlatformAccessory,
   ) {
     super(platform, accessory);
 

@@ -5,8 +5,8 @@ import {Device} from '../../lib/Device';
 
 export default class Washer extends WasherV2 {
   constructor(
-    protected readonly platform: LGThinQHomebridgePlatform,
-    protected readonly accessory: PlatformAccessory,
+    public readonly platform: LGThinQHomebridgePlatform,
+    public readonly accessory: PlatformAccessory,
   ) {
     super(platform, accessory);
 

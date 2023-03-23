@@ -6,8 +6,8 @@ import {mergeDeep} from './helper';
 
 export class baseDevice extends EventEmitter {
   constructor(
-    protected readonly platform: LGThinQHomebridgePlatform,
-    protected readonly accessory: PlatformAccessory,
+    public readonly platform: LGThinQHomebridgePlatform,
+    public readonly accessory: PlatformAccessory,
   ) {
     super();
 

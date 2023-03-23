@@ -12,8 +12,8 @@ export default class Dishwasher extends baseDevice {
   protected serviceEventFinished;
 
   constructor(
-    protected readonly platform: LGThinQHomebridgePlatform,
-    protected readonly accessory: PlatformAccessory,
+    public readonly platform: LGThinQHomebridgePlatform,
+    public readonly accessory: PlatformAccessory,
   ) {
     super(platform, accessory);
 

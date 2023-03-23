@@ -9,8 +9,8 @@ export default class RangeHood extends baseDevice {
   protected serviceLight;
 
   constructor(
-    protected readonly platform: LGThinQHomebridgePlatform,
-    protected readonly accessory: PlatformAccessory,
+    public readonly platform: LGThinQHomebridgePlatform,
+    public readonly accessory: PlatformAccessory,
   ) {
     super(platform, accessory);
 

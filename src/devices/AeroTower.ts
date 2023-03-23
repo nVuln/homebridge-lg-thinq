@@ -17,8 +17,8 @@ export default class AeroTower extends AirPurifier {
   protected serviceUVNano;
 
   constructor(
-    protected readonly platform: LGThinQHomebridgePlatform,
-    protected readonly accessory: PlatformAccessory,
+    public readonly platform: LGThinQHomebridgePlatform,
+    public readonly accessory: PlatformAccessory,
   ) {
     super(platform, accessory);
 

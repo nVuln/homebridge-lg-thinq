@@ -18,8 +18,8 @@ export default class WasherDryer extends baseDevice {
   protected serviceTubCleanMaintenance;
 
   constructor(
-    protected readonly platform: LGThinQHomebridgePlatform,
-    protected readonly accessory: PlatformAccessory,
+    public readonly platform: LGThinQHomebridgePlatform,
+    public readonly accessory: PlatformAccessory,
   ) {
     super(platform, accessory);
 

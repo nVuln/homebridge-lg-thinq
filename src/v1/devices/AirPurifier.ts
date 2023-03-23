@@ -5,8 +5,8 @@ import {LGThinQHomebridgePlatform} from '../../platform';
 
 export default class AirPurifier extends V2 {
   constructor(
-    protected readonly platform: LGThinQHomebridgePlatform,
-    protected readonly accessory: PlatformAccessory,
+    public readonly platform: LGThinQHomebridgePlatform,
+    public readonly accessory: PlatformAccessory,
   ) {
     super(platform, accessory);
   }
