@@ -60,9 +60,6 @@ export default class AirConditioner extends baseDevice {
 
     this.createHeaterCoolerService();
 
-    // eve characteristic for consumption
-    this.service.addOptionalCharacteristic(this.platform.Eve.Characteristics.TotalConsumption);
-
     if (this.config?.ac_air_quality as boolean && this.Status.airQuality) {
       this.createAirQualityService();
     } else if (this.serviceAirQuality) {
@@ -253,8 +250,6 @@ export default class AirConditioner extends baseDevice {
     this.service.updateCharacteristic(Characteristic.RotationSpeed, this.Status.windStrength);
     // eslint-disable-next-line max-len
     this.service.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwingOn ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED);
-
-    this.service.updateCharacteristic(this.platform.Eve.Characteristics.TotalConsumption, this.Status.currentConsumption);
 
     // air quality
     if (this.config?.ac_air_quality as boolean && this.serviceAirQuality && this.Status.airQuality && this.Status.airQuality.isOn) {
@@ -768,9 +763,5 @@ export class ACStatus {
 
   public get isLightOn() {
     return !!this.data['airState.lightingState.displayControl'];
-  }
-
-  public get currentConsumption() {
-    return parseInt(this.data['airState.energy.onCurrent']) / 100;
   }
 }

@@ -53,7 +53,6 @@
     "axios": "^0.21.1",
     "axios-retry": "^3.1.9",
     "commander": "^8.2.0",
-    "homebridge-lib": "^6.3.12",
     "luxon": "^2.0.1",
     "node-forge": "^1.0.0",
     "node-persist": "^0.0.11",
