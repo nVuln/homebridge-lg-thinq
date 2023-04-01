@@ -7,6 +7,7 @@ import {EventEmitter} from 'events';
 import {PlatformType} from './lib/constants';
 import {ManualProcessNeeded, NotConnectedError} from './errors';
 import {Device} from './lib/Device';
+import Characteristics from './characteristics';
 
 /**
  * HomebridgePlatform
@@ -16,6 +17,8 @@ import {Device} from './lib/Device';
 export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
+
+  public readonly customCharacteristics: ReturnType<typeof Characteristics> = Characteristics(this.api.hap.Characteristic);
 
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
