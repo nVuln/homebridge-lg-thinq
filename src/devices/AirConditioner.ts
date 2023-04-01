@@ -727,7 +727,12 @@ export class ACStatus {
   }
 
   public get currentRelativeHumidity() {
-    return this.data['airState.humidity.current'] as number;
+    const humidity = parseInt(this.data['airState.humidity.current']);
+    if (humidity > 100) {
+      return humidity / 10;
+    }
+
+    return humidity;
   }
 
   public get currentTemperature() {
