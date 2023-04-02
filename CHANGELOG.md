@@ -1,5 +1,13 @@
 # Change Log
 
+## v1.4.0
+
+- fix: AC humidity value on some device #224  c4227b4
+- add: custom characteristic for AC energy consumption #222  6b36c7a
+- add: dishwasher data sample  3805ce1
+- enable refrigerator door sensor on thinq 1  1d99daf
+- fix: Washer tub clean coach event triggered multiple times  aaa8920
+
 ## v1.3.0
 
 ### New Device Supported
