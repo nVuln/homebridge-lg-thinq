@@ -23,6 +23,7 @@ export default function AirState(deviceModel: DeviceModel, decodedMonitor) {
     'airState.quality.overall': 0,
     'airState.quality.sensorMon': 0,
     'airState.quality.PM1': 0,
+    'airState.energy.onCurrent': 0,
   };
 
   if (deviceModel.value('TempCur')) {
