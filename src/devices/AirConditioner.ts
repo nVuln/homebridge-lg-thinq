@@ -669,10 +669,11 @@ export class ACStatus {
   }
 
   /**
-   * detect fahrenheit unit device by timezone
+   * detect fahrenheit unit device by country code
+   * list: us
    */
   public get isFahrenheitUnit() {
-    return this.device.data.timezoneCode.toLowerCase().startsWith('america/');
+    return this.data.static.countryCode.toLowerCase() === 'us';
   }
 
   public convertTemperatureCelsiusFromHomekitToLG(temperatureInCelsius) {
