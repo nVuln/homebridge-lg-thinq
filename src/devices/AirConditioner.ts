@@ -673,7 +673,7 @@ export class ACStatus {
    * list: us
    */
   public get isFahrenheitUnit() {
-    return this.data.static.countryCode.toLowerCase() === 'us';
+    return this.data['static']?.countryCode?.toLowerCase() === 'us';
   }
 
   public convertTemperatureCelsiusFromHomekitToLG(temperatureInCelsius) {
