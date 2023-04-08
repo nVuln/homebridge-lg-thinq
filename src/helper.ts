@@ -51,6 +51,7 @@ export class Helper {
     switch (device.type) {
       case 'AIR_PURIFIER': return Categories.AIR_PURIFIER;
       case 'DEHUMIDIFIER': return Categories.AIR_DEHUMIDIFIER;
+      case 'AC': return Categories.AIR_CONDITIONER;
       default: return Categories.OTHER;
     }
   }
