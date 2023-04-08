@@ -39,7 +39,12 @@ export default class AirPurifier extends baseDevice {
 
     // get the service if it exists, otherwise create a new service
     // you can create multiple services for each accessory
-    this.serviceAirPurifier = accessory.getService(AirPurifier) || accessory.addService(AirPurifier, 'Air Purifier');
+    this.serviceAirPurifier = accessory.getService(AirPurifier);
+    if (this.serviceAirPurifier === undefined) {
+      this.serviceAirPurifier = accessory.addService(AirPurifier, 'Air Purifier');
+      this.serviceAirPurifier.addOptionalCharacteristic(Characteristic.ConfiguredName);
+      this.serviceAirPurifier.updateCharacteristic(Characteristic.ConfiguredName, 'Air Purifier');
+    }
 
     /**
      * Required Characteristics: Active, CurrentAirPurifierState, TargetAirPurifierState
@@ -63,18 +68,35 @@ export default class AirPurifier extends baseDevice {
 
     this.serviceAirQuality = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
 
-    this.serviceLight = accessory.getService(Lightbulb) || accessory.addService(Lightbulb, device.name + ' - Light');
+    this.serviceLight = accessory.getService(Lightbulb);
+    if (this.serviceLight === undefined) {
+      this.serviceLight = accessory.addService(Lightbulb, device.name + ' - Light');
+      this.serviceLight.addOptionalCharacteristic(Characteristic.ConfiguredName);
+      this.serviceLight.updateCharacteristic(Characteristic.ConfiguredName, 'Light');
+    }
+
     this.serviceLight.getCharacteristic(Characteristic.On).onSet(this.setLight.bind(this));
 
     if (this.Status.filterMaxTime) {
-      this.serviceFilterMaintenance = accessory.getService(FilterMaintenance) || accessory.addService(FilterMaintenance);
+      this.serviceFilterMaintenance = accessory.getService(FilterMaintenance);
+      if (this.serviceFilterMaintenance === undefined) {
+        this.serviceFilterMaintenance = accessory.addService(FilterMaintenance);
+        this.serviceFilterMaintenance.addOptionalCharacteristic(Characteristic.ConfiguredName);
+        this.serviceFilterMaintenance.updateCharacteristic(Characteristic.ConfiguredName, 'Filter Maintenance');
+      }
+
       this.serviceFilterMaintenance.updateCharacteristic(Characteristic.Name, 'Filter Maintenance');
       this.serviceAirPurifier.addLinkedService(this.serviceFilterMaintenance);
     }
 
     this.serviceAirFastMode = accessory.getService('Air Fast');
     if (this.config.air_fast_mode) {
-      this.serviceAirFastMode = this.serviceAirFastMode || accessory.addService(Switch, 'Air Fast', 'Air Fast');
+      if (this.serviceAirFastMode === undefined) {
+        this.serviceAirFastMode = accessory.addService(Switch, 'Air Fast', 'Air Fast');
+        this.serviceAirFastMode.addOptionalCharacteristic(Characteristic.ConfiguredName);
+        this.serviceAirFastMode.updateCharacteristic(Characteristic.ConfiguredName, 'Air Fast');
+      }
+
       this.serviceAirFastMode.updateCharacteristic(Characteristic.Name, 'Air Fast');
       this.serviceAirFastMode.getCharacteristic(Characteristic.On)
         .onSet(this.setAirFastActive.bind(this));
