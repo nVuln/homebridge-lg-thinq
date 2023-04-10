@@ -775,6 +775,11 @@ export class ACStatus {
   }
 
   public get currentConsumption() {
-    return parseInt(this.data['airState.energy.onCurrent']) / 100;
+    const consumption = parseInt(this.data['airState.energy.onCurrent']);
+    if (isNaN(consumption)) {
+      return 0;
+    }
+
+    return consumption / 100;
   }
 }
