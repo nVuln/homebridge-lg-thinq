@@ -40,19 +40,17 @@ export class API {
     this.logger = console;
   }
 
-  async getRequest(uri, headers?: any) {
-    return await this.request('get', uri, headers);
+  async getRequest(uri) {
+    return await this.request('get', uri);
   }
 
-  async postRequest(uri, data, headers?: any) {
-    return await this.request('post', uri, data, headers);
+  async postRequest(uri, data) {
+    return await this.request('post', uri, data);
   }
 
-  protected async request(method, uri: string, data?: any, headers?: any, retry = false) {
-    let requestHeaders = headers || this.defaultHeaders;
-    if (this._gateway?.thinq1_url && uri.startsWith(this._gateway.thinq1_url)) {
-      requestHeaders = headers || this.monitorHeaders;
-    }
+  protected async request(method, uri: string, data?: any, retry = false) {
+    // eslint-disable-next-line max-len
+    const requestHeaders = (this._gateway?.thinq1_url && uri.startsWith(this._gateway.thinq1_url)) ? this.monitorHeaders : this.defaultHeaders;
 
     const url = resolveUrl(this._gateway?.thinq2_url, uri);
 
@@ -62,7 +60,7 @@ export class API {
     }).then(res => res.data).catch(async err => {
       if (err instanceof TokenExpiredError && !retry) {
         return await this.refreshNewToken().then(async () => {
-          return await this.request(method, uri, data, headers, true);
+          return await this.request(method, uri, data, true);
         }).catch((err) => {
           this.logger.debug('refresh new token error: ', err);
           return {};
@@ -79,7 +77,7 @@ export class API {
 
         if (!retry) {
           // retry 1 times
-          return await this.request(method, uri, data, headers, true);
+          return await this.request(method, uri, data, true);
         } else {
           return {};
         }
@@ -280,9 +278,8 @@ export class API {
   }
 
   async thinq1PostRequest(endpoint: string, data: any) {
-    const headers = this.monitorHeaders;
     return await this.postRequest(this._gateway?.thinq1_url + endpoint, {
       lgedmRoot: data,
-    }, headers).then(data => data.lgedmRoot);
+    }).then(data => data.lgedmRoot);
   }
 }
