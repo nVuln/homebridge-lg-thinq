@@ -204,6 +204,24 @@
               }
             }
           },
+          "ac_temperature_unit": {
+            "title": "Temperature Unit",
+            "type": "string",
+            "oneOf": [
+              {
+                "title": "Celsius",
+                "enum": [
+                  "C"
+                ]
+              },
+              {
+                "title": "Fahrenheit",
+                "enum": [
+                  "F"
+                ]
+              }
+            ]
+          },
           "ref_express_freezer": {
             "title": "Express Freezer / Ice Plus",
             "type": "boolean"
@@ -302,6 +320,7 @@
                 "devices[].ac_temperature_sensor",
                 "devices[].ac_humidity_sensor",
                 "devices[].ac_fan_control",
+                "devices[].ac_temperature_unit",
                 {
                   "key": "devices[].ac_buttons",
                   "title": "AC buttons",

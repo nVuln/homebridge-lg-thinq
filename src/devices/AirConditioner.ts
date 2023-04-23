@@ -139,12 +139,13 @@ export default class AirConditioner extends baseDevice {
       ac_humidity_sensor: false,
       ac_led_control: false,
       ac_fan_control: false,
+      ac_temperature_unit: 'C',
       ac_buttons: [],
     }, super.config);
   }
 
   public get Status() {
-    return new ACStatus(this.accessory.context.device.snapshot, this.accessory.context.device);
+    return new ACStatus(this.accessory.context.device.snapshot, this.accessory.context.device, this.config);
   }
 
   async setEnergySaveActive(value: CharacteristicValue) {
@@ -555,9 +556,6 @@ export default class AirConditioner extends baseDevice {
     }
 
     this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
-      .setProps({
-        validValues: targetStates,
-      })
       .onSet(this.setTargetState.bind(this))
       .updateValue(targetStates[0]);
 
@@ -586,14 +584,16 @@ export default class AirConditioner extends baseDevice {
           minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.min),
           maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.max),
           minStep: 0.01,
-        });
+        })
+        .updateValue(this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.min));
 
       this.service.getCharacteristic(Characteristic.HeatingThresholdTemperature)
         .setProps({
           minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.min),
           maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.max),
           minStep: 0.01,
-        });
+        })
+        .updateValue(this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.min));
     }
 
     this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
@@ -665,7 +665,7 @@ export default class AirConditioner extends baseDevice {
 }
 
 export class ACStatus {
-  constructor(protected data, protected device: Device) {
+  constructor(protected data, protected device: Device, protected config) {
   }
 
   /**
@@ -673,7 +673,7 @@ export class ACStatus {
    * list: us
    */
   public get isFahrenheitUnit() {
-    return this.data['static']?.countryCode?.toLowerCase() === 'us';
+    return this.config?.ac_temperature_unit?.toLowerCase() === 'f';
   }
 
   public convertTemperatureCelsiusFromHomekitToLG(temperatureInCelsius) {
