@@ -1,5 +1,11 @@
 # Change Log
 
+## v1.5.0
+
+### IMPORTANT: AC temperature unit need to be set in plugin setting
+- if your AC is in Fahrenheit, please change it in plugin setting to make sure the temperature value is correct, otherwise it will be converted to Celsius by default.
+- in previous version, the temperature unit is auto detected, but it's not reliable, so we have to change it to manual setting.
+
 ## v1.4.0
 
 - fix: AC humidity value on some device #224  c4227b4
