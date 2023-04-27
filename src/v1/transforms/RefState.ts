@@ -21,15 +21,15 @@ export default function RefState(deviceModel: DeviceModel, decodedMonitor) {
   snapshot.refState.freezerTemp = parseInt(snapshot.refState.freezerTemp);
 
   if ('IcePlus' in decodedMonitor) {
-    snapshot.refState['expressMode'] = decodedMonitor['IcePlus'] || deviceModel.default('IcePlus');
+    snapshot.refState['expressMode'] = decodedMonitor['IcePlus'] || deviceModel.default('IcePlus') || '0';
   }
 
   if ('ExpressFridge' in decodedMonitor) {
-    snapshot.refState['expressFridge'] = decodedMonitor['ExpressFridge'] || deviceModel.default('ExpressFridge');
+    snapshot.refState['expressFridge'] = decodedMonitor['ExpressFridge'] || deviceModel.default('ExpressFridge') || '0';
   }
 
   if ('EcoFriendly' in decodedMonitor) {
-    snapshot.refState['ecoFriendly'] = decodedMonitor['EcoFriendly'] || deviceModel.default('EcoFriendly');
+    snapshot.refState['ecoFriendly'] = decodedMonitor['EcoFriendly'] || deviceModel.default('EcoFriendly') || '0';
   }
 
   return snapshot;

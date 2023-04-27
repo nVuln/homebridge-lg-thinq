@@ -223,7 +223,7 @@ export class DeviceModel {
   }
 
   public default(name: string) {
-    return this.data.Value[name].default;
+    return this.data?.Value[name]?.default;
   }
 
   public enumValue(key: string, name: string) {
