@@ -635,6 +635,7 @@ export default class AirConditioner extends baseDevice {
       Service: {
         Switch,
       },
+      Characteristic,
     } = this.platform;
 
     const serviceButton = this.accessory.getService(name) || this.accessory.addService(Switch, name, name);
@@ -659,6 +660,11 @@ export default class AirConditioner extends baseDevice {
           });
         }
       });
+
+    serviceButton.addOptionalCharacteristic(Characteristic.ConfiguredName);
+    if (!serviceButton.getCharacteristic(Characteristic.ConfiguredName).value) {
+      serviceButton.updateCharacteristic(Characteristic.ConfiguredName, name);
+    }
 
     this.serviceLabelButtons.addLinkedService(serviceButton);
   }
