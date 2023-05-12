@@ -214,7 +214,8 @@ export default class Refrigerator extends baseDevice {
       .setProps({
         minValue: Characteristic.TargetHeatingCoolingState.COOL,
         maxValue: Characteristic.TargetHeatingCoolingState.COOL,
-      });
+      })
+      .updateValue(Characteristic.TargetHeatingCoolingState.COOL);
     service.setCharacteristic(Characteristic.TargetHeatingCoolingState, Characteristic.TargetHeatingCoolingState.COOL);
 
     service.getCharacteristic(Characteristic.TemperatureDisplayUnits).setProps({
@@ -252,7 +253,8 @@ export default class Refrigerator extends baseDevice {
 
         await this.setTemperature(key, indexValue);
       })
-      .setProps({minValue: Math.min(...values), maxValue: Math.max(...values), minStep: isCelsius ? 1 : 0.1});
+      .setProps({minValue: Math.min(...values), maxValue: Math.max(...values), minStep: isCelsius ? 1 : 0.1})
+      .updateValue(Math.min(...values));
 
     return service;
   }
