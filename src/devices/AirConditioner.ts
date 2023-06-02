@@ -708,9 +708,15 @@ export class ACStatus {
       return temperatureInCelsius;
     }
 
-    // lookup fahrenheit value by celsius value from table TempFahToCel
-    const temperatureInFahrenheit = parseInt(this.device.deviceModel.lookupMonitorName('TempFahToCel', temperatureInCelsius));
-    if (temperatureInFahrenheit === undefined) {
+    // lookup fahrenheit value by celsius value from table TempCelToFah
+    let temperatureInFahrenheit = parseInt(this.device.deviceModel.lookupMonitorValue('TempCelToFah', temperatureInCelsius));
+    if (isNaN(temperatureInFahrenheit)) {
+      // lookup again in table TempFahToCel
+      temperatureInFahrenheit = parseInt(this.device.deviceModel.lookupMonitorValue('TempFahToCel', temperatureInCelsius));
+    }
+
+    // if not found in both tables, return original value
+    if (isNaN(temperatureInFahrenheit)) {
       return temperatureInCelsius;
     }
 
