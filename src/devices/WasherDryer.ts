@@ -192,7 +192,7 @@ export default class WasherDryer extends baseDevice {
 }
 
 export class WasherDryerStatus {
-  constructor(protected data, protected deviceModel: DeviceModel) {
+  constructor(public data, protected deviceModel: DeviceModel) {
   }
 
   public get isPowerOn() {
