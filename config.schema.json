@@ -98,7 +98,10 @@
               "DISHWASHER",
               "AIR_PURIFIER",
               "DEHUMIDIFIER",
-              "AERO_TOWER"
+              "AERO_TOWER",
+              "OVEN",
+              "RANGE",
+              "COOKTOP"
             ],
             "condition": {
               "functionBody": "return false;"
