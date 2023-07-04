@@ -11,8 +11,8 @@ import AirConditioner from './devices/AirConditioner';
 import AeroTower from './devices/AeroTower';
 import Styler from './devices/Styler';
 import RangeHood from './devices/RangeHood';
-import Oven from "./devices/Oven";
-import Microwave from "./devices/Microwave";
+import Oven from './devices/Oven';
+import Microwave from './devices/Microwave';
 
 /**
  * Platform Accessory
