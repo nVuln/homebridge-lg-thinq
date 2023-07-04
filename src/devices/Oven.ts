@@ -143,8 +143,6 @@ export default class Oven extends baseDevice {
     public readonly accessory: PlatformAccessory,
   ) {
     super(platform, accessory);
-    this.platform = platform;
-    this.accessory = accessory;
 
     const {Characteristic} = this.platform;
 
@@ -743,10 +741,9 @@ export default class Oven extends baseDevice {
   async sendTimerCommand(time) {
     if (!this.waitingForCommand) {
       this.platform.log.debug('Alarm Set to: ' + this.secondsToTime(time));
-      let _a;
       const ctrlKey = 'SetTimer';
       const device = this.accessory.context.device;
-      (_a = this.platform.ThinQ) === null || _a === void 0 ? void 0 : _a.deviceControlWithCtrlKey(device, ctrlKey, {
+      this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: null,
         dataValue: null,
         dataSetList: {
@@ -762,7 +759,7 @@ export default class Oven extends baseDevice {
           },
         },
         dataGetList: null,
-      });
+      }, 'Set', ctrlKey);
       this.waitingForCommand = true;
       setTimeout(() => {
         this.pauseUpdate = false;
