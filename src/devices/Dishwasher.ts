@@ -127,7 +127,7 @@ export default class Dishwasher extends baseDevice {
     this.tvService.addLinkedService(this.startTime);
 
     this.courseDuration = this.createInputSourceService('Cycle Duration', 'CataNico-Always20', 4, this.courseTimeString, this.showTime);
-    this.startTime.getCharacteristic(this.platform.Characteristic.ConfiguredName)
+    this.courseDuration.getCharacteristic(this.platform.Characteristic.ConfiguredName)
       .on('get', (callback) => {
         const currentValue = this.courseTimeString;
         callback(null, currentValue);
