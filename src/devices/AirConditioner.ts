@@ -326,6 +326,10 @@ export default class AirConditioner extends baseDevice {
     if (this.energySaveModeModels.includes(device.model)) {
       this.serviceEnergySaveMode.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.powerSave.basic']);
     }
+
+    if (this.airCleanModels.includes(device.model)) {
+      this.serviceAirClean.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.wMode.airClean']);
+    }
   }
 
   async setLight(value: CharacteristicValue) {
