@@ -7,7 +7,7 @@ import {WasherDryerStatus} from './WasherDryer';
 export default class Dishwasher extends baseDevice {
   public isRunning = false;
   public inputID = 1;
-  public rinseLevel = 'LEVEL_1';
+  public rinseLevel = 'LEVEL_2';
   public inputName = 'Dishwasher Status';
   public inputNameOptions = 'Dishwasher Options';
   public inputNameRinse = 'Dishwasher Rinse Aid Level';
@@ -298,7 +298,7 @@ export default class Dishwasher extends baseDevice {
         this.firstTime = true;
         this.firstDelay = true;
       } else if (this.Status.data.state.includes('END')) {
-        if (this.firstEnd == true) {
+        if (this.firstEnd) {
           const courseFinished = new Date();
           this.finishedTime = courseFinished.toLocaleString('en-US', {
             weekday: 'short',

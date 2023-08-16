@@ -157,7 +157,15 @@ export default class Oven extends baseDevice {
         const currentValue = this.ovenServiceActive();
         callback(null, currentValue);
       })
-      .onSet(this.setActive.bind(this));
+      .on('set', (value, callback) => {
+        if (value === 0) {
+          this.stopOven();
+        }
+        else {
+          this.sendOvenCommand();
+        }
+        callback(null);
+      });
     this.ovenService
       .setCharacteristic(this.platform.Characteristic.ActiveIdentifier, this.inputID);
     this.ovenService
@@ -776,7 +784,7 @@ export default class Oven extends baseDevice {
       if (!this.waitingForCommand) {
         this.pauseUpdate = true;
         this.ovenCommandList.tempUnits = this.Status.data?.upperCurrentTemperatureUnit;
-        if (this.ovenCommandList.ovenSetDuration == 0) {
+        if (this.ovenCommandList.ovenSetDuration === 0) {
           this.ovenCommandList.ovenSetDuration = 1800;
         }
         if (this.ovenCommandList.ovenMode == 'NONE') {
@@ -919,11 +927,20 @@ export default class Oven extends baseDevice {
           this.firstPause = true;
         }, 10000);
         this.waitingForCommand = true;
+        setTimeout(() => {
+          this.waitingForCommand = false;
+        }, 1000);
       }
-      setTimeout(() => {
-        this.waitingForCommand = false;
-      }, 1000);
     }
+  }
+
+  getMonitorState() {
+    if (this.Status.data?.upperRemoteStart.includes('DIS')) {
+      this.monitorOnly = true;
+    } else {
+      this.monitorOnly = this.homekitMonitorOnly as boolean;
+    }
+    return this.monitorOnly;
   }
 
   setActive() {
@@ -941,19 +958,11 @@ export default class Oven extends baseDevice {
   }
 
   ovenOnStatus() {
-    if (!this.Status.data?.upperState.includes('INITIAL')) {
-      return true;
-    } else {
-      return false;
-    }
+    return !this.Status.data?.upperState.includes('INITIAL');
   }
 
   onStatus() {
-    if (!this.Status.data?.upperState.includes('INITIAL') || this.Status.data?.burnerOnCounter > 0) {
-      return true;
-    } else {
-      return false;
-    }
+    return !this.Status.data?.upperState.includes('INITIAL') || this.Status.data?.burnerOnCounter > 0;
   }
 
   nameLengthCheck(newName) {
@@ -1539,6 +1548,10 @@ export default class Oven extends baseDevice {
 
   updateOvenModeSwitch() {
     this.pauseUpdate = true;
+    this.updateOvenModeSwitchNoPause();
+  }
+
+  updateOvenModeSwitchNoPause() {
     this.bakeSwitch.updateCharacteristic(this.platform.Characteristic.On, this.ovenCommandList.ovenMode == 'BAKE' ? true : false);
     this.convectionBakeSwitch.updateCharacteristic(this.platform.Characteristic.On, this.ovenCommandList.ovenMode == 'CONVECTION_BAKE' ? true : false);
     this.convectionRoastSwitch.updateCharacteristic(this.platform.Characteristic.On, this.ovenCommandList.ovenMode == 'CONVECTION_ROST' ? true : false);
@@ -1586,7 +1599,7 @@ export default class Oven extends baseDevice {
       if (this.ovenService.getCharacteristic(this.platform.Characteristic.Active).value != this.ovenServiceActive()) {
         this.ovenService.updateCharacteristic(this.platform.Characteristic.Active, this.ovenServiceActive());
       }
-      if (this.ovenServiceActive() == 0) {
+      if (this.ovenOnStatus()) {
         this.ovenCommandList = {
           ovenMode: 'NONE',
           ovenSetTemperature: 350,
@@ -1604,6 +1617,16 @@ export default class Oven extends baseDevice {
           this.warmModeSwitch.getCharacteristic(this.platform.Characteristic.On).value == true) {
           this.updateOvenModeSwitch();
         }
+      } else {
+        this.ovenCommandList = {
+          ovenMode: this.Status.data?.upperManualCookName,
+          ovenSetTemperature: this.Status.data?.upperTargetTemperatureValue,
+          tempUnits: this.Status.data?.upperCurrentTemperatureUnit,
+          ovenSetDuration: this.oventTargetTime(),
+          probeTemperature: this.Status.data?.upperTargetProveTemperatureF,
+          ovenKeepWarm: (this.Status.data?.upperCookAndWarmStatus.includes('DIS')) ? 'DISABLE' : 'ENABLE',
+        };
+        this.updateOvenModeSwitchNoPause();
       }
 
       ///// how to handle the time Here
@@ -1618,7 +1641,7 @@ export default class Oven extends baseDevice {
         this.courseStartString = 'Oven Start Time Not Set';
       }
 
-      if (this.oventTargetTime() != 0) {
+      if (this.oventTargetTime() !== 0) {
         if (this.oventTargetTime() != this.firstDuration) {
           this.firstDuration = this.oventTargetTime();
           this.courseTimeString = this.ovenCookingDuration();
@@ -1630,7 +1653,7 @@ export default class Oven extends baseDevice {
         this.courseTimeString = 'Oven Cook Time Not Set';
         this.courseTimeEndString = 'Oven End Time Not Set';
       }
-      if (this.ovenTimerTime() != 0) {
+      if (this.ovenTimerTime() !== 0) {
         if (this.ovenTimerTime() != this.firstDuration) {
           this.firstTimer = this.ovenTimerTime();
           this.courseTimerString = this.ovenCookingTimer();
@@ -1819,11 +1842,11 @@ export default class Oven extends baseDevice {
       }
     } else {
       if (this.firstPause) {
+        this.firstPause = false;
         setTimeout(() => {
           this.pauseUpdate = false;
           this.firstPause = true;
         }, 60000 * 2);
-        this.firstPause = false;
       }
     }
   }
