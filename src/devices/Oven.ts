@@ -1,3 +1,6 @@
+/**
+ * Special thank to carlosgamezvillegas (https://github.com/carlosgamezvillegas) for the initial work on the Oven device.
+ */
 import {baseDevice} from '../baseDevice';
 import {LGThinQHomebridgePlatform} from '../platform';
 import {Perms, PlatformAccessory} from 'homebridge';

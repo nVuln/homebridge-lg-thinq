@@ -1,3 +1,6 @@
+/**
+ * Special thank to carlosgamezvillegas (https://github.com/carlosgamezvillegas) for the initial work on the Microwave device.
+ */
 import {baseDevice} from '../baseDevice';
 import {DeviceModel} from '../lib/DeviceModel';
 import {LGThinQHomebridgePlatform} from '../platform';

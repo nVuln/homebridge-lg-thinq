@@ -74,16 +74,22 @@ npm i -g homebridge-lg-thinq
 
 ## Implementation Status
 
-| *Device* | *Implementation* | *Status* | *Control* | *Thinq2* | *Thinq1* |
-| --- | --- | --- | --- | --- | --- |
-| Refrigerator | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
-| Air Purifier | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| *Device*       | *Implementation* | *Status* | *Control* | *Thinq2* | *Thinq1* |
+|----------------| --- | --- | --- | --- | --- |
+| Refrigerator   | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| Air Purifier   | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
 | Washer & Dryer | ✔️ | ✔️ | 🚫 | ✔️ | ✔️ |
-| Dishwasher | ✔️ | ✔️ | 🚫 | ✔️ | 🚫 |
-| Dehumidifier | ✔️ | ✔️ | ⚠️ | ✔️ | 🚫 |
-| AC | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| Dishwasher     | ✔️ | ✔️ | 🚫 | ✔️ | 🚫 |
+| Dehumidifier   | ✔️ | ✔️ | ⚠️ | ✔️ | 🚫 |
+| AC             | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| Oven           | ✔️ | ✔️ | ✔️ | ⚠️ | ⚠️ |
+| Microwave      | ✔️ | ✔️ | ✔️ | ⚠️ | ⚠️ |
 
 for more device support please open issue request.
+
+## Contributors ✨
+
+- Special thank to carlosgamezvillegas (https://github.com/carlosgamezvillegas) for implementing Oven & Microwave device support.
 
 ## Support
 
