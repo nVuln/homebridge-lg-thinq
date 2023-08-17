@@ -44,7 +44,7 @@ export default class Oven extends baseDevice {
   protected inputNameTempString = 'Oven Temperature';
   protected courseStartString = 'Oven Start Time Not Set';
   protected courseTimeString = 'Oven Cook Time Not Set';
-  protected courseTimerString = 'Oven Cook Timer Not Set';
+  protected courseTimerString = 'Oven Timer Not Set';
   protected courseTimeEndString = 'Oven End Time Not Set';
   protected inputNameOptions = 'Oven Options';
   protected inputNameBurner1 = 'Front Left Burner Status';
@@ -1171,8 +1171,8 @@ export default class Oven extends baseDevice {
 
   probeCurrentTemperature() {
     /////Current Temp
-    if (this.Status.data?.upperCurrentPorveTemperatureF != 0 && typeof this.Status.data?.upperCurrentPorveTemperatureF !== 'undefined') {
-      return this.tempFtoC(this.Status.data?.upperCurrentPorveTemperatureF);
+    if (this.Status.data?.upperCurrentProveTemperatureF != 0 && typeof this.Status.data?.upperCurrentProveTemperatureF !== 'undefined') {
+      return this.tempFtoC(this.Status.data?.upperCurrentProveTemperatureF);
     } else {
       return this.localTemperature;
     }
@@ -1333,12 +1333,25 @@ export default class Oven extends baseDevice {
 
   ///////////
   proveStatus() {
-    if (this.Status.data?.upperCurrentProveTemperatureF !== 0 && typeof this.Status.data?.upperCurrentProveTemperatureF !== 'undefined') {
-      this.probeName = 'Current Probe Temp ' + this.Status.data?.upperCurrentProveTemperatureF + '°';
+    if (this.Status.data.upperCurrentProveTemperatureF !== 0 && typeof this.Status.data.upperCurrentProveTemperatureF !== 'undefined') {
+      this.probeName = '';
       this.showProbe = true;
-      if (this.Status.data?.upperTargetProveTemperatureF !== 0 && typeof this.Status.data?.upperTargetProveTemperatureF !== 'undefined') {
-        this.probeName += ' With Set Temp ' + this.Status.data?.upperTargetProveTemperatureF + '°';
-        this.showProbe = true;
+      if (this.Status.data.upperTargetProveTemperatureF !== 0 && typeof this.Status.data.upperTargetProveTemperatureF !== 'undefined') {
+        const donePercent = Math.round(100 * this.Status.data.upperCurrentProveTemperatureF / this.Status.data.upperTargetProveTemperatureF);
+        this.probeName += 'Food is ' + donePercent + '% Done, ';
+      }
+      if (this.Status.data.upperCurrentTemperatureUnit.includes('FAH')) {
+        this.probeName += 'Current Probe Temp ' + this.Status.data.upperCurrentProveTemperatureF + '°';
+        if (this.Status.data.upperTargetProveTemperatureF !== 0 && typeof this.Status.data.upperTargetProveTemperatureF !== 'undefined') {
+          this.probeName += ' With Set Temp ' + this.Status.data.upperTargetProveTemperatureF + '°';
+        }
+      }
+      else {
+        this.probeName += 'Current Probe Temp ' + this.tempFtoC(this.Status.data.upperCurrentProveTemperatureF) + '°';
+        if (this.Status.data.upperTargetProveTemperatureF !== 0 && typeof this.Status.data.upperTargetProveTemperatureF !== 'undefined') {
+          this.probeName += ' With Set Temp ' + this.tempFtoC(this.Status.data.upperTargetProveTemperatureF) + '°';
+        }
+
       }
     } else {
       this.probeName = 'Probe Settings Not Available ';
@@ -1662,7 +1675,7 @@ export default class Oven extends baseDevice {
       } else {
         this.firstTimer = 0;
         this.showTimer = false;
-        this.courseTimerString = 'Oven Cook Timer Not Set';
+        this.courseTimerString = 'Oven Timer Not Set';
       }
 
 
@@ -1774,7 +1787,7 @@ export default class Oven extends baseDevice {
         this.probeTempControl.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.localHumidity);
         this.ovenTempControl.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.localHumidity);
       }
-      if (this.Status.data?.upperCurrentPorveTemperatureF != 0 && typeof this.Status.data?.upperCurrentPorveTemperatureF !== 'undefined') {
+      if (this.Status.data?.upperCurrentProveTemperatureF != 0 && typeof this.Status.data?.upperCurrentProveTemperatureF !== 'undefined') {
         if (this.probeTempControl.getCharacteristic(this.platform.Characteristic.CurrentTemperature).value !== this.probeCurrentTemperature()) {
           this.probeTempControl.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.probeCurrentTemperature());
         }

@@ -1284,6 +1284,12 @@ export default class Microwave extends baseDevice {
     if (this.Status.data?.LWOTargetTemperatureValue !== 0) {
       temperature += ' With Set Temp ' + this.Status.data?.LWOTargetTemperatureValue + '°';
     }
+
+    ////Default
+    if (this.Status.data.LWOTargetTemperatureValue === 0 && this.defaultTemp != 0 && this.Status.data.upperCurrentTemperatureValue === 0) {
+      temperature += 'Current Temp is ' + this.defaultTemp + '°' + ' With Set Temp ' + this.defaultTemp + '°';
+    }
+
     return this.nameLengthCheck(temperature);
   }
 
@@ -1295,24 +1301,16 @@ export default class Microwave extends baseDevice {
       } else {
         return 0.5 * Math.round(2 * this.Status.data?.upperCurrentTemperatureValue);
       }
-    } else if (this.Status.data?.LWOState.includes('COOKING_IN_PROGRESS') && this.Status.data?.upperCurrentTemperatureValue == 0 && this.defaultTemp != 0) {
-      if (this.Status.data?.LWOTargetTemperatureUnit.includes('FAH')) {
-        return this.tempFtoC(this.defaultTemp);
-      } else {
-        return this.tempFtoC(this.defaultTemp);
-      }
-    } else if (this.Status.data?.LWOState.includes('PREHEATING') && this.Status.data?.upperCurrentTemperatureValue == 0 && this.defaultTemp != 0) {
-      if (this.Status.data?.LWOTargetTemperatureUnit.includes('FAH')) {
-        return this.tempFtoC(this.defaultTemp);
-      } else {
-        return this.tempFtoC(this.defaultTemp);
-      }
-    } else if (this.Status.data?.upperCurrentTemperatureValue == 0 && this.Status.data?.LWOTargetTemperatureValue != 0) {
+    } else if (this.Status.data.LWOTargetTemperatureValue !== 0) {
       if (this.Status.data?.LWOTargetTemperatureUnit.includes('FAH')) {
         return this.tempFtoC(this.Status.data?.LWOTargetTemperatureValue);
       } else {
         return 0.5 * Math.round(2 * this.Status.data?.LWOTargetTemperatureValue);
       }
+    } else if (this.Status.data.LWOState.includes('COOKING_IN_PROGRESS') && this.defaultTemp !== 0) {
+      return this.tempFtoC(this.defaultTemp);
+    } else if (this.Status.data.LWOState.includes('PREHEATING') && this.defaultTemp !== 0) {
+      return this.tempFtoC(this.defaultTemp);
     } else {
       return this.localTemperature;
     }
@@ -1326,18 +1324,10 @@ export default class Microwave extends baseDevice {
       } else {
         return 0.5 * Math.round(2 * this.Status.data?.LWOTargetTemperatureValue);
       }
-    } else if (this.Status.data?.LWOState.includes('COOKING_IN_PROGRESS') && this.Status.data?.LWOTargetTemperatureValue == 0 && this.defaultTemp != 0) {
-      if (this.Status.data?.LWOTargetTemperatureUnit.includes('FAH')) {
-        return this.tempFtoC(this.defaultTemp);
-      } else {
-        return this.tempFtoC(this.defaultTemp);
-      }
-    } else if (this.Status.data?.LWOState.includes('PREHEATING') && this.Status.data?.LWOTargetTemperatureValue == 0 && this.defaultTemp != 0) {
-      if (this.Status.data?.LWOTargetTemperatureUnit.includes('FAH')) {
-        return this.tempFtoC(this.defaultTemp);
-      } else {
-        return this.tempFtoC(this.defaultTemp);
-      }
+    } else if (this.Status.data.LWOState.includes('COOKING_IN_PROGRESS') && this.defaultTemp !== 0) {
+      return this.tempFtoC(this.defaultTemp);
+    } else if (this.Status.data.LWOState.includes('PREHEATING') && this.defaultTemp !== 0) {
+      return this.tempFtoC(this.defaultTemp);
     } else {
       return 38;
     }
@@ -1541,7 +1531,7 @@ export default class Microwave extends baseDevice {
 
   ///////////
   currentHeatingState() {
-    if (this.Status.data?.upperCurrentTemperatureValue != 0 || this.defaultTemp != 0) {
+    if (this.Status.data?.upperCurrentTemperatureValue != 0 || this.defaultTemp !== 0 || this.Status.data.LWOTargetTemperatureValue !== 0) {
       return 1;
     } else {
       return 0;
@@ -1549,12 +1539,12 @@ export default class Microwave extends baseDevice {
   }
 
   targetHeatingState() {
-    if (this.Status.data?.LWOTargetTemperatureValue == 0 || this.defaultTemp == 0) {
-      return 0;
-    } else {
+    if (this.Status.data.LWOTargetTemperatureValue !== 0 || this.defaultTemp !== 0) {
       return 1;
     }
-
+    else {
+      return 0;
+    }
   }
 
   updateOvenModeSwitch() {
@@ -1753,10 +1743,8 @@ export default class Microwave extends baseDevice {
       if (this.ovenTempControl.getCharacteristic(this.platform.Characteristic.CurrentTemperature).value !== this.ovenCurrentTemperature()) {
         this.ovenTempControl.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.ovenCurrentTemperature());
       }
-      if (this.Status.data?.LWOTargetTemperatureValue !== 0) {
-        if (this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TargetTemperature).value !== this.ovenTargetTemperature()) {
-          this.ovenTempControl.updateCharacteristic(this.platform.Characteristic.TargetTemperature, this.ovenTargetTemperature());
-        }
+      if (this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TargetTemperature).value !== this.ovenTargetTemperature()) {
+        this.ovenTempControl.updateCharacteristic(this.platform.Characteristic.TargetTemperature, this.ovenTargetTemperature());
       }
       if (this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState).value !== this.targetHeatingState()) {
         this.ovenTempControl.updateCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState, this.targetHeatingState());
