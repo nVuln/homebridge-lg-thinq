@@ -160,16 +160,43 @@ export class ThinQ {
 
   public deviceControl(device: string | Device, values: Record<string, any>, command: 'Set' | 'Operation' = 'Set', ctrlKey = 'basicCtrl') {
     const id = device instanceof Device ? device.id : device;
-    return this.api.sendCommandToDevice(id, values, command, ctrlKey).catch(err => {
+    return this.api.sendCommandToDevice(id, values, command, ctrlKey)
+      .then(response => {
+        if (response.resultCode == "0000") {
+          this.log.debug('ThinQ Device Received the Command');
+        }
+        else {
+          this.log.debug('ThinQ Device Did Not Received the Command');
+        }
+      }).catch(err => {
       // submitted same value
-      if (err.response?.data?.resultCode === '0103') {
-        return false;
-      }
+        if (err.response?.data?.resultCode === '0103') {
+          return false;
+        }
 
-      this.log.error('Unknown Error: ', err.response);
-    });
+        this.log.error('Unknown Error: ', err.response);
+      });
   }
-
+  deviceControlWithCtrlKey(device, ctrlKey, values, command: 'Set' | 'Operation' = 'Set') {
+    const id = device instanceof Device ? device.id : device;
+    return this.api.sendCommandToDevice(id, values, command, ctrlKey)
+      .then(response => {
+        if (response.resultCode == "0000") {
+          this.log.debug('ThinQ Device Received the Command');
+        }
+        else {
+          this.log.debug('ThinQ Device Did Not Received the Command');
+        }
+      })
+      .catch(err => {
+        let _a, _b;
+        // submitted same value
+        if (err.response?.data?.resultCode === '0103') {
+          return false;
+        }
+        this.log.error('Unknown Error: ', err.response);
+      });
+  }
   public async registerMQTTListener(callback: (data: any) => void) {
     const delayMs = ms => new Promise(res => setTimeout(res, ms));
 

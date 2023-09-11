@@ -11,6 +11,8 @@ import AirConditioner from './devices/AirConditioner';
 import AeroTower from './devices/AeroTower';
 import Styler from './devices/Styler';
 import RangeHood from './devices/RangeHood';
+import Oven from './devices/Oven';
+import Microwave from './devices/Microwave';
 
 /**
  * Platform Accessory
@@ -42,6 +44,8 @@ export class Helper {
       case 'AC': return AirConditioner;
       case 'STYLER': return Styler;
       case 'HOOD': return RangeHood;
+      case 'MICROWAVE': return Microwave;
+      case 'OVEN': return Oven;
     }
 
     return null;
@@ -52,6 +56,9 @@ export class Helper {
       case 'AIR_PURIFIER': return Categories.AIR_PURIFIER;
       case 'DEHUMIDIFIER': return Categories.AIR_DEHUMIDIFIER;
       case 'AC': return Categories.AIR_CONDITIONER;
+      case 'DISHWASHER': return 1/*Sprinkler*/;
+      case 'OVEN': return 9/*Thermostat*/;
+      case 'MICROWAVE': return 9/*air heater*/;
       default: return Categories.OTHER;
     }
   }

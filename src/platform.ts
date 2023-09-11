@@ -115,7 +115,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       this.log.debug('Device data: ', JSON.stringify(device.data));
 
       if (this.config.devices.length && !this.config.devices.find(enabled => enabled.id === device.id)) {
-        this.log.debug('Device skipped: ', device.id);
+        this.log.info('Device skipped: ', device.id);
         continue;
       }
 
@@ -156,7 +156,8 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
         lgThinQDevice = new accessoryType(this, accessory);
 
         // link the accessory to your platform
-        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        // this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        this.api.publishExternalAccessories(PLUGIN_NAME, [accessory]);
         this.accessories.push(accessory);
       }
 
