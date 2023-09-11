@@ -89,7 +89,7 @@ for more device support please open issue request.
 
 ## Contributors ✨
 
-- Special thank to carlosgamezvillegas (https://github.com/carlosgamezvillegas) for implementing Oven & Microwave device support.
+- Special thank to [carlosgamezvillegas](https://github.com/carlosgamezvillegas) for implementing Oven & Microwave device support. More detail in [#87](https://github.com/nVuln/homebridge-lg-thinq/issues/87)
 
 ## Support
 

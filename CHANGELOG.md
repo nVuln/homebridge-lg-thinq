@@ -1,5 +1,12 @@
 # Change Log
 
+## v1.6.0
+
+### New Device Supported
+
+* Oven
+* Microwave
+
 ## v1.5.0
 
 ### IMPORTANT: AC temperature unit need to be set in plugin setting
