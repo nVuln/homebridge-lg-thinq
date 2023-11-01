@@ -23,10 +23,7 @@ export class Helper {
   public static make(device: Device) {
     if (device.platform === PlatformType.ThinQ1) {
       // check if thinq1 available
-      const deviceClass = V1helper.make(device);
-      if (deviceClass) {
-        return deviceClass;
-      }
+      return V1helper.make(device);
     }
 
     // thinq2

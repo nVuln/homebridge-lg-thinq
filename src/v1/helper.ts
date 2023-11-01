@@ -11,10 +11,6 @@ import HoodState from './transforms/HoodState';
 
 export default class Helper {
   public static make(device: Device) {
-    if (device.platform !== PlatformType.ThinQ1) {
-      return null;
-    }
-
     switch (device.type) {
       case 'DRYER':
       case 'WASHER': return Washer;
