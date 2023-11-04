@@ -107,6 +107,9 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
     }
 
     for (const device of devices) {
+      this.log.debug('Device ['+device.name+']: ', device.toString());
+      this.log.debug(JSON.stringify(device.data));
+
       if (!this.enable_thinq1 && device.platform === PlatformType.ThinQ1) {
         this.log.debug('Thinq1 device is skipped: ', device.toString());
         continue;
@@ -128,7 +131,6 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       const accessoryType = Helper.make(device);
       if (accessoryType === null) {
         this.log.info('Device not supported: '+ device.platform + ': ' + device.toString());
-        this.log.debug('Device data: ', JSON.stringify(device.data));
         this.ThinQ.unregister(device).then(() => {
           this.log.debug(device.id, '- unregistered!');
         });
