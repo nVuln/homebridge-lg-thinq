@@ -576,23 +576,26 @@ export default class Oven extends baseDevice {
         callback(null);
       });
 
-    this.keepWarmSwitch = accessory.getService('Keep Warm') ||
-      accessory.addService(this.platform.Service.Switch, 'Keep Warm', 'CataNicoGaTa-Control9');
-    this.keepWarmSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
-    this.keepWarmSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Keep Warm');
-    this.keepWarmSwitch.getCharacteristic(this.platform.Characteristic.On)
-      .on('get', (callback) => {
-        const currentValue = !this.Status.data?.upperCookAndWarmStatus.includes('DIS');
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        if (value === true) {
-          this.ovenCommandList.ovenKeepWarm = 'ENABLE';
-        } else {
-          this.ovenCommandList.ovenKeepWarm = 'DISABLE';
-        }
-        callback(null);
-      });
+    if ('upperCookAndWarmStatus' in this.Status.data) {
+      this.keepWarmSwitch = accessory.getService('Keep Warm') ||
+        accessory.addService(this.platform.Service.Switch, 'Keep Warm', 'CataNicoGaTa-Control9');
+      this.keepWarmSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
+      this.keepWarmSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Keep Warm');
+      this.keepWarmSwitch.getCharacteristic(this.platform.Characteristic.On)
+        .on('get', (callback) => {
+          const currentValue = !this.Status.data?.upperCookAndWarmStatus?.includes('DIS');
+          callback(null, currentValue);
+        })
+        .on('set', (value, callback) => {
+          if (value === true) {
+            this.ovenCommandList.ovenKeepWarm = 'ENABLE';
+          } else {
+            this.ovenCommandList.ovenKeepWarm = 'DISABLE';
+          }
+          callback(null);
+        });
+    }
+
     ////////Door sensor
     this.ovenDoorOpened = this.accessory.getService('Oven Door') || this.accessory.addService(this.platform.Service.ContactSensor, 'Oven Door', 'NicoCataGaTa-OvenTCBCS');
     this.ovenDoorOpened.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
@@ -1068,8 +1071,11 @@ export default class Oven extends baseDevice {
     if (!this.inputNameMode.includes('None')) {
       this.inputNameMode = this.OvenSubCookMenu(this.inputNameMode);
     }
-    if (!this.Status.data?.upperCookAndWarmStatus.includes('DIS')) {
-      this.inputNameMode += ' (Keep Warm On)';
+
+    if ('upperCookAndWarmStatus' in this.Status.data) {
+      if (!this.Status.data?.upperCookAndWarmStatus.includes('DIS')) {
+        this.inputNameMode += ' (Keep Warm On)';
+      }
     }
     return this.nameLengthCheck(this.inputNameMode);
   }
@@ -1114,8 +1120,11 @@ export default class Oven extends baseDevice {
         this.inputNameStatus += stateNameCap;
 
     }
-    if (!this.Status.data?.commonControlLock.includes('DIS')) {
-      this.inputNameStatus += ' - Controls Locked';
+
+    if ('commonControlLock' in this.Status.data) {
+      if (!this.Status.data?.commonControlLock.includes('DIS')) {
+        this.inputNameStatus += ' - Controls Locked';
+      }
     }
     return this.nameLengthCheck(this.inputNameStatus);
   }
@@ -1325,10 +1334,10 @@ export default class Oven extends baseDevice {
     if (!this.Status.data?.upperSabbath.includes('DIS')) {
       this.inputNameOptions += ', Sabbath On';
     }
-    if (this.Status.data?.settingConvAutoConversion.includes('ENA')) {
+    if (this.Status.data?.settingConvAutoConversion?.includes('ENA')) {
       this.inputNameOptions += ', Auto Conversion';
     }
-    if (this.Status.data?.settingPreheatAlarm.includes('ON')) {
+    if (this.Status.data?.settingPreheatAlarm?.includes('ON')) {
       this.inputNameOptions += ', Preheat Alarm°';
     }
     return this.nameLengthCheck(this.inputNameOptions);
@@ -1640,7 +1649,7 @@ export default class Oven extends baseDevice {
           tempUnits: this.Status.data?.upperCurrentTemperatureUnit,
           ovenSetDuration: this.oventTargetTime(),
           probeTemperature: this.Status.data?.upperTargetProveTemperatureF,
-          ovenKeepWarm: (this.Status.data?.upperCookAndWarmStatus.includes('DIS')) ? 'DISABLE' : 'ENABLE',
+          ovenKeepWarm: (this.Status.data?.upperCookAndWarmStatus?.includes('DIS')) ? 'DISABLE' : 'ENABLE',
         };
         this.updateOvenModeSwitchNoPause();
       }
@@ -1848,13 +1857,16 @@ export default class Oven extends baseDevice {
       this.ovenAlarmService.updateCharacteristic(Characteristic.Active, this.ovenTimerTime() > 0 ? 1 : 0);
       this.ovenAlarmService.updateCharacteristic(Characteristic.RemainingDuration, this.ovenTimerTime());
       this.ovenAlarmService.updateCharacteristic(Characteristic.InUse, this.ovenTimerTime() > 0 ? 1 : 0);
-      ////Switch State
-      this.keepWarmSwitch.updateCharacteristic(this.platform.Characteristic.On, !this.Status.data?.upperCookAndWarmStatus.includes('DIS'));
-      //////////Warm Status
-      if (!this.Status.data?.upperCookAndWarmStatus.includes('DIS')) {
-        this.ovenCommandList.ovenKeepWarm = 'ENABLE';
-      } else {
-        this.ovenCommandList.ovenKeepWarm = 'DISABLE';
+      if ('upperCookAndWarmStatus' in this.Status.data) {
+        ////Switch State
+        this.keepWarmSwitch.updateCharacteristic(this.platform.Characteristic.On, !this.Status.data?.upperCookAndWarmStatus.includes('DIS'));
+
+        //////////Warm Status
+        if (!this.Status.data?.upperCookAndWarmStatus.includes('DIS')) {
+          this.ovenCommandList.ovenKeepWarm = 'ENABLE';
+        } else {
+          this.ovenCommandList.ovenKeepWarm = 'DISABLE';
+        }
       }
     } else {
       if (this.firstPause) {
