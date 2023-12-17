@@ -49,7 +49,9 @@ export class ThinQ {
       return [];
     });
 
-    return listDevices.map(dev => new Device(dev));
+    return listDevices.map(device => new Device(device))
+      // skip all device invalid id
+      .filter(device => device.id.match(/^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/));
   }
 
   public async setup(device: Device) {
