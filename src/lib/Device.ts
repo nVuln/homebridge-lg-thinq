@@ -30,6 +30,10 @@ export class Device {
     return this.data.manufacture?.macAddress;
   }
 
+  public get salesModel(){
+    return this.data.manufacture?.salesModel;
+  }
+
   public get serialNumber() {
     return this.data.manufacture?.serialNo;
   }

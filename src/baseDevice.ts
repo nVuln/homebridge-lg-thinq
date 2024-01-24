@@ -11,14 +11,14 @@ export class baseDevice extends EventEmitter {
   ) {
     super();
 
-    const device = accessory.context.device;
+    const device: Device = accessory.context.device;
     const {AccessoryInformation} = this.platform.Service;
     const serviceAccessoryInformation = accessory.getService(AccessoryInformation) || accessory.addService(AccessoryInformation);
 
     // set accessory information
     serviceAccessoryInformation
       .setCharacteristic(this.platform.Characteristic.Manufacturer, 'LG')
-      .setCharacteristic(this.platform.Characteristic.Model, device.model || 'Unknown')
+      .setCharacteristic(this.platform.Characteristic.Model, device.salesModel || device.model || 'Unknown')
       .setCharacteristic(this.platform.Characteristic.SerialNumber, this.config.serial_number || device.serialNumber || 'Unknown');
   }
 
