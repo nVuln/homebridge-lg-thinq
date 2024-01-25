@@ -28,7 +28,6 @@ class UiServer extends HomebridgePluginUiServer {
             id: device.deviceId,
             name: device.alias,
             type: constants.DeviceType[device.deviceType],
-            serial_number: device.manufacture?.salesModel,
           };
         }),
       };
