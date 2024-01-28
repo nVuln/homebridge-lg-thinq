@@ -580,8 +580,8 @@ export default class AirConditioner extends baseDevice {
     this.service = this.accessory.getService(HeaterCooler) || this.accessory.addService(HeaterCooler, device.name);
     this.service.setCharacteristic(Characteristic.Name, device.name);
     this.service.getCharacteristic(Characteristic.Active)
-      .onSet(this.setActive.bind(this))
-      .updateValue(Characteristic.Active.INACTIVE);
+      .updateValue(Characteristic.Active.INACTIVE)
+      .onSet(this.setActive.bind(this));
     this.service.getCharacteristic(Characteristic.CurrentHeaterCoolerState)
       .updateValue(Characteristic.CurrentHeaterCoolerState.INACTIVE);
 
@@ -594,8 +594,12 @@ export default class AirConditioner extends baseDevice {
     }
 
     this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
-      .onSet(this.setTargetState.bind(this))
-      .updateValue(targetStates[0]);
+      .updateValue(targetStates[0])
+      .onSet(this.setTargetState.bind(this));
+
+    if (this.Status.currentTemperature) {
+      this.service.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.currentTemperature);
+    }
 
     const currentTemperatureValue = device.deviceModel.value('airState.tempState.current') as RangeValue;
     if (currentTemperatureValue) {
@@ -605,10 +609,6 @@ export default class AirConditioner extends baseDevice {
           maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(currentTemperatureValue.max),
           minStep: 0.01,
         });
-    }
-
-    if (this.Status.currentTemperature) {
-      this.service.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.currentTemperature);
     }
 
     let targetTemperatureValue = device.deviceModel.value('airState.tempState.limitMin') as RangeValue;
