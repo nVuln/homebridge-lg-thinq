@@ -375,7 +375,7 @@ export default class Dishwasher extends baseDevice {
           if (this.delayTime > 3600) {
             hourMinutes = 'Hours';
           }
-          if (this.delayTime == 3600) {
+          if (this.delayTime === 3600) {
             hourMinutes = 'Hour';
 
           }
@@ -395,42 +395,42 @@ export default class Dishwasher extends baseDevice {
       }
     }
     this.inputNameOptions = 'Options:';
-    if (this.Status.data.energySaver.includes('ON')) {
+    if (this.Status.data.energySaver?.includes('ON')) {
       this.inputNameOptions += ' Energy Saver,';
     }
-    if (this.Status.data.halfLoad.includes('ON')) {
+    if (this.Status.data.halfLoad?.includes('ON')) {
       this.inputNameOptions += ' Half Load,';
     }
-    if (this.Status.data.dualZone.includes('ON')) {
+    if (this.Status.data.dualZone?.includes('ON')) {
       this.inputNameOptions += ' Dual Zone,';
     }
-    if (this.Status.data.highTemp.includes('ON')) {
+    if (this.Status.data.highTemp?.includes('ON')) {
       this.inputNameOptions += ' High Temp,';
     }
-    if (this.Status.data.steam.includes('ON')) {
+    if (this.Status.data.steam?.includes('ON')) {
       this.inputNameOptions += ' Steam,';
     }
-    if (this.Status.data.extraRinse.includes('ON')) {
+    if (this.Status.data.extraRinse?.includes('ON')) {
       this.inputNameOptions += ' Extra Rinse,';
     }
-    if (this.Status.data.extraDry.includes('ON')) {
+    if (this.Status.data.extraDry?.includes('ON')) {
       this.inputNameOptions += ' Extra Dry,';
     }
-    if (this.Status.data.nightDry.includes('ON')) {
+    if (this.Status.data.nightDry?.includes('ON')) {
       this.inputNameOptions += ' Night Dry,';
     }
-    if (this.Status.data.delayStart.includes('ON')) {
+    if (this.Status.data.delayStart?.includes('ON')) {
       this.inputNameOptions += ' Delay Start,';
     }
-    if (!this.Status.data.energySaver.includes('ON') &&
-      !this.Status.data.halfLoad.includes('ON') &&
-      !this.Status.data.dualZone.includes('ON') &&
-      !this.Status.data.highTemp.includes('ON') &&
-      !this.Status.data.steam.includes('ON') &&
-      !this.Status.data.extraRinse.includes('ON') &&
-      !this.Status.data.extraDry.includes('ON') &&
-      !this.Status.data.nightDry.includes('ON') &&
-      !this.Status.data.delayStart.includes('ON')) {
+    if (!this.Status.data.energySaver?.includes('ON') &&
+      !this.Status.data.halfLoad?.includes('ON') &&
+      !this.Status.data.dualZone?.includes('ON') &&
+      !this.Status.data.highTemp?.includes('ON') &&
+      !this.Status.data.steam?.includes('ON') &&
+      !this.Status.data.extraRinse?.includes('ON') &&
+      !this.Status.data.extraDry?.includes('ON') &&
+      !this.Status.data.nightDry?.includes('ON') &&
+      !this.Status.data.delayStart?.includes('ON')) {
       this.inputNameOptions += ' None,';
     }
     this.inputNameOptions = this.inputNameOptions.substring(0, this.inputNameOptions.length - 1);
