@@ -38,7 +38,13 @@ export default class WasherDryer extends baseDevice {
 
     const device: Device = accessory.context.device;
 
-    this.serviceWasherDryer = accessory.getService(Valve) || accessory.addService(Valve, device.name);
+    this.serviceWasherDryer = accessory.getService(Valve);
+    if (!this.serviceWasherDryer) {
+      this.serviceWasherDryer = accessory.addService(Valve, device.name, device.name);
+      this.serviceWasherDryer.addOptionalCharacteristic(Characteristic.ConfiguredName);
+      this.serviceWasherDryer.updateCharacteristic(Characteristic.ConfiguredName, device.name);
+    }
+
     this.serviceWasherDryer.getCharacteristic(Characteristic.Active)
       .onSet(this.setActive.bind(this))
       .setProps({
@@ -58,15 +64,20 @@ export default class WasherDryer extends baseDevice {
     // only thinq2 support door lock status
     this.serviceDoorLock = accessory.getService(LockMechanism);
     if (this.config.washer_door_lock && device.platform === PlatformType.ThinQ2 && 'doorLock' in device.snapshot?.washerDryer) {
-      this.serviceDoorLock = this.serviceDoorLock || accessory.addService(LockMechanism, device.name + ' - Door');
+      if (!this.serviceDoorLock) {
+        this.serviceDoorLock = accessory.addService(LockMechanism, device.name + ' - Door');
+        this.serviceDoorLock.addOptionalCharacteristic(Characteristic.ConfiguredName);
+        this.serviceDoorLock.updateCharacteristic(Characteristic.ConfiguredName, device.name + ' - Door');
+      }
+
       this.serviceDoorLock.getCharacteristic(Characteristic.LockCurrentState)
+        .updateValue(LockCurrentState.UNSECURED)
         .onSet(this.setActive.bind(this))
         .setProps({
           minValue: 0,
           maxValue: 3,
           validValues: [LockCurrentState.UNSECURED, LockCurrentState.SECURED],
-        })
-        .updateValue(LockCurrentState.UNSECURED);
+        });
       this.serviceDoorLock.getCharacteristic(Characteristic.LockTargetState)
         .onSet(this.setActive.bind(this))
         .updateValue(Characteristic.LockTargetState.UNSECURED);
@@ -76,7 +87,12 @@ export default class WasherDryer extends baseDevice {
 
     this.serviceEventFinished = accessory.getService(OccupancySensor);
     if (this.config.washer_trigger as boolean) {
-      this.serviceEventFinished = this.serviceEventFinished || accessory.addService(OccupancySensor, device.name + ' - Program Finished');
+      if (!this.serviceEventFinished) {
+        this.serviceEventFinished = accessory.addService(OccupancySensor, 'Program Finished', 'Program Finished');
+        this.serviceEventFinished.addOptionalCharacteristic(Characteristic.ConfiguredName);
+        this.serviceEventFinished.updateCharacteristic(Characteristic.ConfiguredName, 'Program Finished');
+      }
+
       // eslint-disable-next-line max-len
       this.serviceEventFinished.updateCharacteristic(Characteristic.OccupancyDetected, Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED);
     } else if (this.serviceEventFinished) {
@@ -84,8 +100,13 @@ export default class WasherDryer extends baseDevice {
     }
 
     // tub clean coach
-    this.serviceTubCleanMaintenance = accessory.getService('Tub Clean Coach')
-      || accessory.addService(StatelessProgrammableSwitch, 'Tub Clean Coach', 'Tub Clean Coach');
+    this.serviceTubCleanMaintenance = accessory.getService('Tub Clean Coach');
+    if (!this.serviceTubCleanMaintenance) {
+      this.serviceTubCleanMaintenance = accessory.addService(StatelessProgrammableSwitch, 'Tub Clean Coach', 'Tub Clean Coach');
+      this.serviceTubCleanMaintenance.addOptionalCharacteristic(Characteristic.ConfiguredName);
+      this.serviceTubCleanMaintenance.updateCharacteristic(Characteristic.ConfiguredName, 'Tub Clean Coach');
+    }
+
     this.serviceTubCleanMaintenance.updateCharacteristic(Characteristic.Name, 'Tub Clean Coach');
     this.serviceTubCleanMaintenance.getCharacteristic(Characteristic.ProgrammableSwitchEvent)
       .setProps({
