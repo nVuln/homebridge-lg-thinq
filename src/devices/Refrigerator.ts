@@ -12,6 +12,7 @@ export default class Refrigerator extends baseDevice {
   protected serviceExpressMode;
   protected serviceExpressFridge;
   protected serviceEcoFriendly;
+  protected serviceWaterFilter;
 
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
@@ -24,6 +25,7 @@ export default class Refrigerator extends baseDevice {
         ContactSensor,
         Switch,
         ServiceLabel,
+        FilterMaintenance,
       },
       Characteristic,
     } = this.platform;
@@ -74,6 +76,17 @@ export default class Refrigerator extends baseDevice {
       accessory.removeService(this.serviceEcoFriendly);
       this.serviceEcoFriendly = null;
     }
+
+    if (this.Status.hasFeature('waterFilter')) {
+      this.serviceWaterFilter = accessory.getService('Water Filter Maintenance');
+      if (this.serviceWaterFilter === undefined) {
+        this.serviceWaterFilter = accessory.addService(FilterMaintenance, 'Water Filter Maintenance', 'Water Filter Maintenance');
+        this.serviceWaterFilter.addOptionalCharacteristic(Characteristic.ConfiguredName);
+        this.serviceWaterFilter.updateCharacteristic(Characteristic.ConfiguredName, 'Water Filter Maintenance');
+      }
+
+      this.serviceWaterFilter.updateCharacteristic(Characteristic.Name, 'Water Filter Maintenance');
+    }
   }
 
   public get config() {
@@ -94,7 +107,13 @@ export default class Refrigerator extends baseDevice {
   public updateAccessoryCharacteristic(device: Device) {
     super.updateAccessoryCharacteristic(device);
 
-    const {Characteristic} = this.platform;
+    const {
+      Characteristic,
+      Characteristic: {
+        FilterLifeLevel,
+        FilterChangeIndication,
+      },
+    } = this.platform;
 
     const tempBetween = (props, value) => {
       return Math.min(Math.max(props.minValue, value), props.maxValue);
@@ -128,6 +147,12 @@ export default class Refrigerator extends baseDevice {
 
     if (this.config.ref_eco_friendly && 'ecoFriendly' in device.snapshot?.refState && this.serviceEcoFriendly) {
       this.serviceEcoFriendly.updateCharacteristic(Characteristic.On, this.Status.isEcoFriendlyOn);
+    }
+
+    if (this.Status.hasFeature('waterFilter') && this.serviceWaterFilter) {
+      this.serviceWaterFilter.updateCharacteristic(FilterLifeLevel, this.Status.waterFilterRemain);
+      this.serviceWaterFilter.updateCharacteristic(FilterChangeIndication,
+        this.Status.waterFilterRemain < 5 ? FilterChangeIndication.CHANGE_FILTER : FilterChangeIndication.FILTER_OK);
     }
   }
 
@@ -199,8 +224,7 @@ export default class Refrigerator extends baseDevice {
    */
   protected createThermostat(name: string, key: string) {
     const device: Device = this.accessory.context.device;
-    const visibleItem = device.deviceModel.data.Config?.visibleItems?.find(item => item.Feature === key || item.feature === key);
-    if (visibleItem && (visibleItem.ControlTitle === undefined && visibleItem.controlTitle === undefined)) {
+    if (!this.Status.hasFeature(key)) {
       return;
     }
 
@@ -209,14 +233,13 @@ export default class Refrigerator extends baseDevice {
     const service = this.accessory.getService(name) || this.accessory.addService(this.platform.Service.Thermostat, name, name);
 
     // cool only
-    service.setCharacteristic(Characteristic.CurrentHeatingCoolingState, Characteristic.CurrentHeatingCoolingState.COOL);
+    service.updateCharacteristic(Characteristic.CurrentHeatingCoolingState, Characteristic.CurrentHeatingCoolingState.COOL);
     service.getCharacteristic(Characteristic.TargetHeatingCoolingState)
+      .updateValue(Characteristic.TargetHeatingCoolingState.COOL)
       .setProps({
         minValue: Characteristic.TargetHeatingCoolingState.COOL,
         maxValue: Characteristic.TargetHeatingCoolingState.COOL,
-      })
-      .updateValue(Characteristic.TargetHeatingCoolingState.COOL);
-    service.setCharacteristic(Characteristic.TargetHeatingCoolingState, Characteristic.TargetHeatingCoolingState.COOL);
+      });
 
     service.getCharacteristic(Characteristic.TemperatureDisplayUnits).setProps({
       minValue: Characteristic.TemperatureDisplayUnits.CELSIUS,
@@ -237,6 +260,7 @@ export default class Refrigerator extends baseDevice {
       });
 
     service.getCharacteristic(Characteristic.TargetTemperature)
+      .updateValue(Math.min(...values))
       .onSet(async (value: CharacteristicValue) => { // value in celsius
         let indexValue;
         if (this.Status.tempUnit === 'FAHRENHEIT') {
@@ -253,8 +277,7 @@ export default class Refrigerator extends baseDevice {
 
         await this.setTemperature(key, indexValue);
       })
-      .setProps({minValue: Math.min(...values), maxValue: Math.max(...values), minStep: isCelsius ? 1 : 0.1})
-      .updateValue(Math.min(...values));
+      .setProps({minValue: Math.min(...values), maxValue: Math.max(...values), minStep: isCelsius ? 1 : 0.1});
 
     return service;
   }
@@ -313,5 +336,20 @@ export class RefrigeratorStatus {
 
   public get tempUnit() {
     return this.data?.tempUnit || 'CELSIUS';
+  }
+
+  public get waterFilterRemain() {
+    return this.data?.waterFilter1RemainP || 0;
+  }
+
+  public hasFeature(key: string) {
+    const visibleItem = this.deviceModel.data.Config?.visibleItems?.find(item => item.Feature === key || item.feature === key);
+    if (!visibleItem) {
+      return false;
+    } else if (visibleItem.ControlTitle === undefined && visibleItem.controlTitle === undefined) {
+      return false;
+    }
+
+    return true;
   }
 }
