@@ -40,8 +40,8 @@ export default class AirPurifier extends baseDevice {
     // get the service if it exists, otherwise create a new service
     // you can create multiple services for each accessory
     this.serviceAirPurifier = accessory.getService(AirPurifier);
-    if (this.serviceAirPurifier === undefined) {
-      this.serviceAirPurifier = accessory.addService(AirPurifier, 'Air Purifier');
+    if (!this.serviceAirPurifier) {
+      this.serviceAirPurifier = accessory.addService(AirPurifier, 'Air Purifier', 'Air Purifier');
       this.serviceAirPurifier.addOptionalCharacteristic(Characteristic.ConfiguredName);
       this.serviceAirPurifier.updateCharacteristic(Characteristic.ConfiguredName, 'Air Purifier');
     }
@@ -69,7 +69,7 @@ export default class AirPurifier extends baseDevice {
     this.serviceAirQuality = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
 
     this.serviceLight = accessory.getService(Lightbulb);
-    if (this.serviceLight === undefined) {
+    if (!this.serviceLight) {
       this.serviceLight = accessory.addService(Lightbulb, device.name + ' - Light');
       this.serviceLight.addOptionalCharacteristic(Characteristic.ConfiguredName);
       this.serviceLight.updateCharacteristic(Characteristic.ConfiguredName, 'Light');
@@ -79,8 +79,8 @@ export default class AirPurifier extends baseDevice {
 
     if (this.Status.filterMaxTime) {
       this.serviceFilterMaintenance = accessory.getService(FilterMaintenance);
-      if (this.serviceFilterMaintenance === undefined) {
-        this.serviceFilterMaintenance = accessory.addService(FilterMaintenance);
+      if (!this.serviceFilterMaintenance) {
+        this.serviceFilterMaintenance = accessory.addService(FilterMaintenance, 'Filter Maintenance', 'Filter Maintenance');
         this.serviceFilterMaintenance.addOptionalCharacteristic(Characteristic.ConfiguredName);
         this.serviceFilterMaintenance.updateCharacteristic(Characteristic.ConfiguredName, 'Filter Maintenance');
       }
@@ -91,7 +91,7 @@ export default class AirPurifier extends baseDevice {
 
     this.serviceAirFastMode = accessory.getService('Air Fast');
     if (this.config.air_fast_mode) {
-      if (this.serviceAirFastMode === undefined) {
+      if (!this.serviceAirFastMode) {
         this.serviceAirFastMode = accessory.addService(Switch, 'Air Fast', 'Air Fast');
         this.serviceAirFastMode.addOptionalCharacteristic(Characteristic.ConfiguredName);
         this.serviceAirFastMode.updateCharacteristic(Characteristic.ConfiguredName, 'Air Fast');
