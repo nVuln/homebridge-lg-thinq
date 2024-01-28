@@ -47,11 +47,21 @@ export default class Refrigerator extends baseDevice {
     }
 
     // Door open state
-    this.serviceDoorOpened = accessory.getService(ContactSensor) || accessory.addService(ContactSensor, 'Refrigerator Door Closed');
+    this.serviceDoorOpened = accessory.getService(ContactSensor);
+    if (!this.serviceDoorOpened) {
+      this.serviceDoorOpened = accessory.addService(ContactSensor, 'Refrigerator Door Closed');
+      this.serviceDoorOpened.addOptionalCharacteristic(Characteristic.ConfiguredName);
+      this.serviceDoorOpened.updateCharacteristic(Characteristic.ConfiguredName, 'Refrigerator Door Closed');
+    }
 
     this.serviceExpressMode = accessory.getService('Express Freezer');
     if (this.config.ref_express_freezer && 'expressMode' in device.snapshot?.refState) {
-      this.serviceExpressMode = this.serviceExpressMode || accessory.addService(Switch, 'Express Freezer', 'Express Freezer');
+      if (!this.serviceExpressMode) {
+        this.serviceExpressMode = accessory.addService(Switch, 'Express Freezer', 'Express Freezer');
+        this.serviceExpressMode.addOptionalCharacteristic(Characteristic.ConfiguredName);
+        this.serviceExpressMode.updateCharacteristic(Characteristic.ConfiguredName, 'Express Freezer');
+      }
+
       this.serviceExpressMode.getCharacteristic(Characteristic.On).onSet(this.setExpressMode.bind(this));
     } else if (this.serviceExpressMode) {
       accessory.removeService(this.serviceExpressMode);
@@ -60,8 +70,12 @@ export default class Refrigerator extends baseDevice {
 
     this.serviceExpressFridge = accessory.getService('Express Fridge');
     if (this.config.ref_express_fridge && 'expressFridge' in device.snapshot?.refState) {
-      // eslint-disable-next-line max-len
-      this.serviceExpressFridge = this.serviceExpressFridge || accessory.addService(Switch, 'Express Fridge', 'Express Fridge');
+      if (!this.serviceExpressFridge) {
+        this.serviceExpressFridge = accessory.addService(Switch, 'Express Fridge', 'Express Fridge');
+        this.serviceExpressFridge.addOptionalCharacteristic(Characteristic.ConfiguredName);
+        this.serviceExpressFridge.updateCharacteristic(Characteristic.ConfiguredName, 'Express Fridge');
+      }
+
       this.serviceExpressFridge.getCharacteristic(Characteristic.On).onSet(this.setExpressFridge.bind(this));
     } else if (this.serviceExpressFridge) {
       accessory.removeService(this.serviceExpressFridge);
@@ -70,7 +84,12 @@ export default class Refrigerator extends baseDevice {
 
     this.serviceEcoFriendly = accessory.getService('Eco Friendly');
     if (this.config.ref_eco_friendly && 'ecoFriendly' in device.snapshot?.refState) {
-      this.serviceEcoFriendly = this.serviceEcoFriendly || accessory.addService(Switch, 'Eco Friendly', 'Eco Friendly');
+      if (!this.serviceEcoFriendly) {
+        this.serviceEcoFriendly = accessory.addService(Switch, 'Eco Friendly', 'Eco Friendly');
+        this.serviceEcoFriendly.addOptionalCharacteristic(Characteristic.ConfiguredName);
+        this.serviceEcoFriendly.updateCharacteristic(Characteristic.ConfiguredName, 'Eco Friendly');
+      }
+
       this.serviceEcoFriendly.getCharacteristic(Characteristic.On).onSet(this.setEcoFriendly.bind(this));
     } else if (this.serviceEcoFriendly) {
       accessory.removeService(this.serviceEcoFriendly);
@@ -79,7 +98,7 @@ export default class Refrigerator extends baseDevice {
 
     if (this.Status.hasFeature('waterFilter')) {
       this.serviceWaterFilter = accessory.getService('Water Filter Maintenance');
-      if (this.serviceWaterFilter === undefined) {
+      if (!this.serviceWaterFilter) {
         this.serviceWaterFilter = accessory.addService(FilterMaintenance, 'Water Filter Maintenance', 'Water Filter Maintenance');
         this.serviceWaterFilter.addOptionalCharacteristic(Characteristic.ConfiguredName);
         this.serviceWaterFilter.updateCharacteristic(Characteristic.ConfiguredName, 'Water Filter Maintenance');
@@ -230,7 +249,13 @@ export default class Refrigerator extends baseDevice {
 
     const {Characteristic} = this.platform;
     const isCelsius = this.Status.tempUnit === 'CELSIUS';
-    const service = this.accessory.getService(name) || this.accessory.addService(this.platform.Service.Thermostat, name, name);
+
+    let service = this.accessory.getService(name);
+    if (!service) {
+      service = this.accessory.addService(this.platform.Service.Thermostat, name, name);
+      service.addOptionalCharacteristic(Characteristic.ConfiguredName);
+      service.updateCharacteristic(Characteristic.ConfiguredName, name);
+    }
 
     // cool only
     service.updateCharacteristic(Characteristic.CurrentHeatingCoolingState, Characteristic.CurrentHeatingCoolingState.COOL);
