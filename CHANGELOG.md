@@ -1,5 +1,27 @@
 # Change Log
 
+## v1.8.0
+
+### Washer is fixed now
+* Washer should be appear in Home app now, so sorry for my mistake in previous version.
+* Reset Homebridge accesssory cache is required to make it work.
+
+### New Device Supported
+
+* New kind of washer is supported also (device type 223)
+
+## v1.7.0
+
+- fix: washer service name  a9fa96a
+- fix: air purifier service name  6a7937f
+- fix: refrigerator service name  4faca7f
+- fix: AC warning message  b53642d
+- add: refrigerator water filter status #260  d0ef884
+- fix: dishwasher crashed #270  7efddaf
+- fix: AC temperature not updated #177  e934f81
+- revert: server.js in custom UI  e11b2a6
+- fix: retrieve sale model if possible #275  d6df494
+
 ## v1.6.0
 
 ### New Device Supported
