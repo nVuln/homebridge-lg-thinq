@@ -2,7 +2,7 @@ import {Logger, PlatformConfig} from 'homebridge';
 import {API} from './API';
 import {LGThinQHomebridgePlatform} from '../platform';
 import {Device} from './Device';
-import {PlatformType} from './constants';
+import {DeviceType, PlatformType} from './constants';
 import * as uuid from 'uuid';
 import * as Path from 'path';
 import * as forge from 'node-forge';
@@ -107,7 +107,13 @@ export class ThinQ {
     }
 
     const modelVersion = parseFloat(deviceModel.Info?.version);
-    if (modelVersion && modelVersion >= 3 && deviceModel.Info?.defaultTargetDeviceRoot) {
+
+    // new washer model
+    if (device.type === DeviceType[DeviceType.WASH_TOWER_2]
+      && modelVersion && modelVersion >= 3
+      && deviceModel.Info?.defaultTargetDeviceRoot
+      && deviceModel[deviceModel.Info.defaultTargetDeviceRoot]
+    ) {
       deviceModel = deviceModel[deviceModel.Info.defaultTargetDeviceRoot];
     }
 
