@@ -13,6 +13,7 @@ import Styler from './devices/Styler';
 import RangeHood from './devices/RangeHood';
 import Oven from './devices/Oven';
 import Microwave from './devices/Microwave';
+import WasherDryer2 from './devices/WasherDryer2';
 
 /**
  * Platform Accessory
@@ -34,8 +35,9 @@ export class Helper {
       case 'WASHER':
       case 'WASHER_NEW':
       case 'WASH_TOWER':
+      case 'DRYER':
         return WasherDryer;
-      case 'DRYER': return WasherDryer;
+      case 'WASH_TOWER_2': return WasherDryer2; // new kind of washer
       case 'DISHWASHER': return Dishwasher;
       case 'DEHUMIDIFIER': return Dehumidifier;
       case 'AC': return AirConditioner;

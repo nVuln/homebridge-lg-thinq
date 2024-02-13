@@ -106,6 +106,11 @@ export class ThinQ {
       await this.persist.setItem(device.id, deviceModel);
     }
 
+    const modelVersion = parseFloat(deviceModel.Info?.version);
+    if (modelVersion && modelVersion >= 3 && deviceModel.Info?.defaultTargetDeviceRoot) {
+      deviceModel = deviceModel[deviceModel.Info.defaultTargetDeviceRoot];
+    }
+
     return this.deviceModel[device.id] = device.deviceModel = new DeviceModel(deviceModel);
   }
 

@@ -115,6 +115,10 @@
             "title": "Enable program finished trigger?",
             "type": "boolean"
           },
+          "washer_tub_clean": {
+            "title": "Enable Tub Clean Event",
+            "type": "boolean"
+          },
           "washer_trigger": {
             "title": "Enable program finished trigger?",
             "type": "boolean"
@@ -304,10 +308,11 @@
               "expanded": false,
               "items": [
                 "devices[].washer_trigger",
+                "devices[].washer_tub_clean",
                 "devices[].washer_door_lock"
               ],
               "condition": {
-                "functionBody": "return model.devices && model.devices[arrayIndices] && ['WASHER','WASHER_NEW', 'WASH_TOWER', 'DRYER'].includes(model.devices[arrayIndices].type);"
+                "functionBody": "return model.devices && model.devices[arrayIndices] && ['WASHER','WASHER_NEW', 'WASH_TOWER', 'DRYER', 'WASH_TOWER_2'].includes(model.devices[arrayIndices].type);"
               }
             },
             {
