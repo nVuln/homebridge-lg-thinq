@@ -2,8 +2,13 @@ import {baseDevice} from '../baseDevice';
 import {LGThinQHomebridgePlatform} from '../platform';
 import {CharacteristicValue, PlatformAccessory} from 'homebridge';
 import {Device} from '../lib/Device';
-import {RangeValue} from '../lib/DeviceModel';
+import {EnumValue, RangeValue, ValueType} from '../lib/DeviceModel';
 import {cToF} from '../helper';
+
+export enum ACModelType {
+  AWHP = 'AWHP',
+  RAC = 'RAC',
+}
 
 export enum FanSpeed {
   LOW = 2,
@@ -249,17 +254,13 @@ export default class AirConditioner extends baseDevice {
       Characteristic,
       Characteristic: {
         Active,
+        CurrentHeaterCoolerState,
       },
     } = this.platform;
 
     this.service.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? Active.ACTIVE : Active.INACTIVE);
     if (this.Status.currentTemperature) {
       this.service.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.currentTemperature);
-    }
-
-    if (this.Status.targetTemperature) {
-      this.service.updateCharacteristic(Characteristic.CoolingThresholdTemperature, this.Status.targetTemperature);
-      this.service.updateCharacteristic(Characteristic.HeatingThresholdTemperature, this.Status.targetTemperature);
     }
 
     if (!this.Status.isPowerOn) {
@@ -281,6 +282,16 @@ export default class AirConditioner extends baseDevice {
       }
     } else {
       // another mode
+    }
+
+    if (this.Status.targetTemperature) {
+      if (this.service.getCharacteristic(CurrentHeaterCoolerState).value === CurrentHeaterCoolerState.HEATING) {
+        this.service.updateCharacteristic(Characteristic.HeatingThresholdTemperature, this.Status.targetTemperature);
+      }
+
+      if (this.service.getCharacteristic(CurrentHeaterCoolerState).value === CurrentHeaterCoolerState.COOLING) {
+        this.service.updateCharacteristic(Characteristic.CoolingThresholdTemperature, this.Status.targetTemperature);
+      }
     }
 
     this.service.updateCharacteristic(Characteristic.RotationSpeed, this.Status.windStrength);
@@ -398,10 +409,7 @@ export default class AirConditioner extends baseDevice {
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.operation',
       dataValue: isOn as number,
-    }, 'Operation').then(() => {
-      device.data.snapshot['airState.operation'] = isOn as number;
-      this.updateAccessoryCharacteristic(device);
-    });
+    }, 'Operation');
   }
 
   async setTargetTemperature(value: CharacteristicValue) {
@@ -438,9 +446,6 @@ export default class AirConditioner extends baseDevice {
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.windStrength',
       dataValue: windStrength,
-    }).then(() => {
-      device.data.snapshot['airState.windStrength'] = windStrength;
-      this.updateAccessoryCharacteristic(device);
     });
   }
 
@@ -491,9 +496,6 @@ export default class AirConditioner extends baseDevice {
     return this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.opMode',
       dataValue: opMode,
-    }).then(() => {
-      device.data.snapshot['airState.opMode'] = opMode;
-      this.updateAccessoryCharacteristic(device);
     });
   }
 
@@ -601,6 +603,11 @@ export default class AirConditioner extends baseDevice {
       this.service.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.currentTemperature);
     }
 
+    /**
+     * DHW 15 - 80: support.airState.tempState.waterTempHeatMin - support.airState.tempState.waterTempHeatMax
+     * heating 15 - 65:
+     * cooling 5 - 27: support.airState.tempState.waterTempCoolMin - support.airState.tempState.waterTempCoolMax
+     */
     const currentTemperatureValue = device.deviceModel.value('airState.tempState.current') as RangeValue;
     if (currentTemperatureValue) {
       this.service.getCharacteristic(Characteristic.CurrentTemperature)
@@ -611,27 +618,68 @@ export default class AirConditioner extends baseDevice {
         });
     }
 
-    let targetTemperatureValue = device.deviceModel.value('airState.tempState.limitMin') as RangeValue;
-    if (!targetTemperatureValue || !targetTemperatureValue.min || !targetTemperatureValue.max) {
-      targetTemperatureValue = device.deviceModel.value('airState.tempState.target') as RangeValue;
+    let heatLowLimitKey, heatHighLimitKey, coolLowLimitKey, coolHighLimitKey;
+
+    if (this.Status.type === ACModelType.AWHP) {
+      heatLowLimitKey = 'support.airState.tempState.waterTempHeatMin';
+      heatHighLimitKey = 'support.airState.tempState.waterTempHeatMax';
+      coolLowLimitKey = 'support.airState.tempState.waterTempCoolMin';
+      coolHighLimitKey = 'support.airState.tempState.waterTempCoolMax';
+    }
+    else {
+      heatLowLimitKey = 'support.heatLowLimit';
+      heatHighLimitKey = 'support.heatHighLimit';
+      coolLowLimitKey = 'support.coolLowLimit';
+      coolHighLimitKey = 'support.coolHighLimit';
     }
 
-    if (targetTemperatureValue) {
-      this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
-        .setProps({
-          minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.min),
-          maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.max),
-          minStep: 0.01,
-        })
-        .updateValue(this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.min));
+    const targetTemperature = (minRange, maxRange): RangeValue => {
+      if (minRange && maxRange) {
+        const minRangeOptions: number[] = Object.values(minRange.options);
+        const maxRangeOptions: number[] = Object.values(maxRange.options);
+        return {
+          type: ValueType.Range,
+          min: Math.min(...minRangeOptions.filter(v => v !== 0)),
+          max: Math.max(...maxRangeOptions.filter(v => v !== 0)),
+          step: 0.01,
+        };
+      } else {
+        let temperature = device.deviceModel.value('airState.tempState.limitMin') as RangeValue;
 
+        if (!temperature || !temperature.min || !temperature.max) {
+          temperature = device.deviceModel.value('airState.tempState.target') as RangeValue;
+        }
+
+        return temperature;
+      }
+    };
+
+    const tempHeatMinRange = device.deviceModel.value(heatLowLimitKey) as EnumValue;
+    const tempHeatMaxRange = device.deviceModel.value(heatHighLimitKey) as EnumValue;
+    const targetHeatTemperature = targetTemperature(tempHeatMinRange, tempHeatMaxRange);
+
+    if (targetHeatTemperature) {
       this.service.getCharacteristic(Characteristic.HeatingThresholdTemperature)
         .setProps({
-          minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.min),
-          maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.max),
-          minStep: 0.01,
+          minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.min),
+          maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.max),
+          minStep: targetHeatTemperature.step || 0.01,
         })
-        .updateValue(this.Status.convertTemperatureCelsiusFromLGToHomekit(targetTemperatureValue.min));
+        .updateValue(this.Status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.min));
+    }
+
+    const tempCoolMinRange = device.deviceModel.value(coolLowLimitKey) as EnumValue;
+    const tempCoolMaxRange = device.deviceModel.value(coolHighLimitKey) as EnumValue;
+    const targetCoolTemperature = targetTemperature(tempCoolMinRange, tempCoolMaxRange);
+
+    if (targetCoolTemperature) {
+      this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
+        .setProps({
+          minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.min),
+          maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.max),
+          minStep: targetHeatTemperature.step || 0.01,
+        })
+        .updateValue(this.Status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.min));
     }
 
     this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
@@ -831,5 +879,9 @@ export class ACStatus {
     }
 
     return consumption / 100;
+  }
+
+  public get type() {
+    return this.device.deviceModel.data.Info.modelType || ACModelType.RAC;
   }
 }
