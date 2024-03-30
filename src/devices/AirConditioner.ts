@@ -402,6 +402,7 @@ export default class AirConditioner extends baseDevice {
   async setActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
     const isOn = value as boolean ? 1 : 0;
+    this.platform.log.debug('Set power on = ', isOn, ' - current status = ', this.Status.isPowerOn);
     if (this.Status.isPowerOn && isOn) {
       return; // don't send same status
     }
@@ -409,7 +410,13 @@ export default class AirConditioner extends baseDevice {
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.operation',
       dataValue: isOn as number,
-    }, 'Operation');
+    }, 'Operation').then(success => {
+      if (success) {
+        device.data.snapshot['airState.operation'] = isOn;
+      }
+
+      this.updateAccessoryCharacteristic(device);
+    });
   }
 
   async setTargetTemperature(value: CharacteristicValue) {
@@ -493,7 +500,7 @@ export default class AirConditioner extends baseDevice {
 
   async setOpMode(opMode) {
     const device: Device = this.accessory.context.device;
-    return this.platform.ThinQ?.deviceControl(device.id, {
+    this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.opMode',
       dataValue: opMode,
     });

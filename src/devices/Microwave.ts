@@ -793,10 +793,9 @@ export default class Microwave extends baseDevice {
 
 
   async timeModeCommand() {
-    let _a;
     const ctrlKey = 'SetPreference';
     const device = this.accessory.context.device;
-    (_a = this.platform.ThinQ) === null || _a === void 0 ? void 0 : _a.deviceControlWithCtrlKey(device, ctrlKey, {
+    this.platform.ThinQ?.deviceControl(device, {
       dataKey: null,
       dataValue: null,
       dataSetList: {
@@ -814,7 +813,7 @@ export default class Microwave extends baseDevice {
         },
       },
       dataGetList: null,
-    });
+    }, 'Set', ctrlKey);
   }
 
   async sendLightVentCommand() {
