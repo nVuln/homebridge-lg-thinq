@@ -594,16 +594,32 @@ export default class AirConditioner extends baseDevice {
     this.service.getCharacteristic(Characteristic.CurrentHeaterCoolerState)
       .updateValue(Characteristic.CurrentHeaterCoolerState.INACTIVE);
 
-    const targetStates: number[] = [];
-    if (this.config.ac_mode === 'BOTH' || this.config.ac_mode === 'COOLING') {
-      targetStates.push(Characteristic.TargetHeaterCoolerState.COOL);
+    if (this.config.ac_mode === 'BOTH') {
+      this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
+        .setProps({
+          minValue: Characteristic.TargetHeaterCoolerState.HEAT,
+          maxValue: Characteristic.TargetHeaterCoolerState.COOL,
+        })
+        .updateValue(Characteristic.TargetHeaterCoolerState.HEAT);
     }
-    if (this.config.ac_mode === 'BOTH' || this.config.ac_mode === 'HEATING') {
-      targetStates.push(Characteristic.TargetHeaterCoolerState.HEAT);
+    else if (this.config.ac_mode === 'COOLING') {
+      this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
+        .setProps({
+          minValue: Characteristic.TargetHeaterCoolerState.COOL,
+          maxValue: Characteristic.TargetHeaterCoolerState.COOL,
+        })
+        .updateValue(Characteristic.TargetHeaterCoolerState.COOL);
+    }
+    else if (this.config.ac_mode === 'HEATING') {
+      this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
+        .setProps({
+          minValue: Characteristic.TargetHeaterCoolerState.HEAT,
+          maxValue: Characteristic.TargetHeaterCoolerState.HEAT,
+        })
+        .updateValue(Characteristic.TargetHeaterCoolerState.HEAT);
     }
 
     this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
-      .updateValue(targetStates[0])
       .onSet(this.setTargetState.bind(this));
 
     if (this.Status.currentTemperature) {
@@ -641,24 +657,33 @@ export default class AirConditioner extends baseDevice {
     }
 
     const targetTemperature = (minRange, maxRange): RangeValue => {
+      let temperature: RangeValue = {
+        type: ValueType.Range,
+        min: 0,
+        max: 0,
+        step: 0.01,
+      };
+
       if (minRange && maxRange) {
         const minRangeOptions: number[] = Object.values(minRange.options);
         const maxRangeOptions: number[] = Object.values(maxRange.options);
-        return {
-          type: ValueType.Range,
-          min: Math.min(...minRangeOptions.filter(v => v !== 0)),
-          max: Math.max(...maxRangeOptions.filter(v => v !== 0)),
-          step: 0.01,
-        };
-      } else {
-        let temperature = device.deviceModel.value('airState.tempState.limitMin') as RangeValue;
-
-        if (!temperature || !temperature.min || !temperature.max) {
-          temperature = device.deviceModel.value('airState.tempState.target') as RangeValue;
+        if (minRangeOptions.length > 1) {
+          temperature.min = Math.min(...minRangeOptions.filter(v => v !== 0));
         }
-
-        return temperature;
+        if (maxRangeOptions.length > 1) {
+          temperature.max = Math.max(...maxRangeOptions.filter(v => v !== 0));
+        }
       }
+
+      if (!temperature || !temperature.min || !temperature.max) {
+        temperature = device.deviceModel.value('airState.tempState.limitMin') as RangeValue;
+      }
+
+      if (!temperature || !temperature.min || !temperature.max  || isFinite(temperature.min) || isFinite(temperature.max)) {
+        temperature = device.deviceModel.value('airState.tempState.target') as RangeValue;
+      }
+
+      return temperature;
     };
 
     const tempHeatMinRange = device.deviceModel.value(heatLowLimitKey) as EnumValue;
