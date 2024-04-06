@@ -28,12 +28,6 @@ export default class Styler extends baseDevice {
     this.serviceStyter = accessory.getService(Valve) || accessory.addService(Valve, device.name);
     this.serviceStyter.getCharacteristic(Characteristic.Active)
       .onSet(this.setActive.bind(this))
-      .setProps({
-        perms: [
-          Perms.PAIRED_READ,
-          Perms.NOTIFY,
-        ],
-      })
       .updateValue(Characteristic.Active.INACTIVE);
     this.serviceStyter.setCharacteristic(Characteristic.Name, device.name);
     this.serviceStyter.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.GENERIC_VALVE);

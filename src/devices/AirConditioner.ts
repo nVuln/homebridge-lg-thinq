@@ -679,7 +679,7 @@ export default class AirConditioner extends baseDevice {
         temperature = device.deviceModel.value('airState.tempState.limitMin') as RangeValue;
       }
 
-      if (!temperature || !temperature.min || !temperature.max  || isFinite(temperature.min) || isFinite(temperature.max)) {
+      if (!temperature || !temperature.min || !temperature.max) {
         temperature = device.deviceModel.value('airState.tempState.target') as RangeValue;
       }
 
