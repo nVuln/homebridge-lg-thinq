@@ -227,7 +227,12 @@ export class WasherDryerStatus {
   }
 
   public get isDoorLocked() {
-    return this.data.doorLock === this.deviceModel.lookupMonitorName('doorLock', '@CP_ON_EN_W');
+    const current = this.deviceModel.lookupMonitorName('doorLock', '@CP_ON_EN_W');
+    if (current === null) {
+      return this.data.doorLock === 'DOORLOCK_ON';
+    }
+
+    return this.data.doorLock === current;
   }
 
   public get remainDuration() {
