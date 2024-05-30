@@ -146,12 +146,14 @@ export default class AirConditioner extends baseDevice {
     // send request every minute to update temperature
     // https://github.com/nVuln/homebridge-lg-thinq/issues/177
     setInterval(() => {
-      this.platform.ThinQ?.deviceControl(device.id, {
-        dataKey: 'airState.mon.timeout',
-        dataValue: '70',
-      }, 'Set', 'allEventEnable', 'control').then(() => {
-        // success
-      });
+      if (device.online) {
+        this.platform.ThinQ?.deviceControl(device.id, {
+          dataKey: 'airState.mon.timeout',
+          dataValue: '70',
+        }, 'Set', 'allEventEnable', 'control').then(() => {
+          // success
+        });
+      }
     }, 60000);
   }
 
