@@ -693,7 +693,6 @@ export default class AirConditioner extends baseDevice {
     const targetHeatTemperature = targetTemperature(tempHeatMinRange, tempHeatMaxRange);
 
     if (targetHeatTemperature) {
-      console.debug('targetHeatTemperature: ' + targetHeatTemperature.step);
       this.service.getCharacteristic(Characteristic.HeatingThresholdTemperature)
         .setProps({
           minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.min),
@@ -708,7 +707,6 @@ export default class AirConditioner extends baseDevice {
     const targetCoolTemperature = targetTemperature(tempCoolMinRange, tempCoolMaxRange);
 
     if (targetCoolTemperature) {
-      console.debug('targetCoolTemperature: ' + targetCoolTemperature.step);
       this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
         .setProps({
           minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.min),
