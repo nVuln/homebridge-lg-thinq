@@ -149,7 +149,7 @@ export default class AirConditioner extends baseDevice {
       this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.mon.timeout',
         dataValue: '70',
-      }, 'Set', 'allEventEnable').then(() => {
+      }, 'Set', 'allEventEnable', 'control').then(() => {
         // success
       });
     }, 60000);
