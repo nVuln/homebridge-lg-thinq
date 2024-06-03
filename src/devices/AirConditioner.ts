@@ -663,7 +663,7 @@ export default class AirConditioner extends baseDevice {
         type: ValueType.Range,
         min: 0,
         max: 0,
-        step: 1,
+        step: 0.01,
       };
 
       if (minRange && maxRange) {
