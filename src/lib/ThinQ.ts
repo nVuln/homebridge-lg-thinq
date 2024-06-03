@@ -171,9 +171,9 @@ export class ThinQ {
     });
   }
 
-  public deviceControl(device: string | Device, values: Record<string, any>, command: 'Set' | 'Operation' = 'Set', ctrlKey = 'basicCtrl') {
+  public deviceControl(device: string | Device, values: Record<string, any>, command: 'Set' | 'Operation' = 'Set', ctrlKey = 'basicCtrl', ctrlPath = 'control-sync') {
     const id = device instanceof Device ? device.id : device;
-    return this.api.sendCommandToDevice(id, values, command, ctrlKey)
+    return this.api.sendCommandToDevice(id, values, command, ctrlKey, ctrlPath)
       .then(response => {
         if (response.resultCode === '0000') {
           this.log.debug('ThinQ Device Received the Command');
