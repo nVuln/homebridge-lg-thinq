@@ -211,6 +211,16 @@
               }
             }
           },
+          "ac_energy_save": {
+            "title": "Energy save as switch",
+            "type": "boolean",
+            "default": true
+          },
+          "ac_air_clean": {
+            "title": "Air purify as switch",
+            "type": "boolean",
+            "default": true
+          },
           "ac_temperature_unit": {
             "title": "Temperature Unit",
             "type": "string",
@@ -328,6 +338,8 @@
                 "devices[].ac_temperature_sensor",
                 "devices[].ac_humidity_sensor",
                 "devices[].ac_fan_control",
+                "devices[].ac_energy_save",
+                "devices[].ac_air_clean",
                 "devices[].ac_temperature_unit",
                 {
                   "key": "devices[].ac_buttons",
