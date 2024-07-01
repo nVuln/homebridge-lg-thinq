@@ -127,38 +127,32 @@ export default class AirConditioner extends baseDevice {
         .onSet(this.setQuietModeActive.bind(this));
     }
 
-    if (this.energySaveModeModels.includes(device.model)) {
-      this.serviceEnergySaveMode = accessory.getService('Energy save');
-
-      if (this.config.ac_energy_save as boolean) {
-        if (!this.serviceEnergySaveMode) {
-          accessory.addService(Switch, 'Energy save', 'Energy save');
-        }
-
-        this.serviceEnergySaveMode.updateCharacteristic(platform.Characteristic.Name, 'Energy save');
-        this.serviceEnergySaveMode.getCharacteristic(platform.Characteristic.On)
-          .onSet(this.setEnergySaveActive.bind(this));
-      } else if (this.serviceEnergySaveMode) {
-        accessory.removeService(this.serviceEnergySaveMode);
-        this.serviceEnergySaveMode = null;
+    this.serviceEnergySaveMode = accessory.getService('Energy save');
+    if (this.energySaveModeModels.includes(device.model) && this.config.ac_energy_save as boolean) {
+      if (!this.serviceEnergySaveMode) {
+        this.serviceEnergySaveMode = accessory.addService(Switch, 'Energy save', 'Energy save');
       }
+
+      this.serviceEnergySaveMode.updateCharacteristic(platform.Characteristic.Name, 'Energy save');
+      this.serviceEnergySaveMode.getCharacteristic(platform.Characteristic.On)
+        .onSet(this.setEnergySaveActive.bind(this));
+    } else if (this.serviceEnergySaveMode) {
+      accessory.removeService(this.serviceEnergySaveMode);
+      this.serviceEnergySaveMode = null;
     }
 
-    if (this.airCleanModels.includes(device.model)) {
-      this.serviceAirClean = accessory.getService('Air Purify');
-
-      if (this.config.ac_air_clean as boolean) {
-        if (!this.serviceAirClean) {
-          accessory.addService(Switch, 'Air Purify', 'Air Purify');
-        }
-
-        this.serviceAirClean.updateCharacteristic(platform.Characteristic.Name, 'Air Purify');
-        this.serviceAirClean.getCharacteristic(platform.Characteristic.On)
-          .onSet(this.setAirCleanActive.bind(this));
-      } else if (this.serviceAirClean) {
-        accessory.removeService(this.serviceAirClean);
-        this.serviceAirClean = null;
+    this.serviceAirClean = accessory.getService('Air Purify');
+    if (this.airCleanModels.includes(device.model) && this.config.ac_air_clean as boolean) {
+      if (!this.serviceAirClean) {
+        this.serviceAirClean = accessory.addService(Switch, 'Air Purify', 'Air Purify');
       }
+
+      this.serviceAirClean.updateCharacteristic(platform.Characteristic.Name, 'Air Purify');
+      this.serviceAirClean.getCharacteristic(platform.Characteristic.On)
+        .onSet(this.setAirCleanActive.bind(this));
+    } else if (this.serviceAirClean) {
+      accessory.removeService(this.serviceAirClean);
+      this.serviceAirClean = null;
     }
 
     this.setupButton(device);
@@ -188,6 +182,8 @@ export default class AirConditioner extends baseDevice {
       ac_fan_control: false,
       ac_temperature_unit: 'C',
       ac_buttons: [],
+      ac_air_clean: true,
+      ac_energy_save: true,
     }, super.config);
   }
 
