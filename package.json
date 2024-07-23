@@ -46,7 +46,7 @@
     "typescript": "^4.3.5"
   },
   "homepage": "https://github.com/nVuln/homebridge-lg-thinq#readme",
-  "author": "",
+  "author": "nVuln",
   "dependencies": {
     "@homebridge/plugin-ui-utils": "^0.0.19",
     "aws-iot-device-sdk": "^2.2.11",
