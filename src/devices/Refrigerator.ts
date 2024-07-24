@@ -364,6 +364,19 @@ export class RefrigeratorStatus {
   }
 
   public get waterFilterRemain() {
+    if ('waterFilter1RemainP' in this.data) {
+      return this.data?.waterFilter1RemainP || 0;
+    }
+
+    if ('waterFilter' in this.data) {
+      const usedInMonth = parseInt(this.data?.waterFilter.match(/(\d)_/)[1]);
+      if (isNaN(usedInMonth)) {
+        return 0;
+      }
+
+      return (12 - usedInMonth) / 12 * 100;
+    }
+
     return this.data?.waterFilter1RemainP || 0;
   }
 
