@@ -10,6 +10,7 @@ export default class Refrigerator extends baseDevice {
   protected serviceFridge;
   protected serviceDoorOpened;
   protected serviceExpressMode;
+  protected serviceShabbatMode;
   protected serviceExpressFridge;
   protected serviceEcoFriendly;
   protected serviceWaterFilter;
@@ -52,6 +53,20 @@ export default class Refrigerator extends baseDevice {
       this.serviceDoorOpened = accessory.addService(ContactSensor, 'Refrigerator Door Closed');
       this.serviceDoorOpened.addOptionalCharacteristic(Characteristic.ConfiguredName);
       this.serviceDoorOpened.updateCharacteristic(Characteristic.ConfiguredName, 'Refrigerator Door Closed');
+    }
+
+    this.serviceShabbatMode = accessory.getService('Shabbat Mode');
+    if (this.config.ref_express_freezer && 'sabbathMode' in device.snapshot?.refState) {
+      if (!this.serviceShabbatMode) {
+        this.serviceShabbatMode = accessory.addService(Switch, 'Shabbat Mode', 'Shabbat Mode');
+        this.serviceShabbatMode.addOptionalCharacteristic(Characteristic.ConfiguredName);
+        this.serviceShabbatMode.updateCharacteristic(Characteristic.ConfiguredName, 'Shabbat Mode');
+      }
+
+      this.serviceShabbatMode.getCharacteristic(Characteristic.On).onSet(this.setShabbatMode.bind(this));
+    } else if (this.serviceShabbatMode) {
+      accessory.removeService(this.serviceShabbatMode);
+      this.serviceShabbatMode = null;
     }
 
     this.serviceExpressMode = accessory.getService('Express Freezer');
@@ -113,6 +128,7 @@ export default class Refrigerator extends baseDevice {
       ref_express_freezer: false,
       ref_express_fridge: false,
       ref_eco_friendly: false,
+      ref_shabbat_mode: false,
     }, super.config);
   }
 
@@ -160,6 +176,11 @@ export default class Refrigerator extends baseDevice {
       this.serviceExpressMode.updateCharacteristic(Characteristic.On, this.Status.isExpressModeOn);
     }
 
+    if (this.config.ref_shabbat_mode && 'sabbatMode' in device.snapshot?.refState && this.serviceShabbatMode) {
+      this.serviceShabbatMode.updateCharacteristic(Characteristic.On, this.Status.isShabbatModeOn);
+    }
+
+
     if (this.config.ref_express_fridge && 'expressFridge' in device.snapshot?.refState && this.serviceExpressFridge) {
       this.serviceExpressFridge.updateCharacteristic(Characteristic.On, this.Status.isExpressFridgeOn);
     }
@@ -185,6 +206,24 @@ export default class Refrigerator extends baseDevice {
       dataSetList: {
         refState: {
           expressMode: value as boolean ? On : Off,
+          tempUnit: this.Status.tempUnit,
+        },
+      },
+      dataGetList: null,
+    });
+    this.platform.log.debug('Set Express Freezer ->', value);
+  }
+
+  async setShabbatMode(value: CharacteristicValue) {
+    const device: Device = this.accessory.context.device;
+    const On = device.deviceModel.lookupMonitorName('sabbathMode', '@CP_ON_EN_W');
+    const Off = device.deviceModel.lookupMonitorName('sabbathMode', '@CP_OFF_EN_W');
+    this.platform.ThinQ?.deviceControl(device.id, {
+      dataKey: null,
+      dataValue: null,
+      dataSetList: {
+        refState: {
+          sabbatMode: value as boolean ? On : Off,
           tempUnit: this.Status.tempUnit,
         },
       },
@@ -350,6 +389,11 @@ export class RefrigeratorStatus {
   public get isExpressModeOn() {
     return this.data?.expressMode === this.deviceModel.lookupMonitorName('expressMode', '@CP_ON_EN_W');
   }
+
+  public get isShabbatModeOn() {
+    return this.data?.sabbathMode === this.deviceModel.lookupMonitorName('sabbatMode', '@CP_ON_EN_W');
+  }
+
 
   public get isExpressFridgeOn() {
     return this.data?.expressFridge === this.deviceModel.lookupMonitorName('expressFridge', '@CP_ON_EN_W');
