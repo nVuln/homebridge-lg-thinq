@@ -113,11 +113,14 @@ export default class AirConditioner extends baseDevice {
     }
 
     // more feature
-    if (this.isJetModeEnabled(device)) {
+    if (this.config.ac_jet_control as boolean && this.isJetModeEnabled(device)) {
       this.serviceJetMode = accessory.getService('Jet Mode') || accessory.addService(Switch, 'Jet Mode', 'Jet Mode');
       this.serviceJetMode.updateCharacteristic(platform.Characteristic.Name, 'Jet Mode');
       this.serviceJetMode.getCharacteristic(platform.Characteristic.On)
         .onSet(this.setJetModeActive.bind(this));
+    } else if (this.serviceJetMode) {
+      accessory.removeService(this.serviceJetMode);
+      this.serviceJetMode = null;
     }
 
     if (this.quietModeModels.includes(device.model)) {
@@ -180,6 +183,7 @@ export default class AirConditioner extends baseDevice {
       ac_humidity_sensor: false,
       ac_led_control: false,
       ac_fan_control: false,
+      ac_jet_control: false,
       ac_temperature_unit: 'C',
       ac_buttons: [],
       ac_air_clean: true,
@@ -619,16 +623,14 @@ export default class AirConditioner extends baseDevice {
           maxValue: Characteristic.TargetHeaterCoolerState.COOL,
         })
         .updateValue(Characteristic.TargetHeaterCoolerState.HEAT);
-    }
-    else if (this.config.ac_mode === 'COOLING') {
+    } else if (this.config.ac_mode === 'COOLING') {
       this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
         .setProps({
           minValue: Characteristic.TargetHeaterCoolerState.COOL,
           maxValue: Characteristic.TargetHeaterCoolerState.COOL,
         })
         .updateValue(Characteristic.TargetHeaterCoolerState.COOL);
-    }
-    else if (this.config.ac_mode === 'HEATING') {
+    } else if (this.config.ac_mode === 'HEATING') {
       this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
         .setProps({
           minValue: Characteristic.TargetHeaterCoolerState.HEAT,
@@ -666,8 +668,7 @@ export default class AirConditioner extends baseDevice {
       heatHighLimitKey = 'support.airState.tempState.waterTempHeatMax';
       coolLowLimitKey = 'support.airState.tempState.waterTempCoolMin';
       coolHighLimitKey = 'support.airState.tempState.waterTempCoolMax';
-    }
-    else {
+    } else {
       heatLowLimitKey = 'support.heatLowLimit';
       heatHighLimitKey = 'support.heatHighLimit';
       coolLowLimitKey = 'support.coolLowLimit';
