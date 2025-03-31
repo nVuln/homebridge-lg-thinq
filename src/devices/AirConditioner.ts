@@ -429,25 +429,25 @@ export default class AirConditioner extends baseDevice {
         TargetHeaterCoolerState,
       },
     } = this.platform;
-
-    // extract all opmode value from ac_buttons configuration
-    let opModeValues = this.config.ac_buttons.map((button: any) => {
-      return button.op_mode;
-    }).filter((op_mode: number | undefined | null) => {
-      return op_mode !== undefined && op_mode !== null;
-    });
-    if (!opModeValues.length) {
-      opModeValues = [6, 8]; // default opmode list
+  
+    // Map HomeKit states to LG opModes
+    let opMode;
+    switch (value) {
+      case TargetHeaterCoolerState.AUTO:
+        opMode = OpMode.AUTO; // LG’s AUTO mode = 6
+        break;
+      case TargetHeaterCoolerState.HEAT:
+        opMode = OpMode.HEAT; // LG’s HEAT mode = 4
+        break;
+      case TargetHeaterCoolerState.COOL:
+        opMode = OpMode.COOL; // LG’s COOL mode = 0
+        break;
+      default:
+        opMode = this.Status.opMode; // Keep current mode
     }
-
-    if (opModeValues.includes(this.Status.opMode)) {
-      return;
-    }
-
-    if (value === TargetHeaterCoolerState.HEAT && ![1, 4].includes(this.Status.opMode)) {
-      await this.setOpMode(4);
-    } else if (value === TargetHeaterCoolerState.COOL && ![0].includes(this.Status.opMode)) {
-      await this.setOpMode(0);
+  
+    if (opMode !== this.Status.opMode) {
+      await this.setOpMode(opMode);
     }
   }
 
@@ -635,28 +635,33 @@ export default class AirConditioner extends baseDevice {
     this.service.getCharacteristic(Characteristic.CurrentHeaterCoolerState)
       .updateValue(Characteristic.CurrentHeaterCoolerState.INACTIVE);
 
-    if (this.config.ac_mode === 'BOTH') {
-      this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
-        .setProps({
-          minValue: Characteristic.TargetHeaterCoolerState.HEAT,
-          maxValue: Characteristic.TargetHeaterCoolerState.COOL,
-        })
-        .updateValue(Characteristic.TargetHeaterCoolerState.HEAT);
-    } else if (this.config.ac_mode === 'COOLING') {
-      this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
-        .setProps({
-          minValue: Characteristic.TargetHeaterCoolerState.COOL,
-          maxValue: Characteristic.TargetHeaterCoolerState.COOL,
-        })
-        .updateValue(Characteristic.TargetHeaterCoolerState.COOL);
-    } else if (this.config.ac_mode === 'HEATING') {
-      this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
-        .setProps({
-          minValue: Characteristic.TargetHeaterCoolerState.HEAT,
-          maxValue: Characteristic.TargetHeaterCoolerState.HEAT,
-        })
-        .updateValue(Characteristic.TargetHeaterCoolerState.HEAT);
-    }
+if (this.config.ac_mode === 'BOTH') {
+  this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
+    .setProps({
+      validValues: [
+        Characteristic.TargetHeaterCoolerState.AUTO,
+        Characteristic.TargetHeaterCoolerState.COOL,
+        Characteristic.TargetHeaterCoolerState.HEAT,
+      ],
+    })
+    .updateValue(Characteristic.TargetHeaterCoolerState.COOL);
+} else if (this.config.ac_mode === 'COOLING') {
+  this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
+    .setProps({
+      validValues: [
+        Characteristic.TargetHeaterCoolerState.COOL,
+      ],
+    })
+    .updateValue(Characteristic.TargetHeaterCoolerState.COOL);
+} else if (this.config.ac_mode === 'HEATING') {
+  this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
+    .setProps({
+      validValues: [
+        Characteristic.TargetHeaterCoolerState.HEAT,
+      ],
+    })
+    .updateValue(Characteristic.TargetHeaterCoolerState.HEAT);
+}
 
     this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
       .onSet(this.setTargetState.bind(this));
