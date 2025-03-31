@@ -1,10 +1,10 @@
 /**
  * Special thank to carlosgamezvillegas (https://github.com/carlosgamezvillegas) for the initial work on the Microwave device.
  */
-import {baseDevice} from '../baseDevice';
-import {DeviceModel} from '../lib/DeviceModel';
-import {LGThinQHomebridgePlatform} from '../platform';
-import {PlatformAccessory, Service} from 'homebridge';
+import { baseDevice } from '../baseDevice';
+import { DeviceModel } from '../lib/DeviceModel';
+import { LGThinQHomebridgePlatform } from '../platform';
+import { Logger, PlatformAccessory, Service } from 'homebridge';
 
 export default class Microwave extends baseDevice {
   protected inputNameStatus = 'Microwave Status';
@@ -73,8 +73,9 @@ export default class Microwave extends baseDevice {
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
+    logger: Logger,
   ) {
-    super(platform, accessory);
+    super(platform, accessory, logger);
     const { Service: { Valve, Fan, Lightbulb, ContactSensor, OccupancySensor, IrrigationSystem }, Characteristic } = this.platform;
     const device = accessory.context.device;
 
@@ -245,8 +246,7 @@ export default class Microwave extends baseDevice {
               this.sendLightVentCommand();
             }
           }, this.timeOut);
-        }
-        else {
+        } else {
           if (this.Status.data?.mwoVentSpeedLevel === 0 || this.Status.data?.mwoLampLevel === 0) {
             this.lampLevel = 2;
             this.ventSpeed = 2;
@@ -1145,75 +1145,75 @@ export default class Microwave extends baseDevice {
   ovenModeName() {
     this.inputNameMode = 'Microwave Mode: ';
     switch (this.Status.data?.LWOManualCookName) {
-      case 'STANDBY':
-        this.inputNameMode += 'Standby';
-        break;
-      case 'MICROWAVE':
-        this.inputNameMode += 'Microwave';
-        break;
-      case 'GRILL':
-        this.inputNameMode += 'Grill';
-        break;
-      case 'OVEN':
-        this.inputNameMode += 'Oven';
-        break;
-      case 'COMBI':
-        this.inputNameMode += 'Combination';
-        break;
-      case 'COMBI_BAKE':
-        this.inputNameMode += 'Combination Bake';
-        break;
-      case 'COMBI_ROAST':
-        this.inputNameMode += 'Combination Roast';
-        break;
-      case 'INVERTER_DEFROST':
-        this.inputNameMode += 'Inverter Defrost';
-        break;
-      case 'AUTO_COOK':
-        this.inputNameMode += 'Air Fry';
-        break;
-      case 'AIRFRY':
-        this.inputNameMode += 'Air Fry';
-        break;
-      case 'WARM':
-        this.inputNameMode += 'Warm';
-        break;
-      case 'CONV_BAKE':
-        this.inputNameMode += 'Convection Bake';
-        break;
-      case 'BROIL':
-        this.inputNameMode += 'Broil';
-        break;
-      case 'DEHYDRATE':
-        this.inputNameMode += 'Dehydrate';
-        break;
-      case 'SPEED_CONV':
-        this.inputNameMode += 'Speed Convection';
-        break;
-      case 'SPEED_ROAST':
-        this.inputNameMode += 'Speed Roast';
-        break;
-      case 'SPEED_BROIL':
-        this.inputNameMode += 'Speed Broil';
-        break;
-      case 'PROOF':
-        this.inputNameMode += 'Proof';
-        break;
-      case 'SENSOR_COOK':
-        this.inputNameMode += 'Sensor Cook';
-        break;
-      case 'TIME_DEFROST':
-        this.inputNameMode += 'Timed Defrost';
-        break;
-      default:
-        // eslint-disable-next-line no-case-declarations
-        let cookName = this.Status.data?.LWOManualCookName;
-        cookName = cookName.toLocaleLowerCase();
-        // eslint-disable-next-line no-case-declarations
-        const cookNameCap =
+    case 'STANDBY':
+      this.inputNameMode += 'Standby';
+      break;
+    case 'MICROWAVE':
+      this.inputNameMode += 'Microwave';
+      break;
+    case 'GRILL':
+      this.inputNameMode += 'Grill';
+      break;
+    case 'OVEN':
+      this.inputNameMode += 'Oven';
+      break;
+    case 'COMBI':
+      this.inputNameMode += 'Combination';
+      break;
+    case 'COMBI_BAKE':
+      this.inputNameMode += 'Combination Bake';
+      break;
+    case 'COMBI_ROAST':
+      this.inputNameMode += 'Combination Roast';
+      break;
+    case 'INVERTER_DEFROST':
+      this.inputNameMode += 'Inverter Defrost';
+      break;
+    case 'AUTO_COOK':
+      this.inputNameMode += 'Air Fry';
+      break;
+    case 'AIRFRY':
+      this.inputNameMode += 'Air Fry';
+      break;
+    case 'WARM':
+      this.inputNameMode += 'Warm';
+      break;
+    case 'CONV_BAKE':
+      this.inputNameMode += 'Convection Bake';
+      break;
+    case 'BROIL':
+      this.inputNameMode += 'Broil';
+      break;
+    case 'DEHYDRATE':
+      this.inputNameMode += 'Dehydrate';
+      break;
+    case 'SPEED_CONV':
+      this.inputNameMode += 'Speed Convection';
+      break;
+    case 'SPEED_ROAST':
+      this.inputNameMode += 'Speed Roast';
+      break;
+    case 'SPEED_BROIL':
+      this.inputNameMode += 'Speed Broil';
+      break;
+    case 'PROOF':
+      this.inputNameMode += 'Proof';
+      break;
+    case 'SENSOR_COOK':
+      this.inputNameMode += 'Sensor Cook';
+      break;
+    case 'TIME_DEFROST':
+      this.inputNameMode += 'Timed Defrost';
+      break;
+    default:
+      // eslint-disable-next-line no-case-declarations
+      let cookName = this.Status.data?.LWOManualCookName;
+      cookName = cookName.toLocaleLowerCase();
+      // eslint-disable-next-line no-case-declarations
+      const cookNameCap =
           cookName.charAt(0).toUpperCase()
           + cookName.slice(1);
-        this.inputNameMode += cookNameCap;
+      this.inputNameMode += cookNameCap;
 
     }
     if (!this.inputNameMode.includes('Standby')) {
@@ -1225,51 +1225,51 @@ export default class Microwave extends baseDevice {
   ovenStatus() {
     this.inputNameStatus = 'Microwave is ';
     switch (this.Status.data?.LWOState) {
-      case 'INITIAL':
-        this.inputNameStatus += 'in Standby';
-        break;
-      case 'PREHEATING':
-        this.inputNameStatus += 'Preheating';
-        break;
-      case 'COOKING_IN_PROGRESS':
-        this.inputNameStatus += 'Cooking';
-        break;
-      case 'DONE':
-        this.inputNameStatus += 'Done Baking';
-        break;
-      case 'COOLING':
-        this.inputNameStatus += 'Cooling Down';
-        break;
-      case 'CLEANING':
-        this.inputNameStatus += 'Cleaning Itself';
-        break;
-      case 'CLEANING_DONE':
-        this.inputNameStatus += 'Done Cleaning Itself';
-        break;
-      case 'PAUSED':
-        this.inputNameStatus += 'Paused';
-        break;
-      case 'PREFERENCE':
-        this.inputNameStatus += 'Preference';
-        break;
-      case 'ERROR':
-        this.inputNameStatus += 'Not Working';
-        break;
-      case 'READY_TO_START':
-        this.inputNameStatus += 'Ready To Start';
-        break;
-      case 'PREHEATING_IS_DONE':
-        this.inputNameStatus += 'Done Preheating';
-        break;
-      default:
-        // eslint-disable-next-line no-case-declarations
-        let stateName = this.Status.data?.LWOState;
-        stateName = stateName.toLocaleLowerCase();
-        // eslint-disable-next-line no-case-declarations
-        const stateNameCap =
+    case 'INITIAL':
+      this.inputNameStatus += 'in Standby';
+      break;
+    case 'PREHEATING':
+      this.inputNameStatus += 'Preheating';
+      break;
+    case 'COOKING_IN_PROGRESS':
+      this.inputNameStatus += 'Cooking';
+      break;
+    case 'DONE':
+      this.inputNameStatus += 'Done Baking';
+      break;
+    case 'COOLING':
+      this.inputNameStatus += 'Cooling Down';
+      break;
+    case 'CLEANING':
+      this.inputNameStatus += 'Cleaning Itself';
+      break;
+    case 'CLEANING_DONE':
+      this.inputNameStatus += 'Done Cleaning Itself';
+      break;
+    case 'PAUSED':
+      this.inputNameStatus += 'Paused';
+      break;
+    case 'PREFERENCE':
+      this.inputNameStatus += 'Preference';
+      break;
+    case 'ERROR':
+      this.inputNameStatus += 'Not Working';
+      break;
+    case 'READY_TO_START':
+      this.inputNameStatus += 'Ready To Start';
+      break;
+    case 'PREHEATING_IS_DONE':
+      this.inputNameStatus += 'Done Preheating';
+      break;
+    default:
+      // eslint-disable-next-line no-case-declarations
+      let stateName = this.Status.data?.LWOState;
+      stateName = stateName.toLocaleLowerCase();
+      // eslint-disable-next-line no-case-declarations
+      const stateNameCap =
           stateName.charAt(0).toUpperCase()
           + stateName.slice(1);
-        this.inputNameStatus += stateNameCap;
+      this.inputNameStatus += stateNameCap;
 
     }
     return this.nameLengthCheck(this.inputNameStatus);
@@ -1340,61 +1340,61 @@ export default class Microwave extends baseDevice {
       0 && typeof this.Status.data?.LWOSubCookName !== 'undefined') {
       let subCookCap = '';
       switch (this.Status.data?.LWOSubCookName) {
-        case 3335:
-          subCookCap = 'Buffalo Wings';
-          this.defaultTemp = 450;
-          break;
-        case 3212:
-          subCookCap = 'Chicken Nuggets';
-          this.defaultTemp = 450;
-          break;
-        case 3227:
-          subCookCap = 'Chicken Tenders';
-          this.defaultTemp = 450;
-          break;
-        case 3339:
-          subCookCap = 'Fish Sticks';
-          this.defaultTemp = 450;
-          break;
-        case 3253:
-          subCookCap = 'French Fries';
-          this.defaultTemp = 450;
-          break;
-        case 3345:
-          subCookCap = 'Hash Brown Patties';
-          this.defaultTemp = 450;
-          break;
-        case 3336:
-          subCookCap = 'Mozzarella Sticks';
-          this.defaultTemp = 450;
-          break;
-        case 3343:
-          subCookCap = 'Popcorn Shrimp';
-          this.defaultTemp = 450;
-          break;
-        case 3225:
-          subCookCap = 'Potato Wedges';
-          this.defaultTemp = 450;
-          break;
-        case 211:
-          subCookCap = 'Meat';
-          this.defaultTemp = 350;
-          break;
-        case 212:
-          subCookCap = 'Poultry';
-          this.defaultTemp = 425;
-          break;
-        case 213:
-          subCookCap = 'Fish';
-          this.defaultTemp = 400;
-          break;
-        case 214:
-          subCookCap = 'Bread';
-          this.defaultTemp = 400;
-          break;
-        default:
-          subCookCap = 'Other Food';
-          this.defaultTemp = 450;
+      case 3335:
+        subCookCap = 'Buffalo Wings';
+        this.defaultTemp = 450;
+        break;
+      case 3212:
+        subCookCap = 'Chicken Nuggets';
+        this.defaultTemp = 450;
+        break;
+      case 3227:
+        subCookCap = 'Chicken Tenders';
+        this.defaultTemp = 450;
+        break;
+      case 3339:
+        subCookCap = 'Fish Sticks';
+        this.defaultTemp = 450;
+        break;
+      case 3253:
+        subCookCap = 'French Fries';
+        this.defaultTemp = 450;
+        break;
+      case 3345:
+        subCookCap = 'Hash Brown Patties';
+        this.defaultTemp = 450;
+        break;
+      case 3336:
+        subCookCap = 'Mozzarella Sticks';
+        this.defaultTemp = 450;
+        break;
+      case 3343:
+        subCookCap = 'Popcorn Shrimp';
+        this.defaultTemp = 450;
+        break;
+      case 3225:
+        subCookCap = 'Potato Wedges';
+        this.defaultTemp = 450;
+        break;
+      case 211:
+        subCookCap = 'Meat';
+        this.defaultTemp = 350;
+        break;
+      case 212:
+        subCookCap = 'Poultry';
+        this.defaultTemp = 425;
+        break;
+      case 213:
+        subCookCap = 'Fish';
+        this.defaultTemp = 400;
+        break;
+      case 214:
+        subCookCap = 'Bread';
+        this.defaultTemp = 400;
+        break;
+      default:
+        subCookCap = 'Other Food';
+        this.defaultTemp = 450;
 
       }
       return name + ' (' + subCookCap + ')';
@@ -1543,8 +1543,7 @@ export default class Microwave extends baseDevice {
   targetHeatingState() {
     if (this.Status.data.LWOTargetTemperatureValue !== 0 || this.defaultTemp !== 0) {
       return 1;
-    }
-    else {
+    } else {
       return 0;
     }
   }

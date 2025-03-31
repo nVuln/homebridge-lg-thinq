@@ -25,7 +25,7 @@ export interface ModelData {
   Info: {
     productType: string;
     productCode: string;
-    coutnry: string;
+    country: string;
     modelType: string;
     model: string;
     modelName: string;
@@ -69,20 +69,39 @@ export interface StringCommentValue {
   comment: string;
 }
 
+/**
+ * Represents the model of a device, including its metadata, values, and monitoring data.
+ * This class provides methods to retrieve and decode device-specific information.
+ */
 export class DeviceModel {
+  /**
+   * Creates a new `DeviceModel` instance.
+   *
+   * @param data - The raw model data for the device.
+   */
   public constructor(
     public data: ModelData,
-  ) {
-  }
+  ) {}
 
+  /**
+   * Retrieves the monitoring values defined in the device model.
+   */
   public get monitoringValue() {
     return this.data.MonitoringValue;
   }
 
+  /**
+   * Retrieves the value definition for a given key in the device model.
+   * Supports ThinQ2 protocol mappings for monitoring values.
+   *
+   * @param name - The key to retrieve the value definition for.
+   * @returns The value definition or `null` if not found.
+   */
   public value(name: string) {
     let data = this.data.Value[name];
+
+    // Handle ThinQ2 protocol mappings
     if (data === undefined && this.data.Monitoring?.type === 'THINQ2') {
-      // convert key to thinq2 monitoring value
       const protocol = this.data.Monitoring?.protocol;
 
       /**
@@ -173,8 +192,8 @@ export class DeviceModel {
        * 			}
        *    ]
        */
-      else if (protocol.constructor.name === 'Array' && protocol.find(p => p.superSet === name) !== undefined) {
-        data = this.data.Value[protocol.find(p => p.superSet === name).value];
+      else if (protocol.constructor.name === 'Array' && protocol.find((p: any) => p.superSet === name) !== undefined) {
+        data = this.data.Value[protocol.find((p: any) => p.superSet === name).value];
       }
     }
 
@@ -182,6 +201,7 @@ export class DeviceModel {
       return null;
     }
 
+    // Determine the type of the value and return the appropriate structure
     const type = data.type || data.data_type;
     switch (type.toLowerCase()) {
       case 'enum':
@@ -222,42 +242,57 @@ export class DeviceModel {
     }
   }
 
+  /**
+   * Retrieves the default value for a given key in the device model.
+   *
+   * @param name - The key to retrieve the default value for.
+   * @returns The default value or `undefined` if not found.
+   */
   public default(name: string) {
     return this.data?.Value[name]?.default;
   }
 
-  public enumValue(key: string, name: string) {
+  /**
+   * Retrieves the enum value for a given key and name.
+   *
+   * @param key - The key to retrieve the enum value for.
+   * @param name - The name of the enum value.
+   * @returns The enum value or `null` if not found.
+   */
+  public enumValue(key: string, name: string): string | null | undefined {
     if (this.value(key)?.type !== ValueType.Enum) {
       return null;
     }
 
     const options = (this.value(key) as EnumValue).options;
-    // invert them pa
-    const optionsInv = ((obj) => {
-      const ret = {};
-      Object.keys(obj).forEach(key => {
-        ret[obj[key]] = key;
-      });
-      return ret;
-    })(options);
+    const optionsInv = Object.fromEntries(Object.entries(options).map(([k, v]) => [v, k]));
 
     return optionsInv[name];
   }
 
+  /**
+   * Retrieves the enum name for a given key and value.
+   *
+   * @param key - The key to retrieve the enum name for.
+   * @param value - The value of the enum.
+   * @returns The enum name or `null` if not found.
+   */
   public enumName(key: string, value: string) {
     if (this.value(key)?.type !== ValueType.Enum) {
       return null;
     }
 
     const options = (this.value(key) as EnumValue).options;
-    if (!(value in options)) {
-      return null;
-    }
-
-    return options[value];
+    return options[value] || null;
   }
 
-  public monitoringValueMapping(key) {
+  /**
+   * Retrieves the monitoring value mapping for a given key.
+   *
+   * @param key - The key to retrieve the monitoring value mapping for.
+   * @returns The monitoring value mapping or `null` if not found.
+   */
+  public monitoringValueMapping(key: string) {
     if (this.data.Value && this.value(key)) {
       return (this.value(key) as EnumValue).options;
     }
@@ -269,6 +304,14 @@ export class DeviceModel {
     return this.monitoringValue[key].valueMapping || null;
   }
 
+  /**
+   * Looks up a monitor value based on a given key and name, with an optional default value.
+   *
+   * @param key - The key used to identify the monitoring value mapping.
+   * @param name - The name of the specific value to look up within the mapping.
+   * @param default_value - An optional default value to return if the lookup fails. Defaults to `null`.
+   * @returns The label of the monitoring value if found, or the `default_value` if not found.
+   */
   public lookupMonitorValue(key: string, name: string, default_value: null | string = null) {
     if (this.data.Value) {
       return this.enumName(key, name) || default_value;
@@ -281,7 +324,14 @@ export class DeviceModel {
     return this.monitoringValueMapping(key)[name]?.label || default_value || null;
   }
 
-  public lookupMonitorName(key: string, label: string) {
+  /**
+   * Looks up a monitor name based on a given key and label.
+   *
+   * @param key - The key used to identify the monitoring value mapping.
+   * @param label - The label of the specific value to look up within the mapping.
+   * @returns The name of the monitoring value if found, or `null` if not found.
+   */
+  public lookupMonitorName(key: string, label: string): string | null | undefined {
     if (this.data.Value) {
       return this.enumValue(key, label);
     }
@@ -290,13 +340,17 @@ export class DeviceModel {
       return null;
     }
 
-    function getKeyByValue(obj, value) {
-      return Object.keys(obj).find(key => obj[key].label === value);
-    }
+    const getKeyByValue = (obj: any, value: string) => Object.keys(obj).find(k => obj[k].label === value);
 
     return getKeyByValue(this.monitoringValue[key].valueMapping, label) || null;
   }
 
+  /**
+   * Decodes the monitoring data for the device.
+   *
+   * @param data - The raw monitoring data to decode.
+   * @returns The decoded monitoring data.
+   */
   public decodeMonitor(data: any) {
     if (this.data.Monitoring?.type === 'BINARY(BYTE)') {
       return this.decodeMonitorBinary(data);
@@ -311,6 +365,13 @@ export class DeviceModel {
     }
   }
 
+  /**
+   * Decodes binary monitoring data for the device.
+   *
+   * @param data - The raw binary monitoring data to decode.
+   * @param length - The length of each binary segment (default: 8).
+   * @returns The decoded monitoring data.
+   */
   private decodeMonitorBinary(data: any, length = 8) {
     const decoded: { [key: string]: any } = {};
 
@@ -318,6 +379,7 @@ export class DeviceModel {
       const key = item.value;
       let value = 0;
 
+      // Decode binary data segment by segment
       for (let i = item.startByte; i < item.startByte + item.length; i++) {
         const v = data[i];
         value = (value << length) + v;

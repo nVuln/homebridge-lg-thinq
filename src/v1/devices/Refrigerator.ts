@@ -1,7 +1,7 @@
-import {default as RefrigeratorV2, RefrigeratorStatus} from '../../devices/Refrigerator';
-import {CharacteristicValue} from 'homebridge';
-import {Device} from '../../lib/Device';
-import {fToC} from '../../helper';
+import { default as RefrigeratorV2, RefrigeratorStatus } from '../../devices/Refrigerator';
+import { CharacteristicValue } from 'homebridge';
+import { Device } from '../../lib/Device';
+import { fToC } from '../../helper';
 
 export default class Refrigerator extends RefrigeratorV2 {
 
@@ -50,7 +50,7 @@ export default class Refrigerator extends RefrigeratorV2 {
 
 export class Status extends RefrigeratorStatus {
   public get freezerTemperature() {
-    // eslint-disable-next-line max-len
+     
     const defaultValue = this.deviceModel.lookupMonitorValue( 'TempFreezer', this.data?.freezerTemp, '0');
     if (this.tempUnit === 'FAHRENHEIT') {
       return fToC(parseInt(this.deviceModel.lookupMonitorValue('TempFreezer_F', this.data?.freezerTemp, defaultValue)));
@@ -60,7 +60,7 @@ export class Status extends RefrigeratorStatus {
   }
 
   public get fridgeTemperature() {
-    // eslint-disable-next-line max-len
+     
     const defaultValue = this.deviceModel.lookupMonitorValue( 'TempRefrigerator', this.data?.fridgeTemp, '0');
     if (this.tempUnit === 'FAHRENHEIT') {
       return fToC(parseInt(this.deviceModel.lookupMonitorValue( 'TempRefrigerator_F', this.data?.fridgeTemp, defaultValue)));

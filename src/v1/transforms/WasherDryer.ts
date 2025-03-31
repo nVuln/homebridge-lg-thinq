@@ -1,5 +1,5 @@
-import {DeviceModel} from '../../lib/DeviceModel';
-import {lookupEnumIndex, loopupEnum} from '../helper';
+import { DeviceModel } from '../../lib/DeviceModel';
+import { lookupEnumIndex, loopupEnum } from '../helper';
 
 export enum WasherState {
   POWEROFF = '@WM_STATE_POWER_OFF_W',
@@ -42,15 +42,15 @@ export default function WasherDryer(deviceModel: DeviceModel, decodedMonitor) {
       state: lookupEnumIndex(WasherState, loopupEnum(deviceModel, decodedMonitor, 'State')) || 'POWEROFF',
       preState: lookupEnumIndex(WasherState, loopupEnum(deviceModel, decodedMonitor, 'PreState')) || 'POWEROFF',
       remoteStart: lookupEnumIndex(RemoteStart, loopupEnum(deviceModel, decodedMonitor, 'RemoteStart')) || 'REMOTE_START_OFF',
-      initialBit: (decodedMonitor['InitialBit'] || false) as boolean ? 'INITIAL_BIT_ON' : 'INITIAL_BIT_OFF',
+      initialBit: (decodedMonitor.InitialBit || false) as boolean ? 'INITIAL_BIT_ON' : 'INITIAL_BIT_OFF',
       childLock: lookupEnumIndex(ChildLock, loopupEnum(deviceModel, decodedMonitor, 'ChildLock')) || 'CHILDLOCK_OFF',
-      TCLCount: (decodedMonitor['TCLCount'] || 0) as number,
-      reserveTimeHour: parseInt(decodedMonitor['Reserve_Time_H'] || 0),
-      reserveTimeMinute: parseInt(decodedMonitor['Reserve_Time_M'] || 0),
-      remainTimeHour: parseInt(decodedMonitor['Remain_Time_H'] || 0),
-      remainTimeMinute: parseInt(decodedMonitor['Remain_Time_M'] || 0),
-      initialTimeHour: parseInt(decodedMonitor['Initial_Time_H'] || 0),
-      initialTimeMinute: parseInt(decodedMonitor['Initial_Time_M'] || 0),
+      TCLCount: (decodedMonitor.TCLCount || 0) as number,
+      reserveTimeHour: parseInt(decodedMonitor.Reserve_Time_H || 0),
+      reserveTimeMinute: parseInt(decodedMonitor.Reserve_Time_M || 0),
+      remainTimeHour: parseInt(decodedMonitor.Remain_Time_H || 0),
+      remainTimeMinute: parseInt(decodedMonitor.Remain_Time_M || 0),
+      initialTimeHour: parseInt(decodedMonitor.Initial_Time_H || 0),
+      initialTimeMinute: parseInt(decodedMonitor.Initial_Time_M || 0),
       soilWash: lookupEnumIndex(SoilWash, loopupEnum(deviceModel, decodedMonitor, 'Soil')) || 'NO_SOILWASH',
     },
   };

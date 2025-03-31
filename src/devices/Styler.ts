@@ -1,8 +1,8 @@
-import {baseDevice} from '../baseDevice';
-import {LGThinQHomebridgePlatform} from '../platform';
-import {CharacteristicValue, Perms, PlatformAccessory} from 'homebridge';
-import {Device} from '../lib/Device';
-import {DeviceModel} from '../lib/DeviceModel';
+import { baseDevice } from '../baseDevice';
+import { LGThinQHomebridgePlatform } from '../platform';
+import { CharacteristicValue, Logger, Perms, PlatformAccessory } from 'homebridge';
+import { Device } from '../lib/Device';
+import { DeviceModel } from '../lib/DeviceModel';
 
 export const NOT_RUNNING_STATUS = ['POWEROFF', 'INITIAL', 'PAUSE', 'COMPLETE', 'ERROR', 'DIAGNOSIS', 'RESERVED',
   'SLEEP', 'FOTA'];
@@ -13,8 +13,9 @@ export default class Styler extends baseDevice {
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
+    logger: Logger,
   ) {
-    super(platform, accessory);
+    super(platform, accessory, logger);
 
     const device: Device = this.accessory.context.device;
 

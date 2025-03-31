@@ -1,9 +1,9 @@
-import {baseDevice} from '../baseDevice';
-import {LGThinQHomebridgePlatform} from '../platform';
-import {CharacteristicValue, PlatformAccessory} from 'homebridge';
-import {Device} from '../lib/Device';
-import {EnumValue, RangeValue, ValueType} from '../lib/DeviceModel';
-import {cToF} from '../helper';
+import { baseDevice } from '../baseDevice';
+import { LGThinQHomebridgePlatform } from '../platform';
+import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
+import { Device } from '../lib/Device';
+import { EnumValue, RangeValue, ValueType } from '../lib/DeviceModel';
+import { cToF } from '../helper';
 
 export enum ACModelType {
   AWHP = 'AWHP',
@@ -27,32 +27,38 @@ enum OpMode {
   AIR_CLEAN = 5,
 }
 
+/**
+ * Represents an LG ThinQ Air Conditioner device.
+ * This class extends the `baseDevice` class and provides functionality to control and monitor
+ * various features of an air conditioner, such as temperature, fan speed, swing mode, and more.
+ */
 export default class AirConditioner extends baseDevice {
-  protected service;
-  protected serviceAirQuality;
-  protected serviceSensor;
-  protected serviceHumiditySensor;
-  protected serviceLight;
-  protected serviceFanV2;
+  protected service: Service;
+  protected serviceAirQuality: Service | undefined;
+  protected serviceSensor: Service | undefined;
+  protected serviceHumiditySensor: Service | undefined;
+  protected serviceLight: Service | undefined;
+  protected serviceFanV2: Service | undefined;
 
   // more feature
-  protected serviceJetMode; // jet mode
-  protected serviceQuietMode;
-  protected serviceEnergySaveMode;
-  protected serviceAirClean;
+  protected serviceJetMode: Service | undefined; // jet mode
+  protected serviceQuietMode: Service | undefined;
+  protected serviceEnergySaveMode: Service | undefined;
+  protected serviceAirClean: Service | undefined;
   protected jetModeModels = ['RAC_056905'];
   protected quietModeModels = ['WINF_056905'];
   protected energySaveModeModels = ['WINF_056905', 'RAC_056905'];
   protected airCleanModels = ['RAC_056905'];
   protected currentTargetState = 2; // default target: COOL
 
-  protected serviceLabelButtons;
+  protected serviceLabelButtons: Service | undefined;
 
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
+    logger: Logger,
   ) {
-    super(platform, accessory);
+    super(platform, accessory, logger);
 
     const device: Device = this.accessory.context.device;
 
@@ -62,8 +68,10 @@ export default class AirConditioner extends baseDevice {
         HumiditySensor,
         Switch,
         Lightbulb,
+        HeaterCooler,
       },
     } = this.platform;
+    this.service = this.accessory.getService(HeaterCooler) || this.accessory.addService(HeaterCooler, device.name);
 
     this.createHeaterCoolerService();
     this.service.addOptionalCharacteristic(this.platform.customCharacteristics.TotalConsumption);
@@ -81,17 +89,17 @@ export default class AirConditioner extends baseDevice {
       this.serviceSensor.addLinkedService(this.service);
     } else if (this.serviceSensor) {
       accessory.removeService(this.serviceSensor);
-      this.serviceSensor = null;
+      this.serviceSensor = undefined;
     }
 
     this.serviceHumiditySensor = accessory.getService(HumiditySensor);
     if (this.config.ac_humidity_sensor as boolean) {
       this.serviceHumiditySensor = this.serviceHumiditySensor || accessory.addService(HumiditySensor);
       this.serviceHumiditySensor.updateCharacteristic(platform.Characteristic.StatusActive, false);
-      this.serviceSensor.addLinkedService(this.service);
+      this.serviceSensor?.addLinkedService(this.service);
     } else if (this.serviceHumiditySensor) {
       accessory.removeService(this.serviceHumiditySensor);
-      this.serviceHumiditySensor = null;
+      this.serviceHumiditySensor = undefined;
     }
 
     this.serviceLight = accessory.getService(Lightbulb);
@@ -103,7 +111,7 @@ export default class AirConditioner extends baseDevice {
       this.serviceLight.addLinkedService(this.service);
     } else if (this.serviceLight) {
       accessory.removeService(this.serviceLight);
-      this.serviceLight = null;
+      this.serviceLight = undefined;
     }
 
     if (this.config.ac_fan_control as boolean) {
@@ -120,7 +128,7 @@ export default class AirConditioner extends baseDevice {
         .onSet(this.setJetModeActive.bind(this));
     } else if (this.serviceJetMode) {
       accessory.removeService(this.serviceJetMode);
-      this.serviceJetMode = null;
+      this.serviceJetMode = undefined;
     }
 
     if (this.quietModeModels.includes(device.model)) {
@@ -141,7 +149,7 @@ export default class AirConditioner extends baseDevice {
         .onSet(this.setEnergySaveActive.bind(this));
     } else if (this.serviceEnergySaveMode) {
       accessory.removeService(this.serviceEnergySaveMode);
-      this.serviceEnergySaveMode = null;
+      this.serviceEnergySaveMode = undefined;
     }
 
     this.serviceAirClean = accessory.getService('Air Purify');
@@ -155,7 +163,7 @@ export default class AirConditioner extends baseDevice {
         .onSet(this.setAirCleanActive.bind(this));
     } else if (this.serviceAirClean) {
       accessory.removeService(this.serviceAirClean);
-      this.serviceAirClean = null;
+      this.serviceAirClean = undefined;
     }
 
     this.setupButton(device);
@@ -195,6 +203,11 @@ export default class AirConditioner extends baseDevice {
     return new ACStatus(this.accessory.context.device.snapshot, this.accessory.context.device, this.config);
   }
 
+  /**
+   * Sets the energy-saving mode for the air conditioner.
+   *
+   * @param value - A boolean indicating whether to enable or disable energy-saving mode.
+   */
   async setEnergySaveActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
 
@@ -209,6 +222,11 @@ export default class AirConditioner extends baseDevice {
     }
   }
 
+  /**
+   * Sets the air purification mode for the air conditioner.
+   *
+   * @param value - A boolean indicating whether to enable or disable air purification mode.
+   */
   async setAirCleanActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
 
@@ -223,31 +241,39 @@ export default class AirConditioner extends baseDevice {
     }
   }
 
+  /**
+   * Sets the quiet mode for the air conditioner.
+   *
+   * @param value - A boolean indicating whether to enable or disable quiet mode.
+   */
   async setQuietModeActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
 
     if (this.Status.isPowerOn && this.Status.opMode === 0) {
-      this.platform.ThinQ?.deviceControl(device.id, {
+      await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.miscFuncState.silentAWHP',
         dataValue: value ? 1 : 0,
-      }).then(() => {
-        device.data.snapshot['airState.miscFuncState.silentAWHP'] = value ? 1 : 0;
-        this.updateAccessoryCharacteristic(device);
-      });
+      })
+      device.data.snapshot['airState.miscFuncState.silentAWHP'] = value ? 1 : 0;
+      this.updateAccessoryCharacteristic(device);
     }
   }
 
+  /**
+   * Sets the jet mode for the air conditioner.
+   *
+   * @param value - A boolean indicating whether to enable or disable jet mode.
+   */
   async setJetModeActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
 
     if (this.Status.isPowerOn && this.Status.opMode === 0) {
-      this.platform.ThinQ?.deviceControl(device.id, {
+      await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.wMode.jet',
         dataValue: value ? 1 : 0,
-      }).then(() => {
-        device.data.snapshot['airState.wMode.jet'] = value ? 1 : 0;
-        this.updateAccessoryCharacteristic(device);
-      });
+      })
+      device.data.snapshot['airState.wMode.jet'] = value ? 1 : 0;
+      this.updateAccessoryCharacteristic(device);
     }
   }
 
@@ -260,15 +286,19 @@ export default class AirConditioner extends baseDevice {
     const { TargetFanState } = this.platform.Characteristic;
 
     const windStrength = value === TargetFanState.AUTO ? 8 : FanSpeed.HIGH; // 8 mean fan auto mode
-    return this.platform.ThinQ?.deviceControl(device.id, {
+    await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.windStrength',
       dataValue: windStrength,
-    }).then(() => {
-      device.data.snapshot['airState.windStrength'] = windStrength;
-      this.updateAccessoryCharacteristic(device);
-    });
+    })
+    device.data.snapshot['airState.windStrength'] = windStrength;
+    this.updateAccessoryCharacteristic(device);
   }
 
+  /**
+   * Updates the accessory characteristics based on the current device state.
+   *
+   * @param device - The device object containing the current state.
+   */
   public updateAccessoryCharacteristic(device: Device) {
     this.accessory.context.device = device;
 
@@ -368,11 +398,11 @@ export default class AirConditioner extends baseDevice {
     }
 
     if (this.energySaveModeModels.includes(device.model) && this.config.ac_energy_save as boolean) {
-      this.serviceEnergySaveMode.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.powerSave.basic']);
+      this.serviceEnergySaveMode?.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.powerSave.basic']);
     }
 
     if (this.airCleanModels.includes(device.model) && this.config.ac_air_clean as boolean) {
-      this.serviceAirClean.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.wMode.airClean']);
+      this.serviceAirClean?.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.wMode.airClean']);
     }
   }
 
@@ -382,13 +412,13 @@ export default class AirConditioner extends baseDevice {
     }
 
     const device: Device = this.accessory.context.device;
-    this.platform.ThinQ?.deviceControl(device.id, {
+    await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.lightingState.displayControl',
       dataValue: value ? 1 : 0,
-    }).then(() => {
-      device.data.snapshot['airState.lightingState.displayControl'] = value ? 1 : 0;
-      this.updateAccessoryCharacteristic(device);
-    });
+    })
+
+    device.data.snapshot['airState.lightingState.displayControl'] = value ? 1 : 0;
+    this.updateAccessoryCharacteristic(device);
   }
 
   async setTargetState(value: CharacteristicValue) {
@@ -401,9 +431,9 @@ export default class AirConditioner extends baseDevice {
     } = this.platform;
 
     // extract all opmode value from ac_buttons configuration
-    let opModeValues = this.config.ac_buttons.map(button => {
+    let opModeValues = this.config.ac_buttons.map((button: any) => {
       return button.op_mode;
-    }).filter(op_mode => {
+    }).filter((op_mode: number | undefined | null) => {
       return op_mode !== undefined && op_mode !== null;
     });
     if (!opModeValues.length) {
@@ -429,16 +459,15 @@ export default class AirConditioner extends baseDevice {
       return; // don't send same status
     }
 
-    this.platform.ThinQ?.deviceControl(device.id, {
+    const success = await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.operation',
       dataValue: isOn as number,
-    }, 'Operation').then(success => {
-      if (success) {
-        device.data.snapshot['airState.operation'] = isOn;
-      }
+    }, 'Operation')
 
-      this.updateAccessoryCharacteristic(device);
-    });
+    if (success) {
+      device.data.snapshot['airState.operation'] = isOn;
+    }
+    this.updateAccessoryCharacteristic(device);
   }
 
   async setTargetTemperature(value: CharacteristicValue) {
@@ -453,13 +482,12 @@ export default class AirConditioner extends baseDevice {
       return;
     }
 
-    this.platform.ThinQ?.deviceControl(device.id, {
+    await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.tempState.target',
       dataValue: temperature,
-    }).then(() => {
-      device.data.snapshot['airState.tempState.target'] = temperature;
-      this.updateAccessoryCharacteristic(device);
-    });
+    })
+    device.data.snapshot['airState.tempState.target'] = temperature;
+    this.updateAccessoryCharacteristic(device);
   }
 
   async setFanSpeed(value: CharacteristicValue) {
@@ -488,7 +516,7 @@ export default class AirConditioner extends baseDevice {
     const device: Device = this.accessory.context.device;
 
     if (this.config.ac_swing_mode === 'BOTH') {
-      this.platform.ThinQ?.deviceControl(device.id, {
+      await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: null,
         dataValue: null,
         dataSetList: {
@@ -496,31 +524,28 @@ export default class AirConditioner extends baseDevice {
           'airState.wDir.hStep': swingValue,
         },
         dataGetList: null,
-      }, 'Set', 'favoriteCtrl').then(() => {
-        device.data.snapshot['airState.wDir.vStep'] = swingValue;
-        device.data.snapshot['airState.wDir.hStep'] = swingValue;
-        this.updateAccessoryCharacteristic(device);
-      });
+      }, 'Set', 'favoriteCtrl')
+      device.data.snapshot['airState.wDir.vStep'] = swingValue;
+      device.data.snapshot['airState.wDir.hStep'] = swingValue;
+      this.updateAccessoryCharacteristic(device);
     } else if (this.config.ac_swing_mode === 'VERTICAL') {
-      this.platform.ThinQ?.deviceControl(device.id, {
+      await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.wDir.vStep',
         dataValue: swingValue,
-      }).then(() => {
-        device.data.snapshot['airState.wDir.vStep'] = swingValue;
-        this.updateAccessoryCharacteristic(device);
-      });
+      })
+      device.data.snapshot['airState.wDir.vStep'] = swingValue;
+      this.updateAccessoryCharacteristic(device);
     } else if (this.config.ac_swing_mode === 'HORIZONTAL') {
-      this.platform.ThinQ?.deviceControl(device.id, {
+      await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.wDir.hStep',
         dataValue: swingValue,
-      }).then(() => {
-        device.data.snapshot['airState.wDir.hStep'] = swingValue;
-        this.updateAccessoryCharacteristic(device);
-      });
+      })
+      device.data.snapshot['airState.wDir.hStep'] = swingValue;
+      this.updateAccessoryCharacteristic(device);
     }
   }
 
-  async setOpMode(opMode) {
+  async setOpMode(opMode: number) {
     const device: Device = this.accessory.context.device;
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.opMode',
@@ -558,9 +583,9 @@ export default class AirConditioner extends baseDevice {
 
         // do not allow change status via home app, revert to prev status in 0.1s
         setTimeout(() => {
-          // eslint-disable-next-line max-len
-          this.serviceFanV2.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE);
-          this.serviceFanV2.updateCharacteristic(Characteristic.RotationSpeed, this.Status.windStrength);
+
+          this.serviceFanV2?.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE);
+          this.serviceFanV2?.updateCharacteristic(Characteristic.RotationSpeed, this.Status.windStrength);
         }, 100);
       })
       .updateValue(Characteristic.Active.INACTIVE);
@@ -599,16 +624,10 @@ export default class AirConditioner extends baseDevice {
   }
 
   protected createHeaterCoolerService() {
-    const {
-      Service: {
-        HeaterCooler,
-      },
-      Characteristic,
-    } = this.platform;
+
 
     const device: Device = this.accessory.context.device;
-
-    this.service = this.accessory.getService(HeaterCooler) || this.accessory.addService(HeaterCooler, device.name);
+    const { Characteristic } = this.platform;
     this.service.setCharacteristic(Characteristic.Name, device.name);
     this.service.getCharacteristic(Characteristic.Active)
       .updateValue(Characteristic.Active.INACTIVE)
@@ -675,7 +694,7 @@ export default class AirConditioner extends baseDevice {
       coolHighLimitKey = 'support.coolHighLimit';
     }
 
-    const targetTemperature = (minRange, maxRange): RangeValue => {
+    const targetTemperature = (minRange: any, maxRange: any): RangeValue => {
       let temperature: RangeValue = {
         type: ValueType.Range,
         min: 0,
@@ -758,7 +777,7 @@ export default class AirConditioner extends baseDevice {
       || this.accessory.addService(this.platform.Service.ServiceLabel, 'Buttons', 'Buttons');
 
     // remove all buttons before
-    for (let i=0; i<this.serviceLabelButtons.linkedServices.length; i++){
+    for (let i = 0; i < this.serviceLabelButtons.linkedServices.length; i++) {
       this.accessory.removeService(this.serviceLabelButtons.linkedServices[i]);
     }
 
@@ -767,7 +786,7 @@ export default class AirConditioner extends baseDevice {
     }
   }
 
-  protected setupButtonOpmode(device: Device, name, opMode) {
+  protected setupButtonOpmode(device: Device, name: string, opMode: number) {
     const {
       Service: {
         Switch,
@@ -784,17 +803,15 @@ export default class AirConditioner extends baseDevice {
       .onSet(async (value: CharacteristicValue) => {
         if (value as boolean) {
           if (this.Status.opMode !== opMode) {
-            await this.setOpMode(opMode).then(() => {
-              device.data.snapshot['airState.opMode'] = opMode;
-              this.updateAccessoryCharacteristic(device);
-            });
+            await this.setOpMode(opMode)
+            device.data.snapshot['airState.opMode'] = opMode;
+            this.updateAccessoryCharacteristic(device);
           }
         } else {
-          await this.setOpMode(OpMode.COOL).then(async () => {
-            device.data.snapshot['airState.opMode'] = OpMode.COOL;
-            this.updateAccessoryCharacteristic(device);
-            await this.setTargetState(this.currentTargetState);
-          });
+          await this.setOpMode(OpMode.COOL)
+          device.data.snapshot['airState.opMode'] = OpMode.COOL;
+          this.updateAccessoryCharacteristic(device);
+          await this.setTargetState(this.currentTargetState);
         }
       });
 
@@ -803,12 +820,12 @@ export default class AirConditioner extends baseDevice {
       serviceButton.updateCharacteristic(Characteristic.ConfiguredName, name);
     }
 
-    this.serviceLabelButtons.addLinkedService(serviceButton);
+    this.serviceLabelButtons?.addLinkedService(serviceButton);
   }
 }
 
 export class ACStatus {
-  constructor(protected data, protected device: Device, protected config) {
+  constructor(protected data: any, protected device: Device, protected config: any) {
   }
 
   /**
@@ -819,13 +836,15 @@ export class ACStatus {
     return this.config?.ac_temperature_unit?.toLowerCase() === 'f';
   }
 
-  public convertTemperatureCelsiusFromHomekitToLG(temperatureInCelsius) {
+  public convertTemperatureCelsiusFromHomekitToLG(temperatureInCelsius: CharacteristicValue) {
+    console.log('convertTemperatureCelsiusFromHomekitToLG', temperatureInCelsius);
+
     if (!this.isFahrenheitUnit) {
       return temperatureInCelsius;
     }
 
-    const temperatureInFahrenheit = Math.round(cToF(temperatureInCelsius)); // convert temperature to fahrenheit by normal algorithm
-
+    const temperatureInFahrenheit = Math.round(cToF(Number(temperatureInCelsius))); // ensure temperatureInCelsius is a number
+    console.log('temperatureInFahrenheit', temperatureInFahrenheit);
     // lookup celsius value by fahrenheit value from table TempFahToCel
     const temperature = this.device.deviceModel.lookupMonitorValue('TempFahToCel', temperatureInFahrenheit.toString());
 
@@ -840,16 +859,16 @@ export class ACStatus {
    * algorithm conversion LG vs Homekit is different
    * so we need to handle it before submit to homekit
    */
-  public convertTemperatureCelsiusFromLGToHomekit(temperatureInCelsius) {
+  public convertTemperatureCelsiusFromLGToHomekit(temperatureInCelsius: number): number {
     if (!this.isFahrenheitUnit) {
       return temperatureInCelsius;
     }
 
     // lookup fahrenheit value by celsius value from table TempCelToFah
-    let temperatureInFahrenheit = parseInt(this.device.deviceModel.lookupMonitorValue('TempCelToFah', temperatureInCelsius));
+    let temperatureInFahrenheit = this.device.deviceModel.lookupMonitorValue('TempCelToFah', `${temperatureInCelsius}`);
     if (isNaN(temperatureInFahrenheit)) {
       // lookup again in table TempFahToCel
-      temperatureInFahrenheit = parseInt(this.device.deviceModel.lookupMonitorValue('TempFahToCel', temperatureInCelsius));
+      temperatureInFahrenheit = parseInt(this.device.deviceModel.lookupMonitorValue('TempFahToCel', `${temperatureInCelsius}`));
     }
 
     // if not found in both tables, return original value
@@ -865,7 +884,7 @@ export class ACStatus {
       return parseFloat(withoutRounded[0]);
     }
 
-    return celsius.toFixed(2);
+    return parseFloat(celsius.toFixed(2));
   }
 
   public get opMode() {

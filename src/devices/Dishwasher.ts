@@ -1,8 +1,8 @@
-import {baseDevice} from '../baseDevice';
-import {LGThinQHomebridgePlatform} from '../platform';
-import {PlatformAccessory} from 'homebridge';
-import {Device} from '../lib/Device';
-import {WasherDryerStatus} from './WasherDryer';
+import { baseDevice } from '../baseDevice';
+import { LGThinQHomebridgePlatform } from '../platform';
+import { Logger, PlatformAccessory } from 'homebridge';
+import { Device } from '../lib/Device';
+import { WasherDryerStatus } from './WasherDryer';
 
 export default class Dishwasher extends baseDevice {
   public isRunning = false;
@@ -56,8 +56,9 @@ export default class Dishwasher extends baseDevice {
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
+    logger: Logger,
   ) {
-    super(platform, accessory);
+    super(platform, accessory, logger);
 
     const {
       Service: {
@@ -200,7 +201,7 @@ export default class Dishwasher extends baseDevice {
     this.serviceEventFinished = accessory.getService(OccupancySensor);
     if (this.config.dishwasher_trigger as boolean) {
       this.serviceEventFinished = this.serviceEventFinished || accessory.addService(OccupancySensor, device.name + ' - Program Finished');
-      // eslint-disable-next-line max-len
+       
       this.serviceEventFinished.updateCharacteristic(Characteristic.OccupancyDetected, Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED);
     } else if (this.serviceEventFinished) {
       accessory.removeService(this.serviceEventFinished);

@@ -1,4 +1,4 @@
-import axios, {AxiosInstance} from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import {
   ManualProcessNeeded,
   ManualProcessNeededErrorCode,
@@ -7,7 +7,7 @@ import {
   TokenExpiredErrorCode,
   TokenExpiredError,
   NotConnectedErrorCodes,
-} from "../errors";
+} from '../errors';
 import axiosRetry from 'axios-retry';
 
 const client = axios.create();

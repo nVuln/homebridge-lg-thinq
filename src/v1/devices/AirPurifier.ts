@@ -1,7 +1,7 @@
-import {default as V2, RotateSpeed} from '../../devices/AirPurifier';
-import {CharacteristicValue, PlatformAccessory} from 'homebridge';
-import {Device} from '../../lib/Device';
-import {LGThinQHomebridgePlatform} from '../../platform';
+import { default as V2, RotateSpeed } from '../../devices/AirPurifier';
+import { CharacteristicValue, PlatformAccessory } from 'homebridge';
+import { Device } from '../../lib/Device';
+import { LGThinQHomebridgePlatform } from '../../platform';
 
 export default class AirPurifier extends V2 {
   constructor(

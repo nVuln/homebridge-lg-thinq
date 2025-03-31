@@ -30,7 +30,7 @@ program
   .argument('<username>', 'LG username')
   .argument('<password>', 'LG password')
   .action(async (username, password) => {
-    // eslint-disable-next-line max-len,no-console
+     
     console.info('Start login: username =', username, ', password =', password, ', country =', options.country, ', language =', options.language);
     try {
       const api = new API(options.country, options.language);
@@ -38,10 +38,10 @@ program
       const auth = new Auth(gateway);
       const session = await auth.login(username, password);
 
-      // eslint-disable-next-line no-console
+       
       console.info('Your refresh_token:', session.refreshToken);
     } catch (err) {
-      // eslint-disable-next-line no-console
+       
       console.error(err);
     }
 
@@ -63,7 +63,7 @@ program
     loginUrl.searchParams.set('redirect_uri', origin + '/login/iabClose');
     loginUrl.searchParams.set('callback_url', origin + '/login/iabClose');
 
-    // eslint-disable-next-line no-console
+     
     console.info('Log in here:', loginUrl.href);
 
     const callbackUrl = await input('Then paste the URL where the browser is redirected: ');
@@ -72,7 +72,7 @@ program
     const refresh_token = url.searchParams.get('refresh_token');
 
     if (refresh_token) {
-      // eslint-disable-next-line no-console
+       
       console.info('Your refresh_token:', refresh_token);
       process.exit(0);
       return;
@@ -90,7 +90,7 @@ program
     };
 
     if (!username || !thirdparty_token || typeof thirdparty[id_type] === 'undefined') {
-      // eslint-disable-next-line no-console
+       
       console.error('redirected url not valid, please try again or use LG account method');
       process.exit(0);
       return;
@@ -101,10 +101,10 @@ program
         third_party: thirdparty[id_type],
       });
 
-      // eslint-disable-next-line no-console
+       
       console.info('Your refresh_token:', session.refreshToken);
     } catch (err) {
-      // eslint-disable-next-line no-console
+       
       console.error(err);
     }
 

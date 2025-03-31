@@ -1,5 +1,5 @@
-const {API} = require('../dist/lib/API');
-const {Auth} = require('../dist/lib/Auth');
+const { API } = require('../dist/lib/API');
+const { Auth } = require('../dist/lib/Auth');
 const { HomebridgePluginUiServer } = require('@homebridge/plugin-ui-utils');
 const constants = require('../dist/lib/constants');
 

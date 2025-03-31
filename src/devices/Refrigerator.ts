@@ -1,9 +1,9 @@
-import {LGThinQHomebridgePlatform} from '../platform';
-import {CharacteristicValue, PlatformAccessory} from 'homebridge';
-import {Device} from '../lib/Device';
-import {baseDevice} from '../baseDevice';
-import {DeviceModel} from '../lib/DeviceModel';
-import {cToF, fToC} from '../helper';
+import { LGThinQHomebridgePlatform } from '../platform';
+import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
+import { Device } from '../lib/Device';
+import { baseDevice } from '../baseDevice';
+import { DeviceModel } from '../lib/DeviceModel';
+import { cToF, fToC } from '../helper';
 
 export default class Refrigerator extends baseDevice {
   protected serviceFreezer;
@@ -17,8 +17,9 @@ export default class Refrigerator extends baseDevice {
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
+    logger: Logger,
   ) {
-    super(platform, accessory);
+    super(platform, accessory, logger);
 
     const {
       Service: {
@@ -247,7 +248,7 @@ export default class Refrigerator extends baseDevice {
       return;
     }
 
-    const {Characteristic} = this.platform;
+    const { Characteristic } = this.platform;
     const isCelsius = this.Status.tempUnit === 'CELSIUS';
 
     let service = this.accessory.getService(name);
@@ -275,7 +276,7 @@ export default class Refrigerator extends baseDevice {
     const values = Object.values(valueMapping)
       .map(value => {
         if (value && typeof value === 'object' && 'label' in value) {
-          return parseInt(value['label'] as string);
+          return parseInt(value.label as string);
         }
 
         return parseInt(value as string);
@@ -302,7 +303,7 @@ export default class Refrigerator extends baseDevice {
 
         await this.setTemperature(key, indexValue);
       })
-      .setProps({minValue: Math.min(...values), maxValue: Math.max(...values), minStep: isCelsius ? 1 : 0.1});
+      .setProps({ minValue: Math.min(...values), maxValue: Math.max(...values), minStep: isCelsius ? 1 : 0.1 });
 
     return service;
   }

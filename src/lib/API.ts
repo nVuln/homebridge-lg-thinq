@@ -1,23 +1,43 @@
 import * as constants from './constants';
-import {URL} from 'url';
+import { URL } from 'url';
 
-import {Session} from './Session';
-import {Gateway} from './Gateway';
+import { Session } from './Session';
+import { Gateway } from './Gateway';
 
-import {requestClient} from './request';
-import {Auth} from './Auth';
-import {WorkId} from './ThinQ';
-import {ManualProcessNeeded, MonitorError, NotConnectedError, TokenExpiredError} from '../errors';
+import { requestClient } from './request';
+import { Auth } from './Auth';
+import { WorkId } from './ThinQ';
+import { ManualProcessNeeded, MonitorError, NotConnectedError, TokenExpiredError } from '../errors';
 import crypto from 'crypto';
-import axios from 'axios';
+import axios, { Method } from 'axios';
+import { Logger } from 'homebridge';
 
-function resolveUrl(from, to) {
-  const url = new URL(to, from);
-  return url.href;
-}
 
+/**
+ * The `API` class provides methods to interact with the LG ThinQ API, enabling
+ * device management, home management, and command execution. It handles
+ * authentication, session management, and API requests with appropriate headers.
+ *
+ * @remarks
+ * This class includes methods for sending commands to devices, retrieving device
+ * and home information, and managing authentication tokens. It supports both
+ * ThinQ1 and ThinQ2 APIs.
+ *
+ * @example
+ * ```typescript
+ * const api = new API('US', 'en-US', logger);
+ * api.setUsernamePassword('username', 'password');
+ * await api.ready();
+ * const devices = await api.getListDevices();
+ * console.log(devices);
+ * ```
+ *
+ * @param country - The country code (default: 'US').
+ * @param language - The language code (default: 'en-US').
+ * @param logger - The logger instance for logging debug and error messages.
+ */
 export class API {
-  protected _homes;
+  protected _homes: any;
   protected _gateway: Gateway | undefined;
   protected session: Session = new Session('', '', 0);
   protected jsessionId!: string;
@@ -31,61 +51,99 @@ export class API {
 
   public httpClient = requestClient;
 
-  public logger;
-
   constructor(
     protected country: string = 'US',
     protected language: string = 'en-US',
+    protected logger: Logger,
   ) {
-    this.logger = console;
   }
 
-  async getRequest(uri) {
+  /**
+   * Sends a GET request to the specified URI.
+   *
+   * @param uri - The URI to send the GET request to.
+   * @returns A promise resolving to the response data.
+   * @throws Error if the URI is invalid.
+   */
+  async getRequest(uri: string) {
+    if (typeof uri !== 'string' || !uri.trim()) {
+      this.logger.error('Invalid URI: ', uri);
+      throw new Error('Invalid URI: URI must be a non-empty string.');
+    }
     return await this.request('get', uri);
   }
 
-  async postRequest(uri, data) {
+  /**
+   * Sends a POST request to the specified URI with the provided data.
+   *
+   * @param uri - The URI to send the POST request to.
+   * @param data - The data to include in the POST request.
+   * @returns A promise resolving to the response data.
+   */
+  async postRequest(uri: string, data: any) {
     return await this.request('post', uri, data);
   }
 
-  protected async request(method, uri: string, data?: any, retry = false) {
-    // eslint-disable-next-line max-len
-    const requestHeaders = (this._gateway?.thinq1_url && uri.startsWith(this._gateway.thinq1_url)) ? this.monitorHeaders : this.defaultHeaders;
+  resolveUrl(from: string, to: string) {
+    const url = new URL(to, from);
+    return url.href;
+  }
 
-    const url = resolveUrl(this._gateway?.thinq2_url, uri);
+  /**
+   * Sends an HTTP request to the ThinQ API.
+   *
+   * @param method - The HTTP method ('get' or 'post').
+   * @param uri - The URI to send the request to.
+   * @param data - Optional data to include in the request.
+   * @param retry - Whether to retry the request in case of token expiration.
+   * @returns A promise resolving to the response data.
+   */
+  protected async request(method: Method | undefined, uri: string, data?: any, retry = false): Promise<any> {
+    const gateway = await this.gateway();
+    // Determine the appropriate headers based on the URI
+    const requestHeaders = (gateway.thinq1_url && uri.startsWith(gateway.thinq1_url))
+      ? this.monitorHeaders
+      : this.defaultHeaders;
+
+    const url = this.resolveUrl(gateway.thinq2_url, uri);
 
     return await this.httpClient.request({
-      method, url, data,
+      method,
+      url,
+      data,
       headers: requestHeaders,
     }).then(res => res.data).catch(async err => {
+      // Handle token expiration and retry the request
       if (err instanceof TokenExpiredError && !retry) {
         return await this.refreshNewToken().then(async () => {
           return await this.request(method, uri, data, true);
         }).catch((err) => {
-          this.logger.debug('refresh new token error: ', err);
+          this.logger.error('refresh new token error: ', err);
           return {};
         });
       } else if (err instanceof ManualProcessNeeded) {
+        // Handle manual process errors (e.g., new terms agreement)
         this.logger.warn('Handling new term agreement... If you keep getting this message, ' + err.message);
         await this.auth.handleNewTerm(this.session.accessToken)
           .then(() => {
             this.logger.warn('LG new term agreement is accepted.');
           })
           .catch(err => {
-            this.logger.debug(err);
+            this.logger.error(err);
           });
 
         if (!retry) {
-          // retry 1 times
+          // Retry the request once
           return await this.request(method, uri, data, true);
         } else {
           return {};
         }
       } else {
+        // Log other errors
         if (axios.isAxiosError(err)) {
-          this.logger.debug('request error: ', err.response);
+          this.logger.error('request error: ', err.response);
         } else if (!(err instanceof NotConnectedError)) {
-          this.logger.debug('request error: ', err);
+          this.logger.error('request error: ', err);
         }
 
         return {};
@@ -94,7 +152,7 @@ export class API {
   }
 
   protected get monitorHeaders() {
-    const monitorHeaders = {
+    const monitorHeaders: Record<string,string> = {
       'Accept': 'application/json',
       'x-thinq-application-key': 'wideq',
       'x-thinq-security-key': 'nuts_securitykey',
@@ -122,7 +180,7 @@ export class API {
       return result.join('');
     }
 
-    const headers = {};
+    const headers: Record<string,string> = {};
     if (this.session.accessToken) {
       headers['x-emp-token'] = this.session.accessToken;
     }
@@ -158,20 +216,29 @@ export class API {
     return await this.getRequest('service/devices/' + device_id).then(data => data.result);
   }
 
+  /**
+   * Retrieves the list of devices associated with the user's account.
+   *
+   * @returns A promise resolving to an array of devices.
+   */
   public async getListDevices() {
     const homes = await this.getListHomes();
     const devices: Record<string, any>[] = [];
 
-    // get all devices in home
+    // Retrieve devices for each home
     for (let i = 0; i < homes.length; i++) {
       const resp = await this.getRequest('service/homes/' + homes[i].homeId);
-
       devices.push(...resp.result.devices);
     }
 
     return devices;
   }
 
+  /**
+   * Retrieves the list of homes associated with the user's account.
+   *
+   * @returns A promise resolving to an array of homes.
+   */
   public async getListHomes() {
     if (!this._homes) {
       this._homes = await this.getRequest('service/homes').then(data => data.result.item);
@@ -180,7 +247,30 @@ export class API {
     return this._homes;
   }
 
-  public async sendCommandToDevice(device_id: string, values: Record<string, any>, command: 'Set' | 'Operation', ctrlKey = 'basicCtrl', ctrlPath = 'control-sync') {
+  /**
+   * Sends a command to a specific device.
+   *
+   * @param device_id - The ID of the device to send the command to.
+   * @param values - The command values to send.
+   * @param command - The type of command ('Set' or 'Operation').
+   * @param ctrlKey - The control key (default: 'basicCtrl').
+   * @param ctrlPath - The control path (default: 'control-sync').
+   * @returns A promise resolving to the response of the command.
+   * @throws Error if `device_id` is not a valid non-empty string.
+   */
+  public async sendCommandToDevice(
+    device_id: string,
+    values: Record<string, any>,
+    command: 'Set' | 'Operation',
+    ctrlKey = 'basicCtrl',
+    ctrlPath = 'control-sync',
+  ) {
+    if (typeof device_id !== 'string' || !device_id.trim()) {
+      throw new Error('Invalid device_id: must be a non-empty string.');
+    }
+    if (typeof command !== 'string' || !['Set', 'Operation'].includes(command)) {
+      throw new Error('Invalid command: must be "Set" or "Operation".');
+    }
     return await this.postRequest('service/devices/' + device_id + '/' + ctrlPath, {
       ctrlKey,
       'command': command,
@@ -188,7 +278,22 @@ export class API {
     });
   }
 
+  /**
+   * Sends a monitor command to a specific device.
+   *
+   * @param deviceId - The ID of the device to monitor.
+   * @param cmdOpt - The command option for monitoring.
+   * @param workId - The work ID associated with the monitoring command.
+   * @returns A promise resolving to the response of the monitor command.
+   * @throws Error if `deviceId` or `cmdOpt` is not a valid non-empty string.
+   */
   public async sendMonitorCommand(deviceId: string, cmdOpt: string, workId: WorkId) {
+    if (typeof deviceId !== 'string' || !deviceId.trim()) {
+      throw new Error('Invalid deviceId: must be a non-empty string.');
+    }
+    if (typeof cmdOpt !== 'string' || !cmdOpt.trim()) {
+      throw new Error('Invalid cmdOpt: must be a non-empty string.');
+    }
     const data = {
       cmd: 'Mon',
       cmdOpt,
@@ -199,8 +304,23 @@ export class API {
     return await this.thinq1PostRequest('rti/rtiMon', data);
   }
 
-  public async getMonitorResult(device_id, work_id) {
-    return await this.thinq1PostRequest('rti/rtiResult', {workList: [{deviceId: device_id, workId: work_id}]})
+  /**
+   * Retrieves the monitor result for a specific device and work ID.
+   *
+   * @param device_id - The ID of the device.
+   * @param work_id - The work ID associated with the monitor result.
+   * @returns A promise resolving to the monitor result or null if not available.
+   * @throws Error if `device_id` or `work_id` is not a valid non-empty string.
+   */
+  public async getMonitorResult(device_id: string, work_id: string) {
+    if (typeof device_id !== 'string' || !device_id.trim()) {
+      throw new Error('Invalid device_id: must be a non-empty string.');
+    }
+    if (typeof work_id !== 'string' || !work_id.trim()) {
+      throw new Error('Invalid work_id: must be a non-empty string.');
+    }
+
+    return await this.thinq1PostRequest('rti/rtiResult', { workList: [{ deviceId: device_id, workId: work_id }] })
       .then(data => {
         if (!('workList' in data) || !('returnCode' in data.workList)) {
           return null;
@@ -219,18 +339,21 @@ export class API {
       });
   }
 
-  public setRefreshToken(refreshToken) {
+  public setRefreshToken(refreshToken: string) {
+    if (typeof refreshToken !== 'string' || !refreshToken.trim()) {
+      throw new Error('Invalid refreshToken: refreshToken must be a non-empty string.');
+    }
     this.session = new Session('', refreshToken, 0);
   }
 
-  public setUsernamePassword(username, password) {
+  public setUsernamePassword(username: string, password: string) {
     this.username = username;
     this.password = password;
   }
 
   public async gateway() {
     if (!this._gateway) {
-      const gateway = await requestClient.get(constants.GATEWAY_URL, {headers: this.defaultHeaders}).then(res => res.data.result);
+      const gateway = await requestClient.get(constants.GATEWAY_URL, { headers: this.defaultHeaders }).then(res => res.data.result);
       this._gateway = new Gateway(gateway);
     }
 
@@ -242,7 +365,7 @@ export class API {
     const gateway = await this.gateway();
 
     if (!this.auth) {
-      this.auth = new Auth(gateway);
+      this.auth = new Auth(gateway, this.logger);
       this.auth.logger = this.logger;
     }
 

@@ -1,7 +1,7 @@
-import {baseDevice} from '../baseDevice';
-import {LGThinQHomebridgePlatform} from '../platform';
-import {CharacteristicValue, PlatformAccessory} from 'homebridge';
-import {Device} from '../lib/Device';
+import { baseDevice } from '../baseDevice';
+import { LGThinQHomebridgePlatform } from '../platform';
+import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
+import { Device } from '../lib/Device';
 
 enum RotateSpeed {
   LOW = 2,
@@ -14,8 +14,9 @@ export default class Dehumidifier extends baseDevice {
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
+    logger: Logger,
   ) {
-    super(platform, accessory);
+    super(platform, accessory, logger);
 
     const {
       Service: {

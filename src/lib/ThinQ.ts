@@ -1,20 +1,20 @@
-import {Logger, PlatformConfig} from 'homebridge';
-import {API} from './API';
-import {LGThinQHomebridgePlatform} from '../platform';
-import {Device} from './Device';
-import {DeviceType, PlatformType} from './constants';
-import * as uuid from 'uuid';
+import { Logger, PlatformConfig } from 'homebridge';
+import { API } from './API';
+import { LGThinQHomebridgePlatform } from '../platform';
+import { Device, DeviceData } from './Device';
+import { DeviceType, PlatformType } from './constants';
+import { v4 } from 'uuid';
 import * as Path from 'path';
 import * as forge from 'node-forge';
-import {DeviceModel} from './DeviceModel';
+import { DeviceModel } from './DeviceModel';
 import Helper from '../v1/helper';
-import {MonitorError, NotConnectedError} from '../errors';
-import {PLUGIN_NAME} from '../settings';
-import {device as awsIotDevice} from 'aws-iot-device-sdk';
-import {URL} from 'url';
+import { MonitorError, NotConnectedError } from '../errors';
+import { PLUGIN_NAME } from '../settings';
+import { device as awsIotDevice } from 'aws-iot-device-sdk';
+import { URL } from 'url';
 import Persist from './Persist';
 
-export type WorkId = typeof uuid['v4'];
+export type WorkId = string;
 
 export class ThinQ {
   protected api: API;
@@ -24,12 +24,11 @@ export class ThinQ {
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
     public readonly config: PlatformConfig,
-    public readonly log: Logger,
+    public readonly logger: Logger,
   ) {
-    this.api = new API(this.config.country, this.config.language);
-    this.api.logger = log;
+    this.api = new API(this.config.country, this.config.language, logger);
     this.api.httpClient.interceptors.response.use(response => {
-      this.log.debug('[request]', response.config.method, response.config.url);
+      this.logger.debug('[request]', response.config.method, response.config.url);
       return response;
     }, err => {
       return Promise.reject(err);
@@ -49,7 +48,7 @@ export class ThinQ {
       return [];
     });
 
-    return listDevices.map(device => new Device(device))
+    return listDevices.map(device => new Device(device as DeviceData))
       // skip all device invalid id
       .filter(device => device.id.match(/^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/));
   }
@@ -61,7 +60,7 @@ export class ThinQ {
     if (device.deviceModel.data.Monitoring === undefined
       && device.deviceModel.data.MonitoringValue === undefined
       && device.deviceModel.data.Value === undefined) {
-      this.log.warn('['+device.name+'] This device may not "smart" device. Ignore it!');
+      this.logger.warn('[' + device.name + '] This device may not "smart" device. Ignore it!');
     }
 
     if (device.platform === PlatformType.ThinQ1) {
@@ -88,8 +87,8 @@ export class ThinQ {
     }
   }
 
-  protected async registerWorkId(device) {
-    return this.workIds[device.id] = await this.api.sendMonitorCommand(device.id, 'Start', uuid.v4()).then(data => {
+  protected async registerWorkId(device: any) {
+    return this.workIds[device.id] = await this.api.sendMonitorCommand(device.id, 'Start', v4()).then(data => {
       if (data !== undefined && 'workId' in data) {
         return data.workId;
       }
@@ -101,13 +100,12 @@ export class ThinQ {
   protected async loadDeviceModel(device: Device) {
     let deviceModel = await this.persist.getItem(device.id);
     if (!deviceModel) {
-      this.log.debug('[' + device.id + '] Device model cache missed.');
+      this.logger.debug('[' + device.id + '] Device model cache missed.');
       deviceModel = await this.api.httpClient.get(device.data.modelJsonUri).then(res => res.data);
       await this.persist.setItem(device.id, deviceModel);
     }
 
     const modelVersion = parseFloat(deviceModel.Info?.version);
-
     // new washer model
     if (device.type === DeviceType[DeviceType.WASH_TOWER_2]
       && modelVersion && modelVersion >= 3
@@ -124,7 +122,7 @@ export class ThinQ {
     device.deviceModel = await this.loadDeviceModel(device);
 
     if (device.platform === PlatformType.ThinQ1) {
-      let result: any = null;
+      let result: Buffer<ArrayBuffer> | null = null;
       // check if work id is registered
       if (!(device.id in this.workIds) || this.workIds[device.id] === null) {
         // register work id
@@ -167,41 +165,41 @@ export class ThinQ {
     const data = Helper.prepareControlData(device, key, value);
 
     return this.api.thinq1PostRequest('rti/rtiControl', data).catch(err => {
-      this.log.error('Unknown Error: ', err);
+      this.logger.error('Unknown Error: ', err);
     });
   }
 
-  public deviceControl(device: string | Device, values: Record<string, any>, command: 'Set' | 'Operation' = 'Set', ctrlKey = 'basicCtrl', ctrlPath = 'control-sync') {
+  public async deviceControl(
+    device: string | Device, values: Record<string, any>,
+    command: 'Set' | 'Operation' = 'Set', ctrlKey = 'basicCtrl', ctrlPath = 'control-sync') {
     const id = device instanceof Device ? device.id : device;
-    return this.api.sendCommandToDevice(id, values, command, ctrlKey, ctrlPath)
-      .then(response => {
-        if (response.resultCode === '0000') {
-          this.log.debug('ThinQ Device Received the Command');
-          return true;
-        } else {
-          this.log.debug('ThinQ Device Did Not Received the Command');
-          return false;
-        }
-      });
+    const response = await this.api.sendCommandToDevice(id, values, command, ctrlKey, ctrlPath);
+    if (response.resultCode === '0000') {
+      this.logger.debug('ThinQ Device Received the Command');
+      return true;
+    } else {
+      this.logger.debug('ThinQ Device Did Not Received the Command');
+      return false;
+    }
   }
 
   public async registerMQTTListener(callback: (data: any) => void) {
-    const delayMs = ms => new Promise(res => setTimeout(res, ms));
+    const delayMs = (ms: number) => new Promise(res => setTimeout(res, ms));
 
     let tried = 5;
-    while(tried > 0) {
+    while (tried > 0) {
       try {
         await this._registerMQTTListener(callback);
         return;
       } catch (err) {
         tried--;
-        this.log.debug('Cannot start MQTT, retrying in 5s.');
-        this.log.debug('mqtt err:', err);
+        this.logger.debug('Cannot start MQTT, retrying in 5s.');
+        this.logger.debug('mqtt err:', err);
         await delayMs(5000);
       }
     }
 
-    this.log.error('Cannot start MQTT!');
+    this.logger.error('Cannot start MQTT!');
   }
 
   protected async _registerMQTTListener(callback: (data: any) => void) {
@@ -209,7 +207,7 @@ export class ThinQ {
 
     // key-pair
     const keys = await this.persist.cacheForever('keys', async () => {
-      this.log.debug('Generating 2048-bit key-pair...');
+      this.logger.debug('Generating 2048-bit key-pair...');
       const keys = forge.pki.rsa.generateKeyPair(2048);
 
       return {
@@ -220,7 +218,7 @@ export class ThinQ {
 
     // CSR
     const csr = await this.persist.cacheForever('csr', async () => {
-      this.log.debug('Creating certification request (CSR)...');
+      this.logger.debug('Creating certification request (CSR)...');
       const csr = forge.pki.createCertificationRequest();
       csr.publicKey = forge.pki.publicKeyFromPem(keys.publicKey);
       csr.setSubject([
@@ -274,27 +272,27 @@ export class ThinQ {
         host: urls.hostname,
       };
 
-      this.log.debug('open mqtt connection to', route.mqttServer);
-      const device = awsIotDevice(connectData);
+      this.logger.debug('open mqtt connection to', route.mqttServer);
+      const device = new awsIotDevice(connectData);
 
       device.on('error', (err) => {
-        this.log.error('mqtt err:', err);
+        this.logger.error('mqtt err:', err);
       });
       device.on('connect', () => {
-        this.log.info('Successfully connected to the MQTT server.');
-        this.log.debug('mqtt connected:', route.mqttServer);
+        this.logger.info('Successfully connected to the MQTT server.');
+        this.logger.debug('mqtt connected:', route.mqttServer);
         for (const subscription of certificate.subscriptions) {
           device.subscribe(subscription);
         }
       });
       device.on('message', (topic, payload) => {
         callback(JSON.parse(payload.toString()));
-        this.log.debug('mqtt message received:', payload.toString());
+        this.logger.debug('mqtt message received:', payload.toString());
       });
       device.on('offline', () => {
         device.end();
 
-        this.log.info('MQTT disconnected, retrying in 60 seconds!');
+        this.logger.info('MQTT disconnected, retrying in 60 seconds!');
         setTimeout(async () => {
           await connectToMqtt();
         }, 60000);

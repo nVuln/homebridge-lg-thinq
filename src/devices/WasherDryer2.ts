@@ -1,4 +1,4 @@
-import WasherDryer, {WasherDryerStatus} from './WasherDryer';
+import WasherDryer, { WasherDryerStatus } from './WasherDryer';
 
 /**
  * new kind of wash tower

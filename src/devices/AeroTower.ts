@@ -1,7 +1,7 @@
 import AirPurifier from './AirPurifier';
-import {LGThinQHomebridgePlatform} from '../platform';
-import {CharacteristicValue, PlatformAccessory} from 'homebridge';
-import {Device} from '../lib/Device';
+import { LGThinQHomebridgePlatform } from '../platform';
+import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
+import { Device } from '../lib/Device';
 
 export enum LightBrightness {
   OFF = 0,
@@ -19,8 +19,9 @@ export default class AeroTower extends AirPurifier {
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
+    logger: Logger,
   ) {
-    super(platform, accessory);
+    super(platform, accessory, logger);
 
     const {
       Service: {
@@ -37,7 +38,7 @@ export default class AeroTower extends AirPurifier {
     this.serviceHumiditySensor = accessory.getService(HumiditySensor)
       || accessory.addService(HumiditySensor, 'Humidity Sensor');
 
-    this.serviceLight.getCharacteristic(Characteristic.Brightness)
+    this.serviceLight?.getCharacteristic(Characteristic.Brightness)
       .setProps({
         maxValue: 3, // 3 level of light
       })
@@ -102,7 +103,7 @@ export default class AeroTower extends AirPurifier {
     const values = [LightBrightness.LEVEL_1, LightBrightness.LEVEL_2, LightBrightness.LEVEL_3];
     const brightnessValue = values.indexOf(snapshot['airState.lightingState.displayControl'] || 0);
     if (brightnessValue !== -1) {
-      this.serviceLight.updateCharacteristic(Characteristic.Brightness, brightnessValue + 1);
+      this.serviceLight?.updateCharacteristic(Characteristic.Brightness, brightnessValue + 1);
     }
 
     if (typeof snapshot['airState.tempState.current'] !== 'undefined') {

@@ -1,10 +1,10 @@
 /**
  * Special thank to carlosgamezvillegas (https://github.com/carlosgamezvillegas) for the initial work on the Oven device.
  */
-import {baseDevice} from '../baseDevice';
-import {LGThinQHomebridgePlatform} from '../platform';
-import {Perms, PlatformAccessory} from 'homebridge';
-import {DeviceModel} from "../lib/DeviceModel";
+import { baseDevice } from '../baseDevice';
+import { LGThinQHomebridgePlatform } from '../platform';
+import { Logger, Perms, PlatformAccessory } from 'homebridge';
+import { DeviceModel } from '../lib/DeviceModel';
 
 enum OvenState {
   INITIAL = '@OV_STATE_INITIAL_W',
@@ -144,10 +144,11 @@ export default class Oven extends baseDevice {
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
+    logger: Logger,
   ) {
-    super(platform, accessory);
+    super(platform, accessory, logger);
 
-    const {Characteristic} = this.platform;
+    const { Characteristic } = this.platform;
 
     this.ovenService = this.accessory.getService(this.config.name) ||
       this.accessory.addService(this.platform.Service.Television, this.config.name, 'NicoCataGaTa-OvenOven7');
@@ -163,8 +164,7 @@ export default class Oven extends baseDevice {
       .on('set', (value, callback) => {
         if (value === 0) {
           this.stopOven();
-        }
-        else {
+        } else {
           this.sendOvenCommand();
         }
         callback(null);
@@ -635,7 +635,7 @@ export default class Oven extends baseDevice {
     this.ovenTempControl.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.ovenTempControl.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Oven Temperature Control');
     this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState)
-      .setProps({validValues: [this.platform.Characteristic.TargetHeatingCoolingState.OFF, this.platform.Characteristic.TargetHeatingCoolingState.HEAT]})
+      .setProps({ validValues: [this.platform.Characteristic.TargetHeatingCoolingState.OFF, this.platform.Characteristic.TargetHeatingCoolingState.HEAT] })
       .on('get', (callback) => {
         const currentValue = this.targetHeatingState();
         callback(null, currentValue);
@@ -691,7 +691,7 @@ export default class Oven extends baseDevice {
     this.probeTempControl.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.probeTempControl.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Probe Temperature Control');
     this.probeTempControl.getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState)
-      .setProps({validValues: [this.platform.Characteristic.TargetHeatingCoolingState.OFF, this.platform.Characteristic.TargetHeatingCoolingState.HEAT]})
+      .setProps({ validValues: [this.platform.Characteristic.TargetHeatingCoolingState.OFF, this.platform.Characteristic.TargetHeatingCoolingState.HEAT] })
       .on('get', (callback) => {
         const currentValue = this.probeTargetState();
         callback(null, currentValue);
@@ -996,76 +996,76 @@ export default class Oven extends baseDevice {
   ovenModeName() {
     this.inputNameMode = 'Oven Mode: ';
     switch (this.Status.data?.upperManualCookName) {
-      case 'NONE':
-        this.inputNameMode += 'None';
-        break;
-      case 'BAKE':
-        this.inputNameMode += 'Bake';
-        break;
-      case 'ROAST':
-        this.inputNameMode += 'Roast';
-        break;
-      case 'CONVECTION_BAKE':
-        this.inputNameMode += 'Convection Bake';
-        break;
-      case 'CONVECTION_ROAST':
-        this.inputNameMode += 'Convection Roast';
-        break;
-      case 'CRISP_CONVECTION':
-        this.inputNameMode += 'Crisp Convection';
-        break;
-      case 'FAVORITE':
-        this.inputNameMode += 'Favorite';
-        break;
-      case 'BROIL':
-        this.inputNameMode += 'Broil';
-        break;
-      case 'WARM':
-        this.inputNameMode += 'Warm';
-        break;
-      case 'PROOF':
-        this.inputNameMode += 'Proof';
-        break;
-      case 'FROZEN_MEAL':
-        this.inputNameMode += 'Frozen Meal';
-        break;
-      case 'SLOW_COOK':
-        this.inputNameMode += 'Slow Cook';
-        break;
-      case 'PROBE_SET':
-        this.inputNameMode += 'Probe Set';
-        break;
-      case 'EASY_CLEAN':
-        this.inputNameMode += 'Easy Clean';
-        break;
-      case 'SPEED_BROIL':
-        this.inputNameMode += 'Speed Broil';
-        break;
-      case 'SELF_CLEAN':
-        this.inputNameMode += 'Self Clean';
-        break;
-      case 'SPEED_ROAST':
-        this.inputNameMode += 'Speed Roast';
-        break;
-      case 'AIR_FRY':
-        this.inputNameMode += 'Air Fry';
-        break;
-      case 'PIZZA':
-        this.inputNameMode += 'Pizza';
-        break;
-      case 'AIR_SOUSVIDE':
-        this.inputNameMode += 'Air Sousvide';
-        break;
-      default:
-        // eslint-disable-next-line no-case-declarations
-        let cookName = this.Status.data?.upperManualCookName;
-        cookName = cookName.toLocaleLowerCase();
-        // eslint-disable-next-line no-case-declarations
-        const cookNameCap =
+    case 'NONE':
+      this.inputNameMode += 'None';
+      break;
+    case 'BAKE':
+      this.inputNameMode += 'Bake';
+      break;
+    case 'ROAST':
+      this.inputNameMode += 'Roast';
+      break;
+    case 'CONVECTION_BAKE':
+      this.inputNameMode += 'Convection Bake';
+      break;
+    case 'CONVECTION_ROAST':
+      this.inputNameMode += 'Convection Roast';
+      break;
+    case 'CRISP_CONVECTION':
+      this.inputNameMode += 'Crisp Convection';
+      break;
+    case 'FAVORITE':
+      this.inputNameMode += 'Favorite';
+      break;
+    case 'BROIL':
+      this.inputNameMode += 'Broil';
+      break;
+    case 'WARM':
+      this.inputNameMode += 'Warm';
+      break;
+    case 'PROOF':
+      this.inputNameMode += 'Proof';
+      break;
+    case 'FROZEN_MEAL':
+      this.inputNameMode += 'Frozen Meal';
+      break;
+    case 'SLOW_COOK':
+      this.inputNameMode += 'Slow Cook';
+      break;
+    case 'PROBE_SET':
+      this.inputNameMode += 'Probe Set';
+      break;
+    case 'EASY_CLEAN':
+      this.inputNameMode += 'Easy Clean';
+      break;
+    case 'SPEED_BROIL':
+      this.inputNameMode += 'Speed Broil';
+      break;
+    case 'SELF_CLEAN':
+      this.inputNameMode += 'Self Clean';
+      break;
+    case 'SPEED_ROAST':
+      this.inputNameMode += 'Speed Roast';
+      break;
+    case 'AIR_FRY':
+      this.inputNameMode += 'Air Fry';
+      break;
+    case 'PIZZA':
+      this.inputNameMode += 'Pizza';
+      break;
+    case 'AIR_SOUSVIDE':
+      this.inputNameMode += 'Air Sousvide';
+      break;
+    default:
+      // eslint-disable-next-line no-case-declarations
+      let cookName = this.Status.data?.upperManualCookName;
+      cookName = cookName.toLocaleLowerCase();
+      // eslint-disable-next-line no-case-declarations
+      const cookNameCap =
           cookName.charAt(0).toUpperCase()
           + cookName.slice(1);
 
-        this.inputNameMode += cookNameCap;
+      this.inputNameMode += cookNameCap;
 
     }
     if (!this.inputNameMode.includes('None')) {
@@ -1083,41 +1083,41 @@ export default class Oven extends baseDevice {
   ovenStatus() {
     this.inputNameStatus = 'Oven is ';
     switch (this.Status.data?.upperState) {
-      case 'INITIAL':
-        this.inputNameStatus += 'in Standby';
-        if (this.Status.data?.upperRemoteStart.includes('DIS')) {
-          this.inputNameStatus += ' (Remote Start Disabled)';
-        } else if (this.homekitMonitorOnly) {
-          this.inputNameStatus += ' (Homekit Monitor Only Mode)';
-        }
-        break;
-      case 'PREHEATING':
-        this.inputNameStatus += 'Preheating';
-        break;
-      case 'COOKING_IN_PROGRESS':
-        this.inputNameStatus += 'Baking';
-        break;
-      case 'DONE':
-        this.inputNameStatus += 'Done Baking';
-        break;
-      case 'COOLING':
-        this.inputNameStatus += 'Cooling Down';
-        break;
-      case 'CLEANING':
-        this.inputNameStatus += 'Cleaning Itself';
-        break;
-      case 'CLEANING_DONE':
-        this.inputNameStatus += 'Done Cleaning Itself';
-        break;
-      default:
-        // eslint-disable-next-line no-case-declarations
-        let stateName = this.Status.data?.upperState;
-        stateName = stateName.toLocaleLowerCase();
-        // eslint-disable-next-line no-case-declarations
-        const stateNameCap =
+    case 'INITIAL':
+      this.inputNameStatus += 'in Standby';
+      if (this.Status.data?.upperRemoteStart.includes('DIS')) {
+        this.inputNameStatus += ' (Remote Start Disabled)';
+      } else if (this.homekitMonitorOnly) {
+        this.inputNameStatus += ' (Homekit Monitor Only Mode)';
+      }
+      break;
+    case 'PREHEATING':
+      this.inputNameStatus += 'Preheating';
+      break;
+    case 'COOKING_IN_PROGRESS':
+      this.inputNameStatus += 'Baking';
+      break;
+    case 'DONE':
+      this.inputNameStatus += 'Done Baking';
+      break;
+    case 'COOLING':
+      this.inputNameStatus += 'Cooling Down';
+      break;
+    case 'CLEANING':
+      this.inputNameStatus += 'Cleaning Itself';
+      break;
+    case 'CLEANING_DONE':
+      this.inputNameStatus += 'Done Cleaning Itself';
+      break;
+    default:
+      // eslint-disable-next-line no-case-declarations
+      let stateName = this.Status.data?.upperState;
+      stateName = stateName.toLocaleLowerCase();
+      // eslint-disable-next-line no-case-declarations
+      const stateNameCap =
           stateName.charAt(0).toUpperCase()
           + stateName.slice(1);
-        this.inputNameStatus += stateNameCap;
+      this.inputNameStatus += stateNameCap;
 
     }
 
@@ -1148,20 +1148,16 @@ export default class Oven extends baseDevice {
     if (this.Status.data?.upperCurrentTemperatureValue != 0) {
       if (this.Status.data?.upperCurrentTemperatureUnit.includes('FAH')) {
         return this.tempFtoC(this.Status.data?.upperCurrentTemperatureValue);
-      }
-      else {
+      } else {
         return 0.5 * Math.round(2 * this.Status.data?.upperCurrentTemperatureValue);
       }
-    }
-    else if (this.Status.data?.upperCurrentTemperatureValue == 0 && this.Status.data?.upperTargetTemperatureValue != 0) {
+    } else if (this.Status.data?.upperCurrentTemperatureValue == 0 && this.Status.data?.upperTargetTemperatureValue != 0) {
       if (this.Status.data?.upperCurrentTemperatureUnit.includes('FAH')) {
         return this.tempFtoC(this.Status.data?.upperTargetTemperatureValue);
-      }
-      else {
+      } else {
         return 0.5 * Math.round(2 * this.Status.data?.upperTargetTemperatureValue);
       }
-    }
-    else {
+    } else {
       return this.localTemperature;
     }
   }
@@ -1171,12 +1167,10 @@ export default class Oven extends baseDevice {
     if (this.Status.data?.upperTargetTemperatureValue != 0) {
       if (this.Status.data?.upperCurrentTemperatureUnit.includes('FAH')) {
         return this.tempFtoC(this.Status.data?.upperTargetTemperatureValue);
-      }
-      else {
+      } else {
         return 0.5 * Math.round(2 * this.Status.data?.upperTargetTemperatureValue);
       }
-    }
-    else {
+    } else {
       return 38;
     }
   }
@@ -1357,8 +1351,7 @@ export default class Oven extends baseDevice {
         if (this.Status.data.upperTargetProveTemperatureF !== 0 && typeof this.Status.data.upperTargetProveTemperatureF !== 'undefined') {
           this.probeName += ' With Set Temp ' + this.Status.data.upperTargetProveTemperatureF + '°';
         }
-      }
-      else {
+      } else {
         this.probeName += 'Current Probe Temp ' + this.tempFtoC(this.Status.data.upperCurrentProveTemperatureF) + '°';
         if (this.Status.data.upperTargetProveTemperatureF !== 0 && typeof this.Status.data.upperTargetProveTemperatureF !== 'undefined') {
           this.probeName += ' With Set Temp ' + this.tempFtoC(this.Status.data.upperTargetProveTemperatureF) + '°';
@@ -1412,7 +1405,7 @@ export default class Oven extends baseDevice {
   }
 
   createCook(key) {
-    const {Service: {HeaterCooler}, Characteristic} = this.platform;
+    const { Service: { HeaterCooler }, Characteristic } = this.platform;
     const device = this.accessory.context.device;
     const service = this.accessory.getService(HeaterCooler) || this.accessory.addService(HeaterCooler, device.name);
     service.getCharacteristic(Characteristic.CurrentHeaterCoolerState)
@@ -1616,7 +1609,7 @@ export default class Oven extends baseDevice {
 
   updateAccessoryCharacteristic(device) {
     super.updateAccessoryCharacteristic(device);
-    const {Characteristic} = this.platform;
+    const { Characteristic } = this.platform;
     // this.platform.log('Update Accessorry received');
 
     if (!this.pauseUpdate) {

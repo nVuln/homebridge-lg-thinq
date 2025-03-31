@@ -1,9 +1,9 @@
-import {baseDevice} from '../baseDevice';
-import {LGThinQHomebridgePlatform} from '../platform';
-import {CharacteristicValue, Perms, PlatformAccessory} from 'homebridge';
-import {Device} from '../lib/Device';
-import {PlatformType} from '../lib/constants';
-import {DeviceModel} from '../lib/DeviceModel';
+import { baseDevice } from '../baseDevice';
+import { LGThinQHomebridgePlatform } from '../platform';
+import { CharacteristicValue, Logger, Perms, PlatformAccessory } from 'homebridge';
+import { Device } from '../lib/Device';
+import { PlatformType } from '../lib/constants';
+import { DeviceModel } from '../lib/DeviceModel';
 
 export const NOT_RUNNING_STATUS = ['COOLDOWN', 'POWEROFF', 'POWERFAIL', 'INITIAL', 'PAUSE', 'AUDIBLE_DIAGNOSIS', 'FIRMWARE',
   'COURSE_DOWNLOAD', 'ERROR', 'END'];
@@ -20,8 +20,9 @@ export default class WasherDryer extends baseDevice {
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
+    logger: Logger,
   ) {
-    super(platform, accessory);
+    super(platform, accessory, logger);
 
     const {
       Service: {
@@ -87,7 +88,7 @@ export default class WasherDryer extends baseDevice {
       }
 
       this.serviceEventFinished.setCharacteristic(Characteristic.Name, 'Program Finished');
-      // eslint-disable-next-line max-len
+       
       this.serviceEventFinished.updateCharacteristic(Characteristic.OccupancyDetected, Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED);
     } else if (this.serviceEventFinished) {
       accessory.removeService(this.serviceEventFinished);
@@ -103,7 +104,7 @@ export default class WasherDryer extends baseDevice {
       }
 
       this.serviceTubCleanMaintenance.setCharacteristic(Characteristic.Name, 'Tub Clean Coach');
-      // eslint-disable-next-line max-len
+       
       this.serviceTubCleanMaintenance.updateCharacteristic(Characteristic.OccupancyDetected, Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED);
 
       this.serviceTubCleanMaintenance.setCharacteristic(Characteristic.Name, 'Tub Clean Coach');
