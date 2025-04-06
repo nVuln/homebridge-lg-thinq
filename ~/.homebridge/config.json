@@ -1,0 +1,76 @@
+{
+    "bridge": {
+        "name": "Homebridge 4398",
+        "username": "0E:7E:17:D6:06:29",
+        "port": 51465,
+        "pin": "545-44-792",
+        "advertiser": "bonjour-hap"
+    },
+    "accessories": [],
+    "platforms": [
+        {
+            "name": "Config",
+            "port": 8581,
+            "auth": "form",
+            "theme": "orange",
+            "lightingMode": "auto",
+            "menuMode": "default",
+            "tempUnits": "c",
+            "lang": "auto",
+            "platform": "config"
+        },
+        {
+            "name": "HDLBusproHomebridge",
+            "buses": [
+                {
+                    "bus_name": "New bus",
+                    "bus_IP": "192.168.1.130",
+                    "bus_port": 6000,
+                    "subnets": [
+                        {
+                            "subnet_number": 1,
+                            "cd_number": 3,
+                            "devices": [
+                                {
+                                    "device_name": "Living Room Heater",
+                                    "device_address": 8,
+                                    "device_type": "relayheater",
+                                    "area": 1,
+                                    "channel": 3,
+                                    "nc": true,
+                                    "curtains_precision": 5
+                                },
+                                {
+                                    "device_name": "Bedroom Curtain",
+                                    "device_address": 17,
+                                    "device_type": "relaycurtains",
+                                    "area": 1,
+                                    "channel": 1,
+                                    "nc": true,
+                                    "duration": 3.5,
+                                    "curtains_precision": 10
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "platform": "HDLBusproHomebridge"
+        },
+        {
+            "platform": "LGThinQ",
+            "country": "US",
+            "language": "en-US",
+            "refresh_token": "",
+            "air_purifier_optional_features": false,
+            "washer_dryer_optional_features": false,
+            "ac_swing_mode": "NONE",
+            "ac_fan_only_mode": false,
+            "ac_optional_features": false,
+            "hide_unsupported_devices": true
+        }
+    ],
+    "disabledPlugins": [
+        "@elshaer/homebridge-hdl-buspro-enhanced"
+    ]
+} 
