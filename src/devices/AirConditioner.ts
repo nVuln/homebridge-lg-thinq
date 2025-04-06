@@ -482,13 +482,13 @@ export default class AirConditioner extends baseDevice {
     let opMode;
     switch (value) {
       case TargetHeaterCoolerState.AUTO:
-        opMode = OpMode.AUTO; // LG’s AUTO mode = 6
+        opMode = OpMode.AUTO; // LG's AUTO mode = 6
         break;
       case TargetHeaterCoolerState.HEAT:
-        opMode = OpMode.HEAT; // LG’s HEAT mode = 4
+        opMode = OpMode.HEAT; // LG's HEAT mode = 4
         break;
       case TargetHeaterCoolerState.COOL:
-        opMode = OpMode.COOL; // LG’s COOL mode = 0
+        opMode = OpMode.COOL; // LG's COOL mode = 0
         break;
       default:
         opMode = this.Status.opMode; // Keep current mode
@@ -770,33 +770,6 @@ export default class AirConditioner extends baseDevice {
             throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
           }
           return Characteristic.TargetHeaterCoolerState.HEAT;
-        })
-        .updateValue(Characteristic.TargetHeaterCoolerState.HEAT);
-    }
-    if (this.config.ac_mode === 'BOTH') {
-      this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
-        .setProps({
-          validValues: [
-            Characteristic.TargetHeaterCoolerState.AUTO,
-            Characteristic.TargetHeaterCoolerState.COOL,
-            Characteristic.TargetHeaterCoolerState.HEAT,
-          ],
-        })
-        .updateValue(Characteristic.TargetHeaterCoolerState.COOL);
-    } else if (this.config.ac_mode === 'COOLING') {
-      this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
-        .setProps({
-          validValues: [
-            Characteristic.TargetHeaterCoolerState.COOL,
-          ],
-        })
-        .updateValue(Characteristic.TargetHeaterCoolerState.COOL);
-    } else if (this.config.ac_mode === 'HEATING') {
-      this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
-        .setProps({
-          validValues: [
-            Characteristic.TargetHeaterCoolerState.HEAT,
-          ],
         })
         .updateValue(Characteristic.TargetHeaterCoolerState.HEAT);
     }
