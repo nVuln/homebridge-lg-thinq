@@ -135,17 +135,41 @@ export default class Refrigerator extends baseDevice {
     } = this.platform;
 
     const tempBetween = (props, value) => {
+      // Default to a safe temperature if the value is invalid
+      if (value === undefined || value === null || isNaN(value)) {
+        return props.maxValue > 0 ? Math.min(4, props.maxValue) : props.minValue;
+      }
       return Math.min(Math.max(props.minValue, value), props.maxValue);
     };
 
     if (this.serviceFreezer) {
-      const t = tempBetween(this.serviceFreezer.getCharacteristic(Characteristic.TargetTemperature).props, this.Status.freezerTemperature);
+      // Make sure we have valid properties
+      const targetChar = this.serviceFreezer.getCharacteristic(Characteristic.TargetTemperature);
+      if (!targetChar.props.minValue || targetChar.props.minValue < -30) {
+        // Set reasonable defaults for freezer if props are invalid
+        targetChar.setProps({
+          minValue: -23,
+          maxValue: -15,
+          minStep: 1,
+        });
+      }
+      const t = tempBetween(targetChar.props, this.Status.freezerTemperature);
       this.serviceFreezer.updateCharacteristic(Characteristic.CurrentTemperature, t);
       this.serviceFreezer.updateCharacteristic(Characteristic.TargetTemperature, t);
     }
 
     if (this.serviceFridge) {
-      const t = tempBetween(this.serviceFridge.getCharacteristic(Characteristic.TargetTemperature).props, this.Status.fridgeTemperature);
+      // Make sure we have valid properties
+      const targetChar = this.serviceFridge.getCharacteristic(Characteristic.TargetTemperature);
+      if (!targetChar.props.minValue || targetChar.props.minValue < 1 || targetChar.props.maxValue > 10) {
+        // Set reasonable defaults for fridge if props are invalid
+        targetChar.setProps({
+          minValue: 1,
+          maxValue: 7,
+          minStep: 1,
+        });
+      }
+      const t = tempBetween(targetChar.props, this.Status.fridgeTemperature);
       this.serviceFridge.updateCharacteristic(Characteristic.CurrentTemperature, t);
       this.serviceFridge.updateCharacteristic(Characteristic.TargetTemperature, t);
     }
@@ -261,13 +285,13 @@ export default class Refrigerator extends baseDevice {
     service.updateCharacteristic(Characteristic.CurrentHeatingCoolingState, Characteristic.CurrentHeatingCoolingState.COOL)
       .getCharacteristic(Characteristic.CurrentHeatingCoolingState)
       .setProps({
-        validValues: [Characteristic.CurrentHeatingCoolingState.COOL] // Hide other states
+        validValues: [Characteristic.CurrentHeatingCoolingState.COOL], // Hide other states
       });
 
     service.getCharacteristic(Characteristic.TargetHeatingCoolingState)
       .updateValue(Characteristic.TargetHeatingCoolingState.COOL)
       .setProps({
-        validValues: [Characteristic.TargetHeatingCoolingState.COOL] // Hide Heat/Auto/Off
+        validValues: [Characteristic.TargetHeatingCoolingState.COOL], // Hide Heat/Auto/Off
       });
 
     service.getCharacteristic(Characteristic.TemperatureDisplayUnits).setProps({

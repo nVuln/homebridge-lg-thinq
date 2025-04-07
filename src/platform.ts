@@ -30,6 +30,9 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
   // enable thinq1 support
   private readonly enable_thinq1: boolean = false;
 
+  // Plugin name for registering accessories
+  private readonly actualPluginName: string;
+
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
@@ -39,6 +42,11 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
 
     this.enable_thinq1 = config.thinq1 as boolean;
     this.config.devices = this.config.devices || [];
+
+    // Use the config-specified plugin name if it exists,
+    // otherwise try to auto-detect from environment (for fork compatibility)
+    this.actualPluginName = config.plugin_name ? String(config.plugin_name) : PLUGIN_NAME;
+    this.log.debug(`Using plugin name: ${this.actualPluginName}`);
 
     this.intervalTime = (config.refresh_interval || 5) * 1000;
     this.ThinQ = new ThinQ(this, config, log);
@@ -157,7 +165,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
         lgThinQDevice = new accessoryType(this, accessory);
 
         // link the accessory to your platform
-        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        this.api.registerPlatformAccessories(this.actualPluginName, PLATFORM_NAME, [accessory]);
 
         this.accessories.push(accessory);
       }
@@ -175,7 +183,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
         this.accessories.splice(this.accessories.indexOf(accessory), 1);
       });
 
-      this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, accessoriesToRemove);
+      this.api.unregisterPlatformAccessories(this.actualPluginName, PLATFORM_NAME, accessoriesToRemove);
     }
   }
 
