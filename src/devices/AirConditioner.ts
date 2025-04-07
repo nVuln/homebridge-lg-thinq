@@ -172,6 +172,58 @@ export default class AirConditioner extends baseDevice {
         });
       }
     }, 60000);
+
+    // Add polling mechanism to check if device is responsive
+    this.startDeviceOnlineStatusPolling();
+  }
+
+  // Method to start polling for device online status
+  private startDeviceOnlineStatusPolling() {
+    const POLLING_INTERVAL = 10000; // Check every 10 seconds
+
+    setInterval(() => {
+      const device: Device = this.accessory.context.device;
+
+      // Skip if device is already marked as offline
+      if (!device.online) {
+        return;
+      }
+
+      // Try to get device status by sending a simple command
+      this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: 'airState.mon.timeout',
+        dataValue: '1', // Just a quick check with a small value
+      }, 'Set', 'allEventEnable', 'control')
+        .then(success => {
+          if (!success) {
+            // If command failed, mark as offline
+            device.data.online = false;
+            this.accessory.context.device = device;
+            this.platform.log.debug(`[${device.name}] Device is not responding, marking as offline`);
+
+            // Force HomeKit to try to get the device status, which will trigger the onGet handler
+            // and show the "No Response" in HomeKit
+            this.service.getCharacteristic(this.platform.Characteristic.Active).emit('get', (err, value) => {
+              if (err) {
+                this.platform.log.debug(`[${device.name}] Error getting Active characteristic: ${err}`);
+              }
+            });
+          }
+        })
+        .catch(error => {
+          // If there's an error, mark device as offline
+          device.data.online = false;
+          this.accessory.context.device = device;
+          this.platform.log.debug(`[${device.name}] Error checking device status: ${error}, marking as offline`);
+
+          // Force HomeKit to try to get the device status
+          this.service.getCharacteristic(this.platform.Characteristic.Active).emit('get', (err, value) => {
+            if (err) {
+              this.platform.log.debug(`[${device.name}] Error getting Active characteristic: ${err}`);
+            }
+          });
+        });
+    }, POLLING_INTERVAL);
   }
 
   public get config() {
@@ -280,6 +332,28 @@ export default class AirConditioner extends baseDevice {
       },
     } = this.platform;
 
+    // Check if we can actually communicate with the device
+    let isDeviceResponding = false;
+    try {
+      // Try to get the current state
+      const currentState = this.Status;
+      isDeviceResponding = currentState !== undefined && currentState !== null;
+    } catch (error) {
+      isDeviceResponding = false;
+    }
+
+    // Set Reachable characteristic based on device response status
+    this.accessory.getService(this.platform.Service.AccessoryInformation)
+      ?.updateCharacteristic(this.platform.Characteristic.Reachable, isDeviceResponding);
+
+    // If device is not responding, don't update other characteristics
+    if (!isDeviceResponding) {
+      // Set all characteristics to indicate non-responsive state
+      this.service.updateCharacteristic(Characteristic.Active, Active.INACTIVE);
+      this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, CurrentHeaterCoolerState.INACTIVE);
+      return;
+    }
+
     this.service.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? Active.ACTIVE : Active.INACTIVE);
     if (this.Status.currentTemperature) {
       this.service.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.currentTemperature);
@@ -318,7 +392,9 @@ export default class AirConditioner extends baseDevice {
 
     this.service.updateCharacteristic(Characteristic.RotationSpeed, this.Status.windStrength);
     // eslint-disable-next-line max-len
-    this.service.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwingOn ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED);
+    if (this.config.ac_swing_mode !== 'NONE') {
+      this.service.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwingOn ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED);
+    }
 
     this.service.updateCharacteristic(this.platform.customCharacteristics.TotalConsumption, this.Status.currentConsumption);
 
@@ -351,7 +427,9 @@ export default class AirConditioner extends baseDevice {
       this.serviceFanV2.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? Active.ACTIVE : Active.INACTIVE);
       this.serviceFanV2.updateCharacteristic(Characteristic.RotationSpeed, this.Status.windStrength);
       // eslint-disable-next-line max-len
-      this.serviceFanV2.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwingOn ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED);
+      if (this.config.ac_swing_mode !== 'NONE') {
+        this.serviceFanV2.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwingOn ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED);
+      }
     }
 
     if (this.config.ac_led_control as boolean && this.serviceLight) {
@@ -393,29 +471,37 @@ export default class AirConditioner extends baseDevice {
 
   async setTargetState(value: CharacteristicValue) {
     this.platform.log.debug('Set target AC mode = ', value);
-    this.currentTargetState = value as number;
     const {
       Characteristic: {
         TargetHeaterCoolerState,
       },
     } = this.platform;
-  
+
+    // Validate the target state value
+    const validValues = [TargetHeaterCoolerState.AUTO, TargetHeaterCoolerState.HEAT, TargetHeaterCoolerState.COOL];
+    if (!validValues.includes(value as number)) {
+      this.platform.log.warn(`[${this.accessory.context.device.name}] Invalid target state: ${value}, defaulting to AUTO`);
+      value = TargetHeaterCoolerState.AUTO;
+    }
+
+    this.currentTargetState = value as number;
+
     // Map HomeKit states to LG opModes
     let opMode;
     switch (value) {
       case TargetHeaterCoolerState.AUTO:
-        opMode = OpMode.AUTO; // LG’s AUTO mode = 6
+        opMode = OpMode.AUTO; // LG's AUTO mode = 6
         break;
       case TargetHeaterCoolerState.HEAT:
-        opMode = OpMode.HEAT; // LG’s HEAT mode = 4
+        opMode = OpMode.HEAT; // LG's HEAT mode = 4
         break;
       case TargetHeaterCoolerState.COOL:
-        opMode = OpMode.COOL; // LG’s COOL mode = 0
+        opMode = OpMode.COOL; // LG's COOL mode = 0
         break;
       default:
         opMode = this.Status.opMode; // Keep current mode
     }
-  
+
     if (opMode !== this.Status.opMode) {
       await this.setOpMode(opMode);
     }
@@ -583,9 +669,13 @@ export default class AirConditioner extends baseDevice {
       })
       .updateValue(this.Status.windStrength)
       .onSet(this.setFanSpeed.bind(this));
-    this.serviceFanV2.getCharacteristic(Characteristic.SwingMode)
-      .onSet(this.setSwingMode.bind(this))
-      .updateValue(this.Status.isSwingOn ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED);
+
+    // Only add the SwingMode characteristic if swing mode is not set to NONE
+    if (this.config.ac_swing_mode !== 'NONE') {
+      this.serviceFanV2.getCharacteristic(Characteristic.SwingMode)
+        .onSet(this.setSwingMode.bind(this))
+        .updateValue(this.Status.isSwingOn ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED);
+    }
   }
 
   protected createAirQualityService() {
@@ -612,37 +702,85 @@ export default class AirConditioner extends baseDevice {
     this.service.setCharacteristic(Characteristic.Name, device.name);
     this.service.getCharacteristic(Characteristic.Active)
       .updateValue(Characteristic.Active.INACTIVE)
+      .onGet(() => {
+        // Force "No Response" state when device is offline
+        if (!device.online) {
+          throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+        }
+        return this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE;
+      })
       .onSet(this.setActive.bind(this));
     this.service.getCharacteristic(Characteristic.CurrentHeaterCoolerState)
+      .onGet(() => {
+        // Force "No Response" state when device is offline
+        if (!device.online) {
+          throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+        }
+        if (!this.Status.isPowerOn) {
+          return Characteristic.CurrentHeaterCoolerState.INACTIVE;
+        } else if ([OpMode.COOL].includes(this.Status.opMode)) {
+          return Characteristic.CurrentHeaterCoolerState.COOLING;
+        } else if ([OpMode.HEAT].includes(this.Status.opMode)) {
+          return Characteristic.CurrentHeaterCoolerState.HEATING;
+        } else if ([OpMode.AUTO, -1].includes(this.Status.opMode)) {
+          if (this.Status.currentTemperature < this.Status.targetTemperature) {
+            return Characteristic.CurrentHeaterCoolerState.HEATING;
+          } else {
+            return Characteristic.CurrentHeaterCoolerState.COOLING;
+          }
+        }
+        return Characteristic.CurrentHeaterCoolerState.INACTIVE;
+      })
       .updateValue(Characteristic.CurrentHeaterCoolerState.INACTIVE);
 
-if (this.config.ac_mode === 'BOTH') {
-  this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
-    .setProps({
-      validValues: [
-        Characteristic.TargetHeaterCoolerState.AUTO,
-        Characteristic.TargetHeaterCoolerState.COOL,
-        Characteristic.TargetHeaterCoolerState.HEAT,
-      ],
-    })
-    .updateValue(Characteristic.TargetHeaterCoolerState.COOL);
-} else if (this.config.ac_mode === 'COOLING') {
-  this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
-    .setProps({
-      validValues: [
-        Characteristic.TargetHeaterCoolerState.COOL,
-      ],
-    })
-    .updateValue(Characteristic.TargetHeaterCoolerState.COOL);
-} else if (this.config.ac_mode === 'HEATING') {
-  this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
-    .setProps({
-      validValues: [
-        Characteristic.TargetHeaterCoolerState.HEAT,
-      ],
-    })
-    .updateValue(Characteristic.TargetHeaterCoolerState.HEAT);
-}
+    if (this.config.ac_mode === 'BOTH') {
+      this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
+        .setProps({
+          validValues: [
+            Characteristic.TargetHeaterCoolerState.AUTO,
+            Characteristic.TargetHeaterCoolerState.COOL,
+            Characteristic.TargetHeaterCoolerState.HEAT,
+          ],
+        })
+        .onGet(() => {
+          // Force "No Response" state when device is offline
+          if (!device.online) {
+            throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+          }
+          return this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState).value;
+        })
+        .updateValue(Characteristic.TargetHeaterCoolerState.COOL);
+    } else if (this.config.ac_mode === 'COOLING') {
+      this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
+        .setProps({
+          validValues: [
+            Characteristic.TargetHeaterCoolerState.COOL,
+          ],
+        })
+        .onGet(() => {
+          // Force "No Response" state when device is offline
+          if (!device.online) {
+            throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+          }
+          return Characteristic.TargetHeaterCoolerState.COOL;
+        })
+        .updateValue(Characteristic.TargetHeaterCoolerState.COOL);
+    } else if (this.config.ac_mode === 'HEATING') {
+      this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
+        .setProps({
+          validValues: [
+            Characteristic.TargetHeaterCoolerState.HEAT,
+          ],
+        })
+        .onGet(() => {
+          // Force "No Response" state when device is offline
+          if (!device.online) {
+            throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+          }
+          return Characteristic.TargetHeaterCoolerState.HEAT;
+        })
+        .updateValue(Characteristic.TargetHeaterCoolerState.HEAT);
+    }
 
     this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
       .onSet(this.setTargetState.bind(this));
@@ -663,6 +801,13 @@ if (this.config.ac_mode === 'BOTH') {
           minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(currentTemperatureValue.min),
           maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(currentTemperatureValue.max),
           minStep: 0.01,
+        })
+        .onGet(() => {
+          // Force "No Response" state when device is offline
+          if (!device.online) {
+            throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+          }
+          return this.Status.currentTemperature;
         });
     }
 
@@ -715,13 +860,21 @@ if (this.config.ac_mode === 'BOTH') {
     const targetHeatTemperature = targetTemperature(tempHeatMinRange, tempHeatMaxRange);
 
     if (targetHeatTemperature) {
+      const minHeatTemp = Math.max(16, this.Status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.min));
       this.service.getCharacteristic(Characteristic.HeatingThresholdTemperature)
         .setProps({
-          minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.min),
+          minValue: minHeatTemp,
           maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.max),
           minStep: targetHeatTemperature.step || 0.01,
         })
-        .updateValue(this.Status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.min));
+        .onGet(() => {
+          // Force "No Response" state when device is offline
+          if (!device.online) {
+            throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+          }
+          return this.Status.targetTemperature;
+        })
+        .updateValue(minHeatTemp); // Ensure we use a valid value
     }
 
     const tempCoolMinRange = device.deviceModel.value(coolLowLimitKey) as EnumValue;
@@ -729,13 +882,21 @@ if (this.config.ac_mode === 'BOTH') {
     const targetCoolTemperature = targetTemperature(tempCoolMinRange, tempCoolMaxRange);
 
     if (targetCoolTemperature) {
+      const minCoolTemp = Math.max(20, this.Status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.min));
       this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
         .setProps({
-          minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.min),
+          minValue: minCoolTemp,
           maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.max),
           minStep: targetHeatTemperature.step || 0.01,
         })
-        .updateValue(this.Status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.min));
+        .onGet(() => {
+          // Force "No Response" state when device is offline
+          if (!device.online) {
+            throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+          }
+          return this.Status.targetTemperature;
+        })
+        .updateValue(minCoolTemp); // Ensure we use a valid value
     }
 
     this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
@@ -749,9 +910,27 @@ if (this.config.ac_mode === 'BOTH') {
         maxValue: Object.keys(FanSpeed).length / 2,
         minStep: 0.1,
       })
+      .onGet(() => {
+        // Force "No Response" state when device is offline
+        if (!device.online) {
+          throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+        }
+        return this.Status.windStrength;
+      })
       .onSet(this.setFanSpeed.bind(this));
-    this.service.getCharacteristic(Characteristic.SwingMode)
-      .onSet(this.setSwingMode.bind(this));
+
+    // Only add the SwingMode characteristic if swing mode is not set to NONE
+    if (this.config.ac_swing_mode !== 'NONE') {
+      this.service.getCharacteristic(Characteristic.SwingMode)
+        .onGet(() => {
+          // Force "No Response" state when device is offline
+          if (!device.online) {
+            throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+          }
+          return this.Status.isSwingOn ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED;
+        })
+        .onSet(this.setSwingMode.bind(this));
+    }
   }
 
   public setupButton(device: Device) {
