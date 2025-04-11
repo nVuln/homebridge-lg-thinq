@@ -11,7 +11,7 @@ export class BaseDevice extends EventEmitter {
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
     public readonly accessory: PlatformAccessory<AccessoryContext>,
-    private readonly logger: Logger,
+    protected readonly logger: Logger,
   ) {
     super();
 
