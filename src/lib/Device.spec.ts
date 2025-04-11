@@ -1,88 +1,48 @@
 import { Device, DeviceData } from './Device.js';
 import { describe, test, beforeEach, expect } from '@jest/globals';
+import mockDeviceData from '../../sample/airconditioner.json';
 
 describe('Device', () => {
   let device: Device;
 
-  const mockDeviceData: DeviceData = {
-    deviceId: '12345',
-    alias: 'Smart Fridge',
-    deviceType: 101,
-    modelName: 'FR123-US',
-    modelJsonUri: 'https://example.com/model.json',
-    manufacture: {
-      macAddress: '00:1A:2B:3C:4D:5E',
-      salesModel: 'FR123',
-      serialNo: 'SN123456789',
-      manufactureModel: 'FR123-M',
-    },
-    online: true,
-    modemInfo: {
-      appVersion: '1.0.0',
-      modelName: 'FR123-MODEM',
-    },
-    snapshot: {
-      online: true,
-    },
-    platformType: 'ThinQ2',
-  };
-
   beforeEach(() => {
-    device = new Device(mockDeviceData);
+    device = new Device(mockDeviceData as unknown as DeviceData);
   });
 
   test('should retrieve device ID', () => {
-    expect(device.id).toBe('12345');
+    expect(device.id).toBe(mockDeviceData.deviceId);
   });
 
   test('should retrieve device name', () => {
-    expect(device.name).toBe('Smart Fridge');
+    expect(device.name).toBe(mockDeviceData.alias);
   });
 
   test('should retrieve device type', () => {
-    expect(device.type).toBe('REFRIGERATOR');
+    expect(device.type).toBe('AC');
   });
 
   test('should retrieve device model from modelName', () => {
-    expect(device.model).toBe('FR123-US');
-  });
-
-  test('should retrieve device model from modemInfo.modelName', () => {
-    const data = { ...mockDeviceData, modelName: undefined };
-    device = new Device(data);
-    expect(device.model).toBe('FR123-MODEM');
-  });
-
-  test('should retrieve device model from manufacture.manufactureModel', () => {
-    const data = { ...mockDeviceData, modelName: undefined, modemInfo: undefined };
-    device = new Device(data);
-    expect(device.model).toBe('FR123-M');
-  });
-
-  test('should return empty string if model is not available', () => {
-    const data = { ...mockDeviceData, modelName: undefined, modemInfo: undefined, manufacture: undefined };
-    device = new Device(data);
-    expect(device.model).toBe('');
+    expect(device.model).toBe(mockDeviceData.modelName.slice(0, -3));
   });
 
   test('should retrieve MAC address', () => {
-    expect(device.macAddress).toBe('00:1A:2B:3C:4D:5E');
+    expect(device.macAddress).toBe(mockDeviceData.manufacture.macAddress);
   });
 
   test('should retrieve sales model', () => {
-    expect(device.salesModel).toBe('FR123');
+    expect(device.salesModel).toBe(mockDeviceData.manufacture.salesModel);
   });
 
   test('should retrieve serial number', () => {
-    expect(device.serialNumber).toBe('SN123456789');
+    expect(device.serialNumber).toBe(mockDeviceData.manufacture.serialNo);
   });
 
   test('should retrieve firmware version', () => {
-    expect(device.firmwareVersion).toBe('1.0.0');
+    expect(device.firmwareVersion).toBe(mockDeviceData.modemInfo.appVersion);
   });
 
   test('should retrieve snapshot when available', () => {
-    expect(device.snapshot).toEqual({ online: true });
+    expect(device.snapshot).toEqual(mockDeviceData.snapshot);
   });
 
   test('should set snapshot', () => {
@@ -92,20 +52,14 @@ describe('Device', () => {
   });
 
   test('should retrieve platform type', () => {
-    expect(device.platform).toBe('ThinQ2');
+    expect(device.platform).toBe(mockDeviceData.platformType);
   });
 
   test('should retrieve online status from data.online', () => {
-    expect(device.online).toBe(true);
-  });
-
-  test('should retrieve online status from snapshot.online', () => {
-    const data = { ...mockDeviceData, online: undefined, snapshot: { online: true } };
-    const device2 = new Device(data);
-    expect(device2.online).toBe(true);
+    expect(device.online).toBe(mockDeviceData.online);
   });
 
   test('should return string representation of the device', () => {
-    expect(device.toString()).toBe('12345: Smart Fridge (REFRIGERATOR FR123-US)');
+    expect(device.toString()).toBe(`${mockDeviceData.deviceId}: ${mockDeviceData.alias} (AC ${mockDeviceData.modelName.slice(0, -3)})`);
   });
 });

@@ -1,3 +1,5 @@
+import { PrimitiveTypes } from 'homebridge';
+
 export enum ValueType {
   Bit = 'Bit',
   Enum = 'Enum',
@@ -35,7 +37,7 @@ export interface ModelData {
   Value: {
     [key: string]: ModelDataValue;
   };
-  MonitoringValue: {
+  MonitoringValue?: {
     [key: string]: MonitoringValue;
   };
 
@@ -49,7 +51,7 @@ export interface BitValue {
 
 export interface EnumValue {
   type: ValueType.Enum;
-  options: any;
+  options: Record<string, number>;
 }
 
 export interface RangeValue {
@@ -81,7 +83,7 @@ export class DeviceModel {
    */
   public constructor(
     public data: ModelData,
-  ) {}
+  ) { }
 
   /**
    * Retrieves the monitoring values defined in the device model.
@@ -98,6 +100,9 @@ export class DeviceModel {
    * @returns The value definition or `null` if not found.
    */
   public value(name: string) {
+    if (this.data.Value === undefined) {
+      return null;
+    }
     let data = this.data.Value[name];
 
     // Handle ThinQ2 protocol mappings
@@ -204,41 +209,41 @@ export class DeviceModel {
     // Determine the type of the value and return the appropriate structure
     const type = data.type || data.data_type;
     switch (type.toLowerCase()) {
-      case 'enum':
-        return {
-          type: ValueType.Enum,
-          options: data.option || data.value_mapping,
-        } as EnumValue;
+    case 'enum':
+      return {
+        type: ValueType.Enum,
+        options: data.option || data.value_mapping,
+      } as EnumValue;
 
-      case 'range':
-        return {
-          type: ValueType.Range,
-          min: (data.option || data.value_validation)?.min,
-          max: (data.option || data.value_validation)?.max,
-          step: (data.option || data.value_validation)?.step || 1,
-        } as RangeValue;
+    case 'range':
+      return {
+        type: ValueType.Range,
+        min: (data.option || data.value_validation)?.min,
+        max: (data.option || data.value_validation)?.max,
+        step: (data.option || data.value_validation)?.step || 1,
+      } as RangeValue;
 
-      case 'bit': {
-        const bitValues = Object.values(data.option).reduce((obj: any, value) => ({
-          ...obj,
-          [(value as any).startbit]: (value as any).values,
-        }), {});
-        return { type: ValueType.Bit, options: bitValues } as BitValue;
+    case 'bit': {
+      const bitValues = Object.values(data.option).reduce((obj: any, value) => ({
+        ...obj,
+        [(value as any).startbit]: (value as any).values,
+      }), {});
+      return { type: ValueType.Bit, options: bitValues } as BitValue;
+    }
+
+    case 'reference': {
+      const [ref] = data.option;
+      return { type: ValueType.Reference, reference: this.data[ref] } as ReferenceValue;
+    }
+
+    case 'string':
+      if (typeof data._comment === 'string') {
+        return { type: ValueType.StringComment, comment: data._comment } as StringCommentValue;
       }
+      return null;
 
-      case 'reference': {
-        const [ref] = data.option;
-        return { type: ValueType.Reference, reference: this.data[ref] } as ReferenceValue;
-      }
-
-      case 'string':
-        if (typeof data._comment === 'string') {
-          return { type: ValueType.StringComment, comment: data._comment } as StringCommentValue;
-        }
-        return null;
-
-      default:
-        throw new Error(`Unsupported value type: ${data.type}`);
+    default:
+      throw new Error(`Unsupported value type: ${data.type}`);
     }
   }
 
@@ -256,18 +261,20 @@ export class DeviceModel {
    * Retrieves the enum value for a given key and name.
    *
    * @param key - The key to retrieve the enum value for.
-   * @param name - The name of the enum value.
-   * @returns The enum value or `null` if not found.
+   * @param name - The name of the enum **value**.
+   * @returns The enum value or `undefined` if not found.
    */
-  public enumValue(key: string, name: string): string | null | undefined {
-    if (this.value(key)?.type !== ValueType.Enum) {
+  public enumValue(key: string, name: string): string | null {
+    const value = this.value(key);
+
+    if (value?.type !== ValueType.Enum) {
       return null;
     }
 
-    const options = (this.value(key) as EnumValue).options;
-    const optionsInv = Object.fromEntries(Object.entries(options).map(([k, v]) => [v, k]));
-
-    return optionsInv[name];
+    const options = value.options;
+    // getting the key where value is equal to name
+    const keyByValue = Object.keys(options).find(k => options[k] === name);
+    return keyByValue || null;
   }
 
   /**
@@ -293,11 +300,8 @@ export class DeviceModel {
    * @returns The monitoring value mapping or `null` if not found.
    */
   public monitoringValueMapping(key: string) {
-    if (this.data.Value && this.value(key)) {
-      return (this.value(key) as EnumValue).options;
-    }
 
-    if (typeof this.monitoringValue !== 'object' || !(key in this.monitoringValue)) {
+    if (this.monitoringValue === undefined || !(key in this.monitoringValue)) {
       return null;
     }
 
@@ -312,16 +316,34 @@ export class DeviceModel {
    * @param default_value - An optional default value to return if the lookup fails. Defaults to `null`.
    * @returns The label of the monitoring value if found, or the `default_value` if not found.
    */
-  public lookupMonitorValue(key: string, name: string, default_value: null | string = null) {
+  public lookupMonitorValue(key: string, name: string) {
+    if (this.data.Value) {
+      return this.enumName(key, name);
+    }
+    const monitoringValue = this.monitoringValueMapping(key);
+    if (monitoringValue === null || !(name in monitoringValue)) {
+      return null;
+    }
+    return monitoringValue[name].label || null;
+  }
+
+  /**
+   * Looks up a monitor value based on a given key and name, with an optional default value.
+   *
+   * @param key - The key used to identify the monitoring value mapping.
+   * @param name - The name of the specific value to look up within the mapping.
+   * @param default_value - An optional default value to return if the lookup fails. Defaults to `null`.
+   * @returns The label of the monitoring value if found, or the `default_value` if not found.
+   */
+  public lookupMonitorValue2(key: string, name: string, default_value:string) {
     if (this.data.Value) {
       return this.enumName(key, name) || default_value;
     }
-
-    if (!this.monitoringValueMapping(key) || !(name in this.monitoringValueMapping(key))) {
+    const monitoringValue = this.monitoringValueMapping(key);
+    if (monitoringValue === null || !(name in monitoringValue)) {
       return default_value;
     }
-
-    return this.monitoringValueMapping(key)[name]?.label || default_value || null;
+    return monitoringValue[name].label || default_value;
   }
 
   /**
@@ -331,12 +353,12 @@ export class DeviceModel {
    * @param label - The label of the specific value to look up within the mapping.
    * @returns The name of the monitoring value if found, or `null` if not found.
    */
-  public lookupMonitorName(key: string, label: string): string | null | undefined {
+  public lookupMonitorName(key: string, label: string): string | null {
     if (this.data.Value) {
       return this.enumValue(key, label);
     }
 
-    if (!(key in this.monitoringValue)) {
+    if (this.monitoringValue === undefined || !(key in this.monitoringValue)) {
       return null;
     }
 

@@ -1195,7 +1195,7 @@ export default class Oven extends BaseDevice {
 
   ovenTargetTemperature() {
     ////Set temperature
-    if (this.Status.data?.upperTargetTemperatureValue != 0) {
+    if (this.Status.data?.upperTargetTemperatureValue !== 0) {
       if (this.Status.data?.upperCurrentTemperatureUnit.includes('FAH')) {
         return this.tempFtoC(this.Status.data?.upperTargetTemperatureValue);
       } else {
@@ -1208,7 +1208,7 @@ export default class Oven extends BaseDevice {
 
   probeCurrentTemperature() {
     /////Current Temp
-    if (this.Status.data?.upperCurrentProveTemperatureF != 0 && typeof this.Status.data?.upperCurrentProveTemperatureF !== 'undefined') {
+    if (this.Status.data?.upperCurrentProveTemperatureF !== 0 && typeof this.Status.data?.upperCurrentProveTemperatureF !== 'undefined') {
       return this.tempFtoC(this.Status.data?.upperCurrentProveTemperatureF);
     } else {
       return this.localTemperature;
@@ -1217,7 +1217,7 @@ export default class Oven extends BaseDevice {
 
   probeTargetTemperature() {
     ////Set temperature
-    if (this.Status.data?.upperTargetProveTemperatureF != 0) {
+    if (this.Status.data?.upperTargetProveTemperatureF !== 0) {
       return this.tempFtoC(this.Status.data?.upperTargetProveTemperatureF);
     } else {
       return 38;
@@ -1442,9 +1442,13 @@ export default class Oven extends BaseDevice {
     service.getCharacteristic(Characteristic.CurrentHeaterCoolerState)
       .onGet(() => {
         const currentState = device.deviceModel.lookupMonitorValue('UpperOvenState', this.Status.getState(key));
+        if (currentState === null) {
+          this.platform.log.error('Current Oven State is null');
+          return Characteristic.CurrentHeaterCoolerState.INACTIVE;
+        }
         if (currentState === OvenState.COOLING) {
           return Characteristic.CurrentHeaterCoolerState.COOLING;
-        } else if ([OvenState.PREHEATING, OvenState.COOKING_IN_PROGRESS].includes(currentState)) {
+        } else if ([OvenState.PREHEATING, OvenState.COOKING_IN_PROGRESS].includes(currentState as OvenState)) {
           return Characteristic.CurrentHeaterCoolerState.HEATING;
         } else {
           return Characteristic.CurrentHeaterCoolerState.IDLE;

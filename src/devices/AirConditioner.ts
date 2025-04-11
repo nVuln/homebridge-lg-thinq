@@ -3,7 +3,7 @@ import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { EnumValue, RangeValue, ValueType } from '../lib/DeviceModel.js';
-import { cToF } from '../helper.js';
+import { cToF, fToC } from '../helper.js';
 
 export enum ACModelType {
   AWHP = 'AWHP',
@@ -38,7 +38,7 @@ export type Config = {
   ac_fan_control: boolean,
   ac_jet_control: boolean,
   ac_temperature_unit: string,
-  ac_buttons: Record<string, any>[],
+  ac_buttons: {name: string, op_mode: string}[],
   ac_air_clean: boolean,
   ac_energy_save: boolean,
 }
@@ -139,7 +139,8 @@ export default class AirConditioner extends BaseDevice {
     // more feature
     if (this.config.ac_jet_control as boolean && this.isJetModeEnabled(device)) {
       this.serviceJetMode = accessory.getService('Jet Mode') || accessory.addService(Switch, 'Jet Mode', 'Jet Mode');
-      this.serviceJetMode.updateCharacteristic(platform.Characteristic.Name, 'Jet Mode');
+      this.serviceJetMode.addOptionalCharacteristic(platform.Characteristic.ConfiguredName);
+      this.serviceJetMode.setCharacteristic(platform.Characteristic.ConfiguredName,  device.name + ' - Jet Mode');
       this.serviceJetMode.getCharacteristic(platform.Characteristic.On)
         .onSet(this.setJetModeActive.bind(this));
     } else if (this.serviceJetMode) {
@@ -158,9 +159,9 @@ export default class AirConditioner extends BaseDevice {
     if (this.energySaveModeModels.includes(device.model) && this.config.ac_energy_save as boolean) {
       if (!this.serviceEnergySaveMode) {
         this.serviceEnergySaveMode = accessory.addService(Switch, 'Energy save', 'Energy save');
+        this.serviceEnergySaveMode.addOptionalCharacteristic(platform.Characteristic.ConfiguredName);
+        this.serviceEnergySaveMode.setCharacteristic(platform.Characteristic.ConfiguredName,  device.name + ' - Energy save');
       }
-
-      this.serviceEnergySaveMode.updateCharacteristic(platform.Characteristic.Name, 'Energy save');
       this.serviceEnergySaveMode.getCharacteristic(platform.Characteristic.On)
         .onSet(this.setEnergySaveActive.bind(this));
     } else if (this.serviceEnergySaveMode) {
@@ -172,9 +173,9 @@ export default class AirConditioner extends BaseDevice {
     if (this.airCleanModels.includes(device.model) && this.config.ac_air_clean as boolean) {
       if (!this.serviceAirClean) {
         this.serviceAirClean = accessory.addService(Switch, 'Air Purify', 'Air Purify');
+        this.serviceAirClean.addOptionalCharacteristic(platform.Characteristic.ConfiguredName);
+        this.serviceAirClean.setCharacteristic(platform.Characteristic.ConfiguredName,  device.name + ' - Air Purify');
       }
-
-      this.serviceAirClean.updateCharacteristic(platform.Characteristic.Name, 'Air Purify');
       this.serviceAirClean.getCharacteristic(platform.Characteristic.On)
         .onSet(this.setAirCleanActive.bind(this));
     } else if (this.serviceAirClean) {
@@ -209,7 +210,7 @@ export default class AirConditioner extends BaseDevice {
       ac_fan_control: false,
       ac_jet_control: false,
       ac_temperature_unit: 'C',
-      ac_buttons: [] as Record<string, any>[],
+      ac_buttons: [],
       ac_air_clean: true,
       ac_energy_save: true,
       ...super.config,
@@ -616,7 +617,9 @@ export default class AirConditioner extends BaseDevice {
         }, 100);
       })
       .updateValue(Characteristic.Active.INACTIVE);
-    this.serviceFanV2.getCharacteristic(Characteristic.Name).updateValue(device.name + ' - Fan');
+
+    this.serviceFanV2.addOptionalCharacteristic(Characteristic.ConfiguredName);
+    this.serviceFanV2.setCharacteristic(Characteristic.ConfiguredName, device.name + ' - Fan');
     this.serviceFanV2.getCharacteristic(Characteristic.CurrentFanState)
       .onGet(() => {
         return this.Status.isPowerOn ? Characteristic.CurrentFanState.BLOWING_AIR : Characteristic.CurrentFanState.INACTIVE;
@@ -726,7 +729,7 @@ export default class AirConditioner extends BaseDevice {
       coolHighLimitKey = 'support.coolHighLimit';
     }
 
-    const targetTemperature = (minRange: any, maxRange: any): RangeValue => {
+    const targetTemperature = (minRange: EnumValue, maxRange: EnumValue): RangeValue => {
       let temperature: RangeValue = {
         type: ValueType.Range,
         min: 0,
@@ -855,7 +858,7 @@ export default class AirConditioner extends BaseDevice {
 }
 
 export class ACStatus {
-  constructor(protected data: any, protected device: Device, protected config: any, private logger: Logger) {
+  constructor(protected data: any, protected device: Device, protected config: Config, private logger: Logger) {
   }
 
   /**
@@ -866,6 +869,11 @@ export class ACStatus {
     return this.config.ac_temperature_unit.toLowerCase() === 'f';
   }
 
+  /**
+   * Converts temperature from Homekit to LG format.
+   * @param temperatureInCelsius The temperature in Celsius to convert.
+   * @returns The converted temperature in LG format.
+   */
   public convertTemperatureCelsiusFromHomekitToLG(temperatureInCelsius: CharacteristicValue) {
     this.logger.info('convertTemperatureCelsiusFromHomekitToLG', temperatureInCelsius);
 
@@ -873,13 +881,13 @@ export class ACStatus {
       return temperatureInCelsius;
     }
 
-    const temperatureInFahrenheit = Math.round(cToF(Number(temperatureInCelsius))); // ensure temperatureInCelsius is a number
-    this.logger.info('temperatureInFahrenheit', temperatureInFahrenheit);
-    // lookup celsius value by fahrenheit value from table TempFahToCel
-    const temperature = this.device.deviceModel.lookupMonitorValue('TempFahToCel', temperatureInFahrenheit.toString());
+    // lookup celsius value by fahrenheit value from table TempCelToFah (because enumValue looks up by value)
+    const temperature = this.device.deviceModel.enumValue(`${temperatureInCelsius}`, 'TempCelToFah');
 
-    if (temperature === undefined) {
-      return temperatureInCelsius;
+    if (temperature === null) {
+      const temperatureInFahrenheit = Math.round(cToF(Number(temperatureInCelsius))); // ensure temperatureInCelsius is a number
+      this.logger.info('temperatureInFahrenheit', temperatureInFahrenheit);
+      return temperatureInFahrenheit;
     }
 
     return temperature;
@@ -889,40 +897,22 @@ export class ACStatus {
    * algorithm conversion LG vs Homekit is different
    * so we need to handle it before submit to homekit
    */
-  public convertTemperatureCelsiusFromLGToHomekit(temperatureInCelsius: number): number {
+  public convertTemperatureCelsiusFromLGToHomekit(temperature: number): number {
     if (!this.isFahrenheitUnit) {
-      this.logger.info('Returning original temperature value:', temperatureInCelsius);
-      return temperatureInCelsius;
+      return temperature;
     }
-    this.logger.warn('Doing some fancy unit conversions...', temperatureInCelsius);
-    this.logger.warn('Doing some fancy unit conversions...');
-    this.logger.warn('Doing some fancy unit conversions...');
-    this.logger.warn('Doing some fancy unit conversions...');
-    // lookup fahrenheit value by celsius value from table TempCelToFah
-    let temperatureInFahrenheit = this.device.deviceModel.lookupMonitorValue('TempCelToFah', `${temperatureInCelsius}`);
-    if (isNaN(temperatureInFahrenheit)) {
-      // lookup again in table TempFahToCel
-      temperatureInFahrenheit = parseInt(this.device.deviceModel.lookupMonitorValue('TempFahToCel', `${temperatureInCelsius}`));
+    this.logger.warn('Doing some fancy unit conversions...', temperature);
+    // lookup fahrenheit value by celsius value from table TempCelToFah (because enumValue looks up by value)
+    const temperatureInFahrenheit = this.device.deviceModel.enumValue(`${temperature}`, 'TempCelToFah');
+
+    // if found in TempCelToFah, return it
+    if (temperatureInFahrenheit) {
+      return parseInt(temperatureInFahrenheit);
     }
 
-    // if not found in both tables, return original value
-    if (isNaN(temperatureInFahrenheit)) {
-      this.logger.warn('Returning original temperature value:', temperatureInCelsius);
-      return temperatureInCelsius;
-    }
-
-    // convert F to C, truncate number to 2 decimal places without rounding
-    // custom fToC function, original in helper.ts
-    const celsius = parseFloat(String((temperatureInFahrenheit - 32) * 5 / 9));
-    const withoutRounded = celsius.toString().match(/^-?\d+(?:\.\d{0,2})?/);
-    if (withoutRounded) {
-
-      this.logger.warn('Returning rounded temperature value:', parseFloat(withoutRounded[0]));
-      return parseFloat(withoutRounded[0]);
-    }
-
-    this.logger.warn('Returning something strange and float parsed', parseFloat(celsius.toFixed(2)));
-    return parseFloat(celsius.toFixed(2));
+    // convert temperature from farenheit to celsius with two decimals
+    const temperatureInCelsius = Math.round(fToC(temperature));
+    return temperatureInCelsius;
   }
 
   public get opMode() {
