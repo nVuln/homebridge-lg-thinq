@@ -1,10 +1,10 @@
-import { baseDevice } from '../baseDevice';
+import { AccessoryContext, BaseDevice } from '../baseDevice';
 import { LGThinQHomebridgePlatform } from '../platform';
-import { Logger, PlatformAccessory } from 'homebridge';
+import { Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device';
 import { WasherDryerStatus } from './WasherDryer';
 
-export default class Dishwasher extends baseDevice {
+export default class Dishwasher extends BaseDevice {
   public isRunning = false;
   public inputID = 1;
   public rinseLevel = 'LEVEL_2';
@@ -28,7 +28,7 @@ export default class Dishwasher extends baseDevice {
 
   protected serviceDishwasher;
   protected serviceDoorOpened;
-  protected serviceEventFinished;
+  protected serviceEventFinished: Service | undefined;
   protected tvService;
   protected dishwasherState;
   protected dishwasherOptions;
@@ -38,7 +38,7 @@ export default class Dishwasher extends baseDevice {
   protected dishwasherRinseLevel;
   protected dishwasherClaenness;
 
-  createInputSourceService(name, subtype, identifier, configuredName, isShow) {
+  createInputSourceService(name: string, subtype: string, identifier: number, configuredName: string, isShow: boolean) {
     return this.accessory.getService(name) ||
       this.accessory.addService(this.platform.Service.InputSource, name, subtype)
         .setCharacteristic(this.platform.Characteristic.Identifier, identifier)
@@ -55,7 +55,7 @@ export default class Dishwasher extends baseDevice {
 
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
-    public readonly accessory: PlatformAccessory,
+    public readonly accessory: PlatformAccessory<AccessoryContext>,
     logger: Logger,
   ) {
     super(platform, accessory, logger);
@@ -88,7 +88,11 @@ export default class Dishwasher extends baseDevice {
     this.tvService
       .getCharacteristic(this.platform.Characteristic.ActiveIdentifier)
       .on('set', (inputIdentifier, callback) => {
-
+        if (typeof inputIdentifier !== 'number') {
+          this.platform.log.error('Dishwasher ActiveIdentifier is not a number');
+          callback();
+          return;
+        }
         if (inputIdentifier > 7 || inputIdentifier < 1) {
           this.inputID = 1;
         } else {
@@ -201,7 +205,7 @@ export default class Dishwasher extends baseDevice {
     this.serviceEventFinished = accessory.getService(OccupancySensor);
     if (this.config.dishwasher_trigger as boolean) {
       this.serviceEventFinished = this.serviceEventFinished || accessory.addService(OccupancySensor, device.name + ' - Program Finished');
-       
+
       this.serviceEventFinished.updateCharacteristic(Characteristic.OccupancyDetected, Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED);
     } else if (this.serviceEventFinished) {
       accessory.removeService(this.serviceEventFinished);
@@ -590,7 +594,7 @@ export default class Dishwasher extends baseDevice {
     }, super.config);
   }
 
-  nameLengthCheck(newName) {
+  nameLengthCheck(newName: string) {
     if (newName.length >= 64) {
       newName = newName.slice(0, 60) + '...';
     }
@@ -668,7 +672,7 @@ export default class Dishwasher extends baseDevice {
     }
   }
 
-  getRinseLevel(callback) {
+  getRinseLevel(callback: (error: Error | null, result?: number) => void) {
     if (this.Status.data.state.includes('RUNNING')) {
       this.rinseLevel = this.Status.data.rinseLevel || 'LEVEL_1';
     }
@@ -680,12 +684,12 @@ export default class Dishwasher extends baseDevice {
     callback(null, rinseStatus);
   }
 
-  getDoorStatus(callback) {
+  getDoorStatus(callback: (error: Error | null, result?: boolean) => void) {
     const currentStatus = this.onStatus();
     callback(null, currentStatus);
   }
 
-  getRinseLevelPercent(callback) {
+  getRinseLevelPercent(callback: (error: Error | null, result: number) => void) {
     let levelPercent = this.rinseLevel;
     if (this.Status.data.state.includes('RUNNING')) {
       levelPercent = this.Status.data.rinseLevel || 'LEVEL_1';
@@ -699,7 +703,7 @@ export default class Dishwasher extends baseDevice {
     callback(null, rinseLevelPercent);
   }
 
-  getRinseLevelStatus(callback) {
+  getRinseLevelStatus(callback: (error: Error | null, result: number) => void) {
     let levelStatus = this.rinseLevel;
     if (this.Status.data.state.includes('RUNNING')) {
       levelStatus = this.Status.data.rinseLevel || 'LEVEL_1';
@@ -726,7 +730,7 @@ export default class Dishwasher extends baseDevice {
     this.endTime.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTime ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
   }
 
-  public update(snapshot) {
+  public update(snapshot: any) {
     super.update(snapshot);
 
     const dishwasher = snapshot.dishwasher;
@@ -749,7 +753,7 @@ export default class Dishwasher extends baseDevice {
 
         // turn it off after 10 minute
         setTimeout(() => {
-          this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_NOT_DETECTED);
+          this.serviceEventFinished?.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_NOT_DETECTED);
         }, 10000 * 60);
       }
 

@@ -373,7 +373,7 @@ export class DeviceModel {
    * @returns The decoded monitoring data.
    */
   private decodeMonitorBinary(data: any, length = 8) {
-    const decoded: { [key: string]: any } = {};
+    const decoded: Record<string, any> = {};
 
     for (const item of this.data.Monitoring.protocol) {
       const key = item.value;

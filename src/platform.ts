@@ -1,4 +1,4 @@
-import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
+import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic, Logging } from 'homebridge';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { Helper } from './helper';
@@ -8,7 +8,7 @@ import { PlatformType } from './lib/constants';
 import { ManualProcessNeeded, NotConnectedError } from './errors';
 import { Device } from './lib/Device';
 import Characteristics from './characteristics';
-import { baseDevice } from './baseDevice';
+import { AccessoryContext, BaseDevice } from './baseDevice';
 
 /**
  * LGThinQHomebridgePlatform
@@ -22,7 +22,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
   public readonly customCharacteristics: ReturnType<typeof Characteristics>;
 
   // Tracks restored cached accessories
-  public readonly accessories: PlatformAccessory[] = [];
+  public readonly accessories: PlatformAccessory<AccessoryContext>[] = [];
 
   public readonly ThinQ: ThinQ;
   public readonly events: EventEmitter;
@@ -31,8 +31,14 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
   // Enable ThinQ1 support
   private readonly enable_thinq1: boolean = false;
 
+  // This is only required when using Custom Services and Characteristics not support by HomeKit
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public readonly CustomServices: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public readonly CustomCharacteristics: any;
+
   constructor(
-    public readonly log: Logger,
+    public readonly log: Logging,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
@@ -88,7 +94,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
     };
 
     this.api.on('didFinishLaunching', async () => {
-      this.log.debug('Executed didFinishLaunching callback');
+      log.debug('Executed didFinishLaunching callback');
       didFinishLaunching();
     });
   }
@@ -102,8 +108,13 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
   configureAccessory(accessory: PlatformAccessory) {
     this.log.info('Loading accessory from Homebridge cache:', accessory.displayName);
 
+    if (!accessory.context.device) {
+      this.log.error('Accessory does not have a device context. Cannot restore accessory:', accessory.displayName);
+      return;
+    }
+
     // Add the restored accessory to the accessories cache
-    this.accessories.push(accessory);
+    this.accessories.push(accessory as PlatformAccessory<AccessoryContext>);
   }
 
   /**
@@ -151,9 +162,9 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
         continue;
       }
 
-      let lgThinQDevice: baseDevice;
+      let lgThinQDevice: BaseDevice;
 
-      const existingAccessory = this.accessories.find(accessory => accessory.UUID === device.id);
+      const existingAccessory: PlatformAccessory<AccessoryContext> | undefined = this.accessories.find(accessory => accessory.UUID === device.id);
       if (existingAccessory) {
         // Remove the UUID from the removal list if the accessory already exists
         accessoriesToRemoveUUID.splice(accessoriesToRemoveUUID.indexOf(device.id), 1);
@@ -166,7 +177,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
 
         const category = Helper.category(device);
         // Create a new accessory
-        const accessory = new this.api.platformAccessory(device.name, device.id, category);
+        const accessory: PlatformAccessory<AccessoryContext> | undefined = new this.api.platformAccessory(device.name, device.id, category);
         accessory.context.device = device;
 
         lgThinQDevice = new accessoryType(this, accessory, this.log);

@@ -1,7 +1,6 @@
 import { Device, DeviceData } from './Device';
 import { describe, test, beforeEach, expect } from '@jest/globals';
 
-
 describe('Device', () => {
   let device: Device;
 

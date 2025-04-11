@@ -3,6 +3,7 @@
   "pluginType": "platform",
   "singular": true,
   "customUi": true,
+  "strictValidation": false,
   "schema": {
     "auth_mode": {
       "title": "Auth Mode",

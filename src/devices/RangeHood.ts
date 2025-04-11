@@ -1,16 +1,16 @@
-import { baseDevice } from '../baseDevice';
+import { AccessoryContext, BaseDevice } from '../baseDevice';
 import { LGThinQHomebridgePlatform } from '../platform';
 import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
 import { Device } from '../lib/Device';
 import { ValueType } from '../lib/DeviceModel';
 
-export default class RangeHood extends baseDevice {
+export default class RangeHood extends BaseDevice {
   protected serviceHood;
   protected serviceLight;
 
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
-    public readonly accessory: PlatformAccessory,
+    public readonly accessory: PlatformAccessory<AccessoryContext>,
     logger: Logger,
   ) {
     super(platform, accessory, logger);

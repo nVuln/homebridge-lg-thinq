@@ -1,6 +1,6 @@
-import { baseDevice } from '../baseDevice';
+import { AccessoryContext, BaseDevice } from '../baseDevice';
 import { LGThinQHomebridgePlatform } from '../platform';
-import { CharacteristicValue, Logger, Perms, PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, Logger, Perms, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device';
 import { PlatformType } from '../lib/constants';
 import { DeviceModel } from '../lib/DeviceModel';
@@ -8,18 +8,18 @@ import { DeviceModel } from '../lib/DeviceModel';
 export const NOT_RUNNING_STATUS = ['COOLDOWN', 'POWEROFF', 'POWERFAIL', 'INITIAL', 'PAUSE', 'AUDIBLE_DIAGNOSIS', 'FIRMWARE',
   'COURSE_DOWNLOAD', 'ERROR', 'END'];
 
-export default class WasherDryer extends baseDevice {
+export default class WasherDryer extends BaseDevice {
   public isRunning = false;
   public isServiceTubCleanMaintenanceTriggered = false;
 
-  protected serviceWasherDryer;
-  protected serviceEventFinished;
-  protected serviceDoorLock;
-  protected serviceTubCleanMaintenance;
+  protected serviceWasherDryer: Service | undefined;
+  protected serviceEventFinished: Service | undefined;
+  protected serviceDoorLock: Service | undefined;
+  protected serviceTubCleanMaintenance: Service | undefined;
 
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
-    public readonly accessory: PlatformAccessory,
+    public readonly accessory: PlatformAccessory<AccessoryContext>,
     logger: Logger,
   ) {
     super(platform, accessory, logger);
@@ -140,14 +140,14 @@ export default class WasherDryer extends baseDevice {
     const {
       Characteristic,
     } = this.platform;
-    this.serviceWasherDryer.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
-    this.serviceWasherDryer.updateCharacteristic(Characteristic.InUse, this.Status.isRunning ? 1 : 0);
-    const prevRemainDuration = this.serviceWasherDryer.getCharacteristic(Characteristic.RemainingDuration).value;
+    this.serviceWasherDryer?.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
+    this.serviceWasherDryer?.updateCharacteristic(Characteristic.InUse, this.Status.isRunning ? 1 : 0);
+    const prevRemainDuration = this.serviceWasherDryer?.getCharacteristic(Characteristic.RemainingDuration)?.value;
     if (this.Status.remainDuration !== prevRemainDuration) {
-      this.serviceWasherDryer.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
+      this.serviceWasherDryer?.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
     }
 
-    this.serviceWasherDryer.updateCharacteristic(Characteristic.StatusFault,
+    this.serviceWasherDryer?.updateCharacteristic(Characteristic.StatusFault,
       this.Status.isError ? Characteristic.StatusFault.GENERAL_FAULT : Characteristic.StatusFault.NO_FAULT);
 
     if (this.config.washer_door_lock && this.serviceDoorLock) {
@@ -157,7 +157,7 @@ export default class WasherDryer extends baseDevice {
     }
   }
 
-  public update(snapshot) {
+  public update(snapshot: any) {
     super.update(snapshot);
 
     const washerDryer = snapshot.washerDryer;
@@ -184,13 +184,13 @@ export default class WasherDryer extends baseDevice {
 
         // turn it off after 10 minute
         setTimeout(() => {
-          this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_NOT_DETECTED);
+          this.serviceEventFinished?.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_NOT_DETECTED);
         }, 10000 * 60);
       }
 
       // detect if washer program is start
       if (this.Status.isRunning && !this.isRunning) {
-        this.serviceEventFinished.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_NOT_DETECTED);
+        this.serviceEventFinished?.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_NOT_DETECTED);
         this.isRunning = true;
       }
     }
@@ -208,7 +208,7 @@ export default class WasherDryer extends baseDevice {
 }
 
 export class WasherDryerStatus {
-  constructor(public data, protected deviceModel: DeviceModel) {
+  constructor(public data: any, protected deviceModel: DeviceModel) {
   }
 
   public get isPowerOn() {

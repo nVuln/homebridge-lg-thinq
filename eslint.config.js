@@ -30,11 +30,11 @@ export default tseslint.config(
       sourceType: 'module',
     },
   },
-  {
-    extends: [
-      "plugin:jest/recommended" // enables eslint-plugin-jest
-    ]
-  },
+  // {
+  //   extends: [
+  //     "plugin:jest/recommended" // enables eslint-plugin-jest
+  //   ]
+  // },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
 );

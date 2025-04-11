@@ -1,6 +1,6 @@
 import { DeviceModel } from '../../lib/DeviceModel';
 
-export default function HoodState(deviceModel: DeviceModel, decodedMonitor) {
+export default function HoodState(deviceModel: DeviceModel, decodedMonitor: any) {
   return {
     hoodState: {
       'ventMode': deviceModel.enumName('VentMode', decodedMonitor.VentMode),

@@ -109,7 +109,7 @@ export default class AC extends AirConditioner {
     this.updateAccessoryCharacteristic(device);
   }
 
-  async setOpMode(opMode) {
+  async setOpMode(opMode: number) {
     const device: Device = this.accessory.context.device;
     await this.platform.ThinQ?.thinq1DeviceControl(device, 'OpMode', opMode);
     device.data.snapshot['airState.opMode'] = opMode;

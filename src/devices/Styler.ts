@@ -1,4 +1,4 @@
-import { baseDevice } from '../baseDevice';
+import { AccessoryContext, BaseDevice } from '../baseDevice';
 import { LGThinQHomebridgePlatform } from '../platform';
 import { CharacteristicValue, Logger, Perms, PlatformAccessory } from 'homebridge';
 import { Device } from '../lib/Device';
@@ -7,12 +7,12 @@ import { DeviceModel } from '../lib/DeviceModel';
 export const NOT_RUNNING_STATUS = ['POWEROFF', 'INITIAL', 'PAUSE', 'COMPLETE', 'ERROR', 'DIAGNOSIS', 'RESERVED',
   'SLEEP', 'FOTA'];
 
-export default class Styler extends baseDevice {
+export default class Styler extends BaseDevice {
   protected serviceStyter;
 
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
-    public readonly accessory: PlatformAccessory,
+    public readonly accessory: PlatformAccessory<AccessoryContext>,
     logger: Logger,
   ) {
     super(platform, accessory, logger);
@@ -67,7 +67,7 @@ export default class Styler extends baseDevice {
 }
 
 class StylerStatus {
-  constructor(protected data, protected deviceModel: DeviceModel) { }
+  constructor(protected data: any, protected deviceModel: DeviceModel) { }
 
   public get isPowerOn() {
     return !['POWEROFF', 'POWERFAIL'].includes(this.data?.state);

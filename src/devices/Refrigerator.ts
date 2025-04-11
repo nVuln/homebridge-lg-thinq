@@ -1,22 +1,22 @@
 import { LGThinQHomebridgePlatform } from '../platform';
-import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device';
-import { baseDevice } from '../baseDevice';
+import { AccessoryContext, BaseDevice } from '../baseDevice';
 import { DeviceModel } from '../lib/DeviceModel';
 import { cToF, fToC } from '../helper';
 
-export default class Refrigerator extends baseDevice {
-  protected serviceFreezer;
-  protected serviceFridge;
-  protected serviceDoorOpened;
-  protected serviceExpressMode;
-  protected serviceExpressFridge;
-  protected serviceEcoFriendly;
-  protected serviceWaterFilter;
+export default class Refrigerator extends BaseDevice {
+  protected serviceFreezer: Service | undefined;
+  protected serviceFridge: Service | undefined;
+  protected serviceDoorOpened: Service | undefined;
+  protected serviceExpressMode: Service | undefined;
+  protected serviceExpressFridge: Service | undefined;
+  protected serviceEcoFriendly: Service | undefined;
+  protected serviceWaterFilter: Service | undefined;
 
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
-    public readonly accessory: PlatformAccessory,
+    public readonly accessory: PlatformAccessory<AccessoryContext>,
     logger: Logger,
   ) {
     super(platform, accessory, logger);
@@ -66,7 +66,7 @@ export default class Refrigerator extends baseDevice {
       this.serviceExpressMode.getCharacteristic(Characteristic.On).onSet(this.setExpressMode.bind(this));
     } else if (this.serviceExpressMode) {
       accessory.removeService(this.serviceExpressMode);
-      this.serviceExpressMode = null;
+      this.serviceExpressMode = undefined;
     }
 
     this.serviceExpressFridge = accessory.getService('Express Fridge');
@@ -80,7 +80,7 @@ export default class Refrigerator extends baseDevice {
       this.serviceExpressFridge.getCharacteristic(Characteristic.On).onSet(this.setExpressFridge.bind(this));
     } else if (this.serviceExpressFridge) {
       accessory.removeService(this.serviceExpressFridge);
-      this.serviceExpressFridge = null;
+      this.serviceExpressFridge = undefined;
     }
 
     this.serviceEcoFriendly = accessory.getService('Eco Friendly');
@@ -94,7 +94,7 @@ export default class Refrigerator extends baseDevice {
       this.serviceEcoFriendly.getCharacteristic(Characteristic.On).onSet(this.setEcoFriendly.bind(this));
     } else if (this.serviceEcoFriendly) {
       accessory.removeService(this.serviceEcoFriendly);
-      this.serviceEcoFriendly = null;
+      this.serviceEcoFriendly = undefined;
     }
 
     if (this.Status.hasFeature('waterFilter')) {
@@ -135,7 +135,7 @@ export default class Refrigerator extends baseDevice {
       },
     } = this.platform;
 
-    const tempBetween = (props, value) => {
+    const tempBetween = (props: any, value: number) => {
       return Math.min(Math.max(props.minValue, value), props.maxValue);
     };
 
@@ -242,7 +242,7 @@ export default class Refrigerator extends baseDevice {
   /**
    * create a thermostat service
    */
-  protected createThermostat(name: string, key: string) {
+  protected createThermostat(name: string, key: string): Service | undefined {
     const device: Device = this.accessory.context.device;
     if (!this.Status.hasFeature(key)) {
       return;
@@ -329,7 +329,7 @@ export default class Refrigerator extends baseDevice {
 }
 
 export class RefrigeratorStatus {
-  constructor(protected data, protected deviceModel: DeviceModel) {
+  constructor(protected data: any, protected deviceModel: DeviceModel) {
   }
 
   public get freezerTemperature() {
@@ -386,7 +386,7 @@ export class RefrigeratorStatus {
   }
 
   public hasFeature(key: string) {
-    const visibleItem = this.deviceModel.data.Config?.visibleItems?.find(item => item.Feature === key || item.feature === key);
+    const visibleItem = this.deviceModel.data.Config?.visibleItems?.find((item: any) => item.Feature === key || item.feature === key);
     if (!visibleItem) {
       return false;
     } else if (visibleItem.ControlTitle === undefined && visibleItem.controlTitle === undefined) {

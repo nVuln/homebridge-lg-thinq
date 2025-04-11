@@ -6,12 +6,17 @@ import { fToC } from '../../helper';
 export default class Refrigerator extends RefrigeratorV2 {
 
   protected createThermostat(name: string, key: string) {
-    const keyMap = {
+    const keyMap: Record<string, string | undefined> = {
       fridgeTemp: 'TempRefrigerator',
       freezerTemp: 'TempFreezer',
     };
-
-    return super.createThermostat(name, keyMap[key]);
+    const newKey = keyMap[key];
+    if (newKey) {
+      return super.createThermostat(name, newKey);
+    } else {
+      this.platform.log.error('Invalid key for thermostat:', key);
+      return undefined;
+    }
   }
 
   async setTemperature(key: string, temp: string) {
@@ -50,8 +55,8 @@ export default class Refrigerator extends RefrigeratorV2 {
 
 export class Status extends RefrigeratorStatus {
   public get freezerTemperature() {
-     
-    const defaultValue = this.deviceModel.lookupMonitorValue( 'TempFreezer', this.data?.freezerTemp, '0');
+
+    const defaultValue = this.deviceModel.lookupMonitorValue('TempFreezer', this.data?.freezerTemp, '0');
     if (this.tempUnit === 'FAHRENHEIT') {
       return fToC(parseInt(this.deviceModel.lookupMonitorValue('TempFreezer_F', this.data?.freezerTemp, defaultValue)));
     }
@@ -60,10 +65,10 @@ export class Status extends RefrigeratorStatus {
   }
 
   public get fridgeTemperature() {
-     
-    const defaultValue = this.deviceModel.lookupMonitorValue( 'TempRefrigerator', this.data?.fridgeTemp, '0');
+
+    const defaultValue = this.deviceModel.lookupMonitorValue('TempRefrigerator', this.data?.fridgeTemp, '0');
     if (this.tempUnit === 'FAHRENHEIT') {
-      return fToC(parseInt(this.deviceModel.lookupMonitorValue( 'TempRefrigerator_F', this.data?.fridgeTemp, defaultValue)));
+      return fToC(parseInt(this.deviceModel.lookupMonitorValue('TempRefrigerator_F', this.data?.fridgeTemp, defaultValue)));
     }
 
     return parseInt(this.deviceModel.lookupMonitorValue('TempRefrigerator_C', this.data?.fridgeTemp, defaultValue));

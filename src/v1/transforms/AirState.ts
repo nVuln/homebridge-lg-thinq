@@ -9,8 +9,8 @@ export enum ACOperation {
   ALL_ON = '@AC_MAIN_OPERATION_ALL_ON_W',
 }
 
-export default function AirState(deviceModel: DeviceModel, decodedMonitor) {
-  const airState = {
+export default function AirState(deviceModel: DeviceModel, decodedMonitor: any) {
+  const airState: Record<string, any> = {
     'airState.opMode': parseInt(decodedMonitor.OpMode || '0') as number,
     'airState.operation': loopupEnum(deviceModel, decodedMonitor, 'Operation') !== ACOperation.OFF,
     'airState.tempState.current': parseFloat(decodedMonitor.TempCur || '0') as number,
@@ -27,12 +27,12 @@ export default function AirState(deviceModel: DeviceModel, decodedMonitor) {
   };
 
   if (deviceModel.value('TempCur')) {
-     
+
     airState['airState.tempState.current'] = Math.max(airState['airState.tempState.current'], (deviceModel.value('TempCur') as RangeValue).min);
   }
 
   if (deviceModel.value('TempCfg')) {
-     
+
     airState['airState.tempState.target'] = Math.max(airState['airState.tempState.target'], (deviceModel.value('TempCfg') as RangeValue).min);
   }
 

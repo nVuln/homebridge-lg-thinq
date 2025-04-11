@@ -2,6 +2,7 @@ import AirPurifier from './AirPurifier';
 import { LGThinQHomebridgePlatform } from '../platform';
 import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
 import { Device } from '../lib/Device';
+import { AccessoryContext } from '../baseDevice';
 
 export enum LightBrightness {
   OFF = 0,
@@ -18,7 +19,7 @@ export default class AeroTower extends AirPurifier {
 
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
-    public readonly accessory: PlatformAccessory,
+    public readonly accessory: PlatformAccessory<AccessoryContext>,
     logger: Logger,
   ) {
     super(platform, accessory, logger);

@@ -1,4 +1,4 @@
-import { DeviceModel, ValueType, EnumValue, RangeValue, ModelData } from './DeviceModel';
+import { DeviceModel, RangeValue, ModelData } from './DeviceModel';
 import { describe, test, beforeEach, expect } from '@jest/globals';
 
 describe('DeviceModel', () => {

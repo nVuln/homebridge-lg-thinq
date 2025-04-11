@@ -6,12 +6,12 @@ export enum DoorOpenState {
   CLOSE = 'CLOSE',
 }
 
-export default function RefState(deviceModel: DeviceModel, decodedMonitor) {
-  const snapshot = {
+export default function RefState(deviceModel: DeviceModel, decodedMonitor: any) {
+  const snapshot: Record<string, any> = {
     refState: {
       fridgeTemp: decodedMonitor.TempRefrigerator || deviceModel.default('TempRefrigerator') || '0',
       freezerTemp: decodedMonitor.TempFreezer || deviceModel.default('TempFreezer') || '0',
-       
+
       atLeastOneDoorOpen: lookupEnumIndex(DoorOpenState, loopupEnum(deviceModel, decodedMonitor, 'DoorOpenState') || deviceModel.default('DoorOpenState')),
       tempUnit: parseInt(decodedMonitor.TempUnit || deviceModel.default('TempUnit')) ? 'CELSIUS' : 'FAHRENHEIT',
     },

@@ -2,12 +2,15 @@ import { LGThinQHomebridgePlatform } from './platform';
 import { Logger, PlatformAccessory } from 'homebridge';
 import { Device } from './lib/Device';
 import { EventEmitter } from 'events';
-import { mergeDeep } from './helper';
 
-export class baseDevice extends EventEmitter {
+export type AccessoryContext = {
+  device: Device;
+}
+
+export class BaseDevice extends EventEmitter {
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
-    public readonly accessory: PlatformAccessory,
+    public readonly accessory: PlatformAccessory<AccessoryContext>,
     private readonly logger: Logger,
   ) {
     super();
@@ -27,18 +30,18 @@ export class baseDevice extends EventEmitter {
     this.accessory.context.device = device;
   }
 
-  public update(snapshot) {
+  public update(snapshot: any) {
     const device: Device = this.accessory.context.device;
-    this.platform.log.debug('['+device.name+'] Received snapshot: ', JSON.stringify(snapshot));
-    device.data.snapshot = mergeDeep({}, device.snapshot, snapshot);
+    this.platform.log.debug('[' + device.name + '] Received snapshot: ', JSON.stringify(snapshot));
+    device.data.snapshot = { ...device.snapshot, ...snapshot };
     this.updateAccessoryCharacteristic(device);
   }
 
-  public get config() {
-    return this.platform.config.devices.find(enabled => enabled.id === this.accessory.context.device.id) || {};
+  public get config(): Record<string, any> {
+    return this.platform.config.devices.find((enabled: Record<string, any>) => enabled.id === this.accessory.context.device.id) || {};
   }
 
-  public static model() {
+  public static model(): string {
     return '';
   }
 }
