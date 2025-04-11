@@ -1,7 +1,7 @@
-const { API } = require('../dist/lib/API');
-const { Auth } = require('../dist/lib/Auth');
-const { HomebridgePluginUiServer } = require('@homebridge/plugin-ui-utils');
-const constants = require('../dist/lib/constants');
+import { API } from '../dist/lib/API.js';
+import { Auth } from '../dist/lib/Auth.js';
+import { HomebridgePluginUiServer } from '@homebridge/plugin-ui-utils';
+import { DeviceType } from '../dist/lib/constants.js';
 
 class UiServer extends HomebridgePluginUiServer {
   constructor () {
@@ -27,7 +27,7 @@ class UiServer extends HomebridgePluginUiServer {
           return {
             id: device.deviceId,
             name: device.alias,
-            type: constants.DeviceType[device.deviceType],
+            type: DeviceType[device.deviceType],
           };
         }),
       };
