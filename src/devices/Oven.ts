@@ -1,11 +1,11 @@
 /**
  * Special thank to carlosgamezvillegas (https://github.com/carlosgamezvillegas) for the initial work on the Oven device.
  */
-import { AccessoryContext, BaseDevice } from '../baseDevice';
-import { LGThinQHomebridgePlatform } from '../platform';
+import { AccessoryContext, BaseDevice } from '../baseDevice.js';
+import { LGThinQHomebridgePlatform } from '../platform.js';
 import { Logger, Perms, PlatformAccessory, Service } from 'homebridge';
-import { DeviceModel } from '../lib/DeviceModel';
-import { Device } from '../lib/Device';
+import { DeviceModel } from '../lib/DeviceModel.js';
+import { Device } from '../lib/Device.js';
 
 enum OvenState {
   INITIAL = '@OV_STATE_INITIAL_W',
@@ -1027,76 +1027,76 @@ export default class Oven extends BaseDevice {
   ovenModeName() {
     this.inputNameMode = 'Oven Mode: ';
     switch (this.Status.data?.upperManualCookName) {
-      case 'NONE':
-        this.inputNameMode += 'None';
-        break;
-      case 'BAKE':
-        this.inputNameMode += 'Bake';
-        break;
-      case 'ROAST':
-        this.inputNameMode += 'Roast';
-        break;
-      case 'CONVECTION_BAKE':
-        this.inputNameMode += 'Convection Bake';
-        break;
-      case 'CONVECTION_ROAST':
-        this.inputNameMode += 'Convection Roast';
-        break;
-      case 'CRISP_CONVECTION':
-        this.inputNameMode += 'Crisp Convection';
-        break;
-      case 'FAVORITE':
-        this.inputNameMode += 'Favorite';
-        break;
-      case 'BROIL':
-        this.inputNameMode += 'Broil';
-        break;
-      case 'WARM':
-        this.inputNameMode += 'Warm';
-        break;
-      case 'PROOF':
-        this.inputNameMode += 'Proof';
-        break;
-      case 'FROZEN_MEAL':
-        this.inputNameMode += 'Frozen Meal';
-        break;
-      case 'SLOW_COOK':
-        this.inputNameMode += 'Slow Cook';
-        break;
-      case 'PROBE_SET':
-        this.inputNameMode += 'Probe Set';
-        break;
-      case 'EASY_CLEAN':
-        this.inputNameMode += 'Easy Clean';
-        break;
-      case 'SPEED_BROIL':
-        this.inputNameMode += 'Speed Broil';
-        break;
-      case 'SELF_CLEAN':
-        this.inputNameMode += 'Self Clean';
-        break;
-      case 'SPEED_ROAST':
-        this.inputNameMode += 'Speed Roast';
-        break;
-      case 'AIR_FRY':
-        this.inputNameMode += 'Air Fry';
-        break;
-      case 'PIZZA':
-        this.inputNameMode += 'Pizza';
-        break;
-      case 'AIR_SOUSVIDE':
-        this.inputNameMode += 'Air Sousvide';
-        break;
-      default:
-        // eslint-disable-next-line no-case-declarations
-        let cookName = this.Status.data?.upperManualCookName;
-        cookName = cookName.toLocaleLowerCase();
-        // eslint-disable-next-line no-case-declarations
-        const cookNameCap =
+    case 'NONE':
+      this.inputNameMode += 'None';
+      break;
+    case 'BAKE':
+      this.inputNameMode += 'Bake';
+      break;
+    case 'ROAST':
+      this.inputNameMode += 'Roast';
+      break;
+    case 'CONVECTION_BAKE':
+      this.inputNameMode += 'Convection Bake';
+      break;
+    case 'CONVECTION_ROAST':
+      this.inputNameMode += 'Convection Roast';
+      break;
+    case 'CRISP_CONVECTION':
+      this.inputNameMode += 'Crisp Convection';
+      break;
+    case 'FAVORITE':
+      this.inputNameMode += 'Favorite';
+      break;
+    case 'BROIL':
+      this.inputNameMode += 'Broil';
+      break;
+    case 'WARM':
+      this.inputNameMode += 'Warm';
+      break;
+    case 'PROOF':
+      this.inputNameMode += 'Proof';
+      break;
+    case 'FROZEN_MEAL':
+      this.inputNameMode += 'Frozen Meal';
+      break;
+    case 'SLOW_COOK':
+      this.inputNameMode += 'Slow Cook';
+      break;
+    case 'PROBE_SET':
+      this.inputNameMode += 'Probe Set';
+      break;
+    case 'EASY_CLEAN':
+      this.inputNameMode += 'Easy Clean';
+      break;
+    case 'SPEED_BROIL':
+      this.inputNameMode += 'Speed Broil';
+      break;
+    case 'SELF_CLEAN':
+      this.inputNameMode += 'Self Clean';
+      break;
+    case 'SPEED_ROAST':
+      this.inputNameMode += 'Speed Roast';
+      break;
+    case 'AIR_FRY':
+      this.inputNameMode += 'Air Fry';
+      break;
+    case 'PIZZA':
+      this.inputNameMode += 'Pizza';
+      break;
+    case 'AIR_SOUSVIDE':
+      this.inputNameMode += 'Air Sousvide';
+      break;
+    default:
+      // eslint-disable-next-line no-case-declarations
+      let cookName = this.Status.data?.upperManualCookName;
+      cookName = cookName.toLocaleLowerCase();
+      // eslint-disable-next-line no-case-declarations
+      const cookNameCap =
           cookName.charAt(0).toUpperCase()
           + cookName.slice(1);
 
-        this.inputNameMode += cookNameCap;
+      this.inputNameMode += cookNameCap;
 
     }
     if (!this.inputNameMode.includes('None')) {
@@ -1114,41 +1114,41 @@ export default class Oven extends BaseDevice {
   ovenStatus() {
     this.inputNameStatus = 'Oven is ';
     switch (this.Status.data?.upperState) {
-      case 'INITIAL':
-        this.inputNameStatus += 'in Standby';
-        if (this.Status.data?.upperRemoteStart.includes('DIS')) {
-          this.inputNameStatus += ' (Remote Start Disabled)';
-        } else if (this.homekitMonitorOnly) {
-          this.inputNameStatus += ' (Homekit Monitor Only Mode)';
-        }
-        break;
-      case 'PREHEATING':
-        this.inputNameStatus += 'Preheating';
-        break;
-      case 'COOKING_IN_PROGRESS':
-        this.inputNameStatus += 'Baking';
-        break;
-      case 'DONE':
-        this.inputNameStatus += 'Done Baking';
-        break;
-      case 'COOLING':
-        this.inputNameStatus += 'Cooling Down';
-        break;
-      case 'CLEANING':
-        this.inputNameStatus += 'Cleaning Itself';
-        break;
-      case 'CLEANING_DONE':
-        this.inputNameStatus += 'Done Cleaning Itself';
-        break;
-      default:
-        // eslint-disable-next-line no-case-declarations
-        let stateName = this.Status.data?.upperState;
-        stateName = stateName.toLocaleLowerCase();
-        // eslint-disable-next-line no-case-declarations
-        const stateNameCap =
+    case 'INITIAL':
+      this.inputNameStatus += 'in Standby';
+      if (this.Status.data?.upperRemoteStart.includes('DIS')) {
+        this.inputNameStatus += ' (Remote Start Disabled)';
+      } else if (this.homekitMonitorOnly) {
+        this.inputNameStatus += ' (Homekit Monitor Only Mode)';
+      }
+      break;
+    case 'PREHEATING':
+      this.inputNameStatus += 'Preheating';
+      break;
+    case 'COOKING_IN_PROGRESS':
+      this.inputNameStatus += 'Baking';
+      break;
+    case 'DONE':
+      this.inputNameStatus += 'Done Baking';
+      break;
+    case 'COOLING':
+      this.inputNameStatus += 'Cooling Down';
+      break;
+    case 'CLEANING':
+      this.inputNameStatus += 'Cleaning Itself';
+      break;
+    case 'CLEANING_DONE':
+      this.inputNameStatus += 'Done Cleaning Itself';
+      break;
+    default:
+      // eslint-disable-next-line no-case-declarations
+      let stateName = this.Status.data?.upperState;
+      stateName = stateName.toLocaleLowerCase();
+      // eslint-disable-next-line no-case-declarations
+      const stateNameCap =
           stateName.charAt(0).toUpperCase()
           + stateName.slice(1);
-        this.inputNameStatus += stateNameCap;
+      this.inputNameStatus += stateNameCap;
 
     }
 

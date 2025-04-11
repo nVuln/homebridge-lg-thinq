@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { API } from './lib/API';
-import { Auth } from './lib/Auth';
+import { API } from './lib/API.js';
+import { Auth } from './lib/Auth.js';
 import { URL } from 'url';
 import * as readline from 'readline';
 import { Logger } from 'homebridge/dist/logger';

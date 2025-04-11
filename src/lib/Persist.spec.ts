@@ -1,4 +1,5 @@
-import Persist from './Persist';
+/* eslint-disable dot-notation */
+import Persist from './Persist.js';
 import { describe, test, beforeEach, expect, jest } from '@jest/globals';
 
 describe('Persist', () => {
@@ -9,8 +10,8 @@ describe('Persist', () => {
     persist = new Persist(mockDir);
     await persist.init();
     jest.spyOn(persist['persist'], 'getItem').mockResolvedValue(null);
-    jest.spyOn(persist['persist'], 'setItem').mockResolvedValue({file: "",content: {}});
-    jest.spyOn(persist['persist'], 'removeItem').mockResolvedValue({file: "", removed: true, existed: true});
+    jest.spyOn(persist['persist'], 'setItem').mockResolvedValue({ file: '', content: {} });
+    jest.spyOn(persist['persist'], 'removeItem').mockResolvedValue({ file: '', removed: true, existed: true });
   });
 
   test('should initialize storage', async () => {

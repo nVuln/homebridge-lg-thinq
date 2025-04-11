@@ -1,19 +1,19 @@
 import { Categories } from 'homebridge';
-import { Device } from './lib/Device';
-import AirPurifier from './devices/AirPurifier';
-import Refrigerator from './devices/Refrigerator';
-import WasherDryer from './devices/WasherDryer';
-import Dishwasher from './devices/Dishwasher';
-import Dehumidifier from './devices/Dehumidifier';
-import { default as V1helper } from './v1/helper';
-import { PlatformType } from './lib/constants';
-import AirConditioner from './devices/AirConditioner';
-import AeroTower from './devices/AeroTower';
-import Styler from './devices/Styler';
-import RangeHood from './devices/RangeHood';
-import Oven from './devices/Oven';
-import Microwave from './devices/Microwave';
-import WasherDryer2 from './devices/WasherDryer2';
+import { Device } from './lib/Device.js';
+import AirPurifier from './devices/AirPurifier.js';
+import Refrigerator from './devices/Refrigerator.js';
+import WasherDryer from './devices/WasherDryer.js';
+import Dishwasher from './devices/Dishwasher.js';
+import Dehumidifier from './devices/Dehumidifier.js';
+import { default as V1helper } from './v1/helper.js';
+import { PlatformType } from './lib/constants.js';
+import AirConditioner from './devices/AirConditioner.js';
+import AeroTower from './devices/AeroTower.js';
+import Styler from './devices/Styler.js';
+import RangeHood from './devices/RangeHood.js';
+import Oven from './devices/Oven.js';
+import Microwave from './devices/Microwave.js';
+import WasherDryer2 from './devices/WasherDryer2.js';
 
 /**
  * Platform Accessory

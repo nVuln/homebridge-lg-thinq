@@ -1,5 +1,6 @@
+/* eslint-disable dot-notation */
 import { describe, beforeEach, test, expect } from '@jest/globals';
-import { Session } from '../../src/lib/Session';
+import { Session } from '../../src/lib/Session.js';
 
 describe('Session', () => {
   let session: Session;

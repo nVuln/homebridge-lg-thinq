@@ -1,9 +1,9 @@
-import { AccessoryContext, BaseDevice } from '../baseDevice';
-import { LGThinQHomebridgePlatform } from '../platform';
+import { AccessoryContext, BaseDevice } from '../baseDevice.js';
+import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
-import { Device } from '../lib/Device';
-import { EnumValue, RangeValue, ValueType } from '../lib/DeviceModel';
-import { cToF } from '../helper';
+import { Device } from '../lib/Device.js';
+import { EnumValue, RangeValue, ValueType } from '../lib/DeviceModel.js';
+import { cToF } from '../helper.js';
 
 export enum ACModelType {
   AWHP = 'AWHP',

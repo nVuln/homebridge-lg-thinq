@@ -1,6 +1,6 @@
-import { default as RangeHoodV2 } from '../../devices/RangeHood';
+import { default as RangeHoodV2 } from '../../devices/RangeHood.js';
 import { CharacteristicValue } from 'homebridge';
-import { Device } from '../../lib/Device';
+import { Device } from '../../lib/Device.js';
 
 export default class RangeHood extends RangeHoodV2 {
   async setHoodRotationSpeed(value: CharacteristicValue) {

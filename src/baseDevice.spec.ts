@@ -1,11 +1,11 @@
-import { BaseDevice, AccessoryContext } from './baseDevice';
-import { LGThinQHomebridgePlatform } from './platform';
+import { BaseDevice, AccessoryContext } from './baseDevice.js';
+import { LGThinQHomebridgePlatform } from './platform.js';
 import { Logger, PlatformAccessory } from 'homebridge';
-import { Device, DeviceData } from './lib/Device';
+import { Device, DeviceData } from './lib/Device.js';
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 
 // Mock dependencies
-jest.mock('./platform');
+jest.mock('./platform.js');
 jest.mock('./lib/Device');
 
 // Test suite for BaseDevice class

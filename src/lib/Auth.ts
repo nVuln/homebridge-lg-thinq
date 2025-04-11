@@ -2,11 +2,11 @@ import crypto from 'crypto';
 import { DateTime } from 'luxon';
 import qs from 'qs';
 import { URL } from 'url';
-import { AuthenticationError, ManualProcessNeededErrorCode, TokenError } from '../errors';
-import * as constants from './constants';
-import { Gateway } from './Gateway';
-import { requestClient } from './request';
-import { Session } from './Session';
+import { AuthenticationError, ManualProcessNeededErrorCode, TokenError } from '../errors/index.js';
+import * as constants from './constants.js';
+import { Gateway } from './Gateway.js';
+import { requestClient } from './request.js';
+import { Session } from './Session.js';
 import { Logger } from 'homebridge';
 
 /**
@@ -151,8 +151,8 @@ export class Auth {
           'Accept': 'application/json',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-      })
-      const token = res.data;
+      });
+    const token = res.data;
 
     this.lgeapi_url = token.oauth2_backend_url || this.lgeapi_url;
 

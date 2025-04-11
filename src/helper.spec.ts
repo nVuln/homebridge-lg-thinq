@@ -1,7 +1,7 @@
-import { Helper, fToC, cToF } from './helper';
-import { Device } from './lib/Device';
+import { Helper, fToC, cToF } from './helper.js';
+import { Device } from './lib/Device.js';
 import { Categories } from 'homebridge';
-import { PlatformType } from './lib/constants';
+import { PlatformType } from './lib/constants.js';
 import { describe, expect, it, jest } from '@jest/globals';
 
 // Mock dependencies

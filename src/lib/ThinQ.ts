@@ -1,18 +1,18 @@
 import { Logger, PlatformConfig } from 'homebridge';
-import { API } from './API';
-import { LGThinQHomebridgePlatform } from '../platform';
-import { Device, DeviceData } from './Device';
-import { DeviceType, PlatformType } from './constants';
+import { API } from './API.js';
+import { LGThinQHomebridgePlatform } from '../platform.js';
+import { Device, DeviceData } from './Device.js';
+import { DeviceType, PlatformType } from './constants.js';
 import { v4 } from 'uuid';
 import * as Path from 'path';
 import * as forge from 'node-forge';
-import { DeviceModel } from './DeviceModel';
-import Helper from '../v1/helper';
-import { MonitorError, NotConnectedError } from '../errors';
-import { PLUGIN_NAME } from '../settings';
+import { DeviceModel } from './DeviceModel.js';
+import Helper from '../v1/helper.js';
+import { MonitorError, NotConnectedError } from '../errors/index.js';
+import { PLUGIN_NAME } from '../settings.js';
 import { device as awsIotDevice } from 'aws-iot-device-sdk';
 import { URL } from 'url';
-import Persist from './Persist';
+import Persist from './Persist.js';
 
 export type WorkId = string;
 

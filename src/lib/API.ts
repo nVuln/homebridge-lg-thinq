@@ -1,13 +1,13 @@
-import * as constants from './constants';
+import * as constants from './constants.js';
 import { URL } from 'url';
 
-import { Session } from './Session';
-import { Gateway } from './Gateway';
+import { Session } from './Session.js';
+import { Gateway } from './Gateway.js';
 
-import { requestClient } from './request';
-import { Auth } from './Auth';
-import { WorkId } from './ThinQ';
-import { ManualProcessNeeded, MonitorError, NotConnectedError, TokenExpiredError } from '../errors';
+import { requestClient } from './request.js';
+import { Auth } from './Auth.js';
+import { WorkId } from './ThinQ.js';
+import { ManualProcessNeeded, MonitorError, NotConnectedError, TokenExpiredError } from '../errors/index.js';
 import crypto from 'crypto';
 import axios, { Method } from 'axios';
 import { Logger } from 'homebridge';

@@ -1,5 +1,5 @@
-import { DeviceModel, RangeValue } from '../../lib/DeviceModel';
-import { loopupEnum } from '../helper';
+import { DeviceModel, RangeValue } from '../../lib/DeviceModel.js';
+import { loopupEnum } from '../helper.js';
 
 export enum ACOperation {
   OFF = '@AC_MAIN_OPERATION_OFF_W',

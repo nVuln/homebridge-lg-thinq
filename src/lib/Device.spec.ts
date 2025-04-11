@@ -1,4 +1,4 @@
-import { Device, DeviceData } from './Device';
+import { Device, DeviceData } from './Device.js';
 import { describe, test, beforeEach, expect } from '@jest/globals';
 
 describe('Device', () => {
@@ -101,7 +101,7 @@ describe('Device', () => {
 
   test('should retrieve online status from snapshot.online', () => {
     const data = { ...mockDeviceData, online: undefined, snapshot: { online: true } };
-    let device2 = new Device(data);
+    const device2 = new Device(data);
     expect(device2.online).toBe(true);
   });
 

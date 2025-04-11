@@ -1,4 +1,4 @@
-import { Gateway, GatewayData } from './Gateway';
+import { Gateway, GatewayData } from './Gateway.js';
 import { describe, test, expect, beforeEach } from '@jest/globals';
 
 describe('Gateway', () => {

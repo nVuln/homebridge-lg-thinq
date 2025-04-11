@@ -1,9 +1,9 @@
-import { LGThinQHomebridgePlatform } from '../platform';
+import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
-import { Device } from '../lib/Device';
-import { AccessoryContext, BaseDevice } from '../baseDevice';
-import { DeviceModel } from '../lib/DeviceModel';
-import { cToF, fToC } from '../helper';
+import { Device } from '../lib/Device.js';
+import { AccessoryContext, BaseDevice } from '../baseDevice.js';
+import { DeviceModel } from '../lib/DeviceModel.js';
+import { cToF, fToC } from '../helper.js';
 
 export default class Refrigerator extends BaseDevice {
   protected serviceFreezer: Service | undefined;
@@ -262,13 +262,13 @@ export default class Refrigerator extends BaseDevice {
     service.updateCharacteristic(Characteristic.CurrentHeatingCoolingState, Characteristic.CurrentHeatingCoolingState.COOL)
       .getCharacteristic(Characteristic.CurrentHeatingCoolingState)
       .setProps({
-        validValues: [Characteristic.CurrentHeatingCoolingState.COOL] // Hide other states
+        validValues: [Characteristic.CurrentHeatingCoolingState.COOL], // Hide other states
       });
 
     service.getCharacteristic(Characteristic.TargetHeatingCoolingState)
       .updateValue(Characteristic.TargetHeatingCoolingState.COOL)
       .setProps({
-        validValues: [Characteristic.TargetHeatingCoolingState.COOL] // Hide Heat/Auto/Off
+        validValues: [Characteristic.TargetHeatingCoolingState.COOL], // Hide Heat/Auto/Off
       });
 
     service.getCharacteristic(Characteristic.TemperatureDisplayUnits).setProps({

@@ -1,8 +1,8 @@
-import { default as AirConditioner, FanSpeed } from '../../devices/AirConditioner';
+import { default as AirConditioner, FanSpeed } from '../../devices/AirConditioner.js';
 import { CharacteristicValue } from 'homebridge';
-import { ACOperation } from '../transforms/AirState';
-import { Device } from '../../lib/Device';
-import { RangeValue } from '../../lib/DeviceModel';
+import { ACOperation } from '../transforms/AirState.js';
+import { Device } from '../../lib/Device.js';
+import { RangeValue } from '../../lib/DeviceModel.js';
 
 export default class AC extends AirConditioner {
 

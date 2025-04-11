@@ -1,7 +1,7 @@
-import { AccessoryContext, BaseDevice } from '../baseDevice';
-import { LGThinQHomebridgePlatform } from '../platform';
+import { AccessoryContext, BaseDevice } from '../baseDevice.js';
+import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
-import { Device } from '../lib/Device';
+import { Device } from '../lib/Device.js';
 
 enum RotateSpeed {
   LOW = 2,

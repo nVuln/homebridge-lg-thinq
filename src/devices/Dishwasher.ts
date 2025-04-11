@@ -1,8 +1,8 @@
-import { AccessoryContext, BaseDevice } from '../baseDevice';
-import { LGThinQHomebridgePlatform } from '../platform';
+import { AccessoryContext, BaseDevice } from '../baseDevice.js';
+import { LGThinQHomebridgePlatform } from '../platform.js';
 import { Logger, PlatformAccessory, Service } from 'homebridge';
-import { Device } from '../lib/Device';
-import { WasherDryerStatus } from './WasherDryer';
+import { Device } from '../lib/Device.js';
+import { WasherDryerStatus } from './WasherDryer.js';
 
 export default class Dishwasher extends BaseDevice {
   public isRunning = false;

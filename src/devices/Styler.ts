@@ -1,8 +1,8 @@
-import { AccessoryContext, BaseDevice } from '../baseDevice';
-import { LGThinQHomebridgePlatform } from '../platform';
-import { CharacteristicValue, Logger, Perms, PlatformAccessory } from 'homebridge';
-import { Device } from '../lib/Device';
-import { DeviceModel } from '../lib/DeviceModel';
+import { AccessoryContext, BaseDevice } from '../baseDevice.js';
+import { LGThinQHomebridgePlatform } from '../platform.js';
+import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
+import { Device } from '../lib/Device.js';
+import { DeviceModel } from '../lib/DeviceModel.js';
 
 export const NOT_RUNNING_STATUS = ['POWEROFF', 'INITIAL', 'PAUSE', 'COMPLETE', 'ERROR', 'DIAGNOSIS', 'RESERVED',
   'SLEEP', 'FOTA'];

@@ -1,6 +1,6 @@
-import { LGThinQHomebridgePlatform } from './platform';
+import { LGThinQHomebridgePlatform } from './platform.js';
 import { Logger, PlatformAccessory } from 'homebridge';
-import { Device } from './lib/Device';
+import { Device } from './lib/Device.js';
 import { EventEmitter } from 'events';
 
 export type AccessoryContext = {

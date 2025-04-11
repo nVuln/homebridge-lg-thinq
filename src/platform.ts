@@ -1,14 +1,14 @@
-import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic, Logging } from 'homebridge';
+import { API, DynamicPlatformPlugin, PlatformAccessory, PlatformConfig, Service, Characteristic, Logging } from 'homebridge';
 
-import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-import { Helper } from './helper';
-import { ThinQ } from './lib/ThinQ';
+import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
+import { Helper } from './helper.js';
+import { ThinQ } from './lib/ThinQ.js';
 import { EventEmitter } from 'events';
-import { PlatformType } from './lib/constants';
-import { ManualProcessNeeded, NotConnectedError } from './errors';
-import { Device } from './lib/Device';
-import Characteristics from './characteristics';
-import { AccessoryContext, BaseDevice } from './baseDevice';
+import { PlatformType } from './lib/constants.js';
+import { ManualProcessNeeded, NotConnectedError } from './errors/index.js';
+import { Device } from './lib/Device.js';
+import Characteristics from './characteristics/index.js';
+import { AccessoryContext, BaseDevice } from './baseDevice.js';
 
 /**
  * LGThinQHomebridgePlatform

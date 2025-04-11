@@ -1,9 +1,11 @@
-import { Auth } from './Auth';
-import { Gateway } from './Gateway';
-import { Session } from './Session';
+/* eslint-disable dot-notation */
+/* eslint-disable @typescript-eslint/no-require-imports */
+import { Auth } from './Auth.js';
+import { Gateway } from './Gateway.js';
+import { Session } from './Session.js';
 import { Logger } from 'homebridge';
 import { describe, test, beforeEach, expect, jest } from '@jest/globals';
-import { AuthenticationError, TokenError } from '../errors';
+import { AuthenticationError } from '../errors/index.js';
 
 describe('Auth', () => {
   let auth: Auth;
@@ -117,8 +119,8 @@ describe('Auth', () => {
     };
     const requestClient = require('./request').requestClient;
     jest.spyOn(requestClient, 'post')
-    .mockResolvedValueOnce({ data: mockPreLoginResponse }) // Mock preLogin response
-    .mockRejectedValueOnce(mockErrorResponse);
+      .mockResolvedValueOnce({ data: mockPreLoginResponse }) // Mock preLogin response
+      .mockRejectedValueOnce(mockErrorResponse);
 
     await expect(auth.loginStep2('testUser', 'mockEncryptedPassword')).rejects.toThrow(AuthenticationError);
   });

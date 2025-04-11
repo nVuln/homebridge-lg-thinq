@@ -1,8 +1,8 @@
-import { AccessoryContext, BaseDevice } from '../baseDevice';
-import { LGThinQHomebridgePlatform } from '../platform';
+import { AccessoryContext, BaseDevice } from '../baseDevice.js';
+import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
-import { Device } from '../lib/Device';
-import { ValueType } from '../lib/DeviceModel';
+import { Device } from '../lib/Device.js';
+import { ValueType } from '../lib/DeviceModel.js';
 
 export default class RangeHood extends BaseDevice {
   protected serviceHood;

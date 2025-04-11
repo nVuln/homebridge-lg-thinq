@@ -1,4 +1,5 @@
-import { API } from './API';
+/* eslint-disable dot-notation */
+import { API } from './API.js';
 import { Logger } from 'homebridge';
 import { beforeEach, describe, expect, jest, test } from '@jest/globals';
 
