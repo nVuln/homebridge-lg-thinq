@@ -5,7 +5,7 @@ import { Device, DeviceData } from './Device.js';
 import { DeviceType, PlatformType } from './constants.js';
 import { v4 } from 'uuid';
 import * as Path from 'path';
-import * as forge from 'node-forge';
+import forge from 'node-forge';
 import { DeviceModel } from './DeviceModel.js';
 import Helper from '../v1/helper.js';
 import { MonitorError, NotConnectedError } from '../errors/index.js';
