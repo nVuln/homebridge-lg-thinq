@@ -16,6 +16,7 @@ export enum FanSpeed {
   MEDIUM = 4,
   MEDIUM_HIGH = 5,
   HIGH = 6,
+  AUTO = 8,
 }
 
 enum OpMode {
@@ -25,6 +26,21 @@ enum OpMode {
   FAN = 2,
   DRY = 1,
   AIR_CLEAN = 5,
+}
+
+export type Config = {
+  ac_swing_mode: string,
+  ac_air_quality: boolean,
+  ac_mode: string,
+  ac_temperature_sensor: boolean,
+  ac_humidity_sensor: boolean,
+  ac_led_control: boolean,
+  ac_fan_control: boolean,
+  ac_jet_control: boolean,
+  ac_temperature_unit: string,
+  ac_buttons: Record<string, any>[],
+  ac_air_clean: boolean,
+  ac_energy_save: boolean,
 }
 
 /**
@@ -182,8 +198,8 @@ export default class AirConditioner extends BaseDevice {
     }, 60000);
   }
 
-  public get config() {
-    return Object.assign({}, {
+  public get config(): Config {
+    return {
       ac_swing_mode: 'BOTH',
       ac_air_quality: false,
       ac_mode: 'BOTH',
@@ -196,11 +212,12 @@ export default class AirConditioner extends BaseDevice {
       ac_buttons: [] as Record<string, any>[],
       ac_air_clean: true,
       ac_energy_save: true,
-    }, super.config);
+      ...super.config,
+    };
   }
 
   public get Status() {
-    return new ACStatus(this.accessory.context.device.snapshot, this.accessory.context.device, this.config);
+    return new ACStatus(this.accessory.context.device.snapshot, this.accessory.context.device, this.config, this.logger);
   }
 
   /**
@@ -317,10 +334,10 @@ export default class AirConditioner extends BaseDevice {
 
     if (!this.Status.isPowerOn) {
       this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, Characteristic.CurrentHeaterCoolerState.INACTIVE);
-    } else if ([OpMode.COOL].includes(this.Status.opMode)) {
+    } else if (this.Status.opMode === OpMode.COOL) {
       this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, Characteristic.CurrentHeaterCoolerState.COOLING);
       this.service.updateCharacteristic(Characteristic.TargetHeaterCoolerState, Characteristic.TargetHeaterCoolerState.COOL);
-    } else if ([OpMode.HEAT].includes(this.Status.opMode)) {
+    } else if (this.Status.opMode === OpMode.HEAT) {
       this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, Characteristic.CurrentHeaterCoolerState.HEATING);
       this.service.updateCharacteristic(Characteristic.TargetHeaterCoolerState, Characteristic.TargetHeaterCoolerState.HEAT);
     } else if ([OpMode.AUTO, -1].includes(this.Status.opMode)) {
@@ -342,6 +359,7 @@ export default class AirConditioner extends BaseDevice {
       }
 
       if (this.service.getCharacteristic(CurrentHeaterCoolerState).value === CurrentHeaterCoolerState.COOLING) {
+        this.logger.debug('Setting cooling target temperature = ', this.Status.targetTemperature);
         this.service.updateCharacteristic(Characteristic.CoolingThresholdTemperature, this.Status.targetTemperature);
       }
     }
@@ -379,7 +397,12 @@ export default class AirConditioner extends BaseDevice {
     // handle fan service
     if (this.config?.ac_fan_control as boolean && this.serviceFanV2) {
       this.serviceFanV2.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? Active.ACTIVE : Active.INACTIVE);
-      this.serviceFanV2.updateCharacteristic(Characteristic.RotationSpeed, this.Status.windStrength);
+      if (this.Status.isWindStrengthAuto) {
+        this.serviceFanV2.updateCharacteristic(Characteristic.TargetFanState, Characteristic.TargetFanState.AUTO);
+      } else {
+        this.serviceFanV2.updateCharacteristic(Characteristic.TargetFanState, Characteristic.TargetFanState.MANUAL);
+        this.serviceFanV2.updateCharacteristic(Characteristic.RotationSpeed, this.Status.windStrength);
+      }
       // eslint-disable-next-line max-len
       this.serviceFanV2.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwingOn ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED);
     }
@@ -475,13 +498,17 @@ export default class AirConditioner extends BaseDevice {
       return;
     }
 
+    if (typeof value !== 'number') {
+      this.platform.log.error('Invalid temperature value: ', value);
+      return;
+    }
+    this.logger.debug('Set target temperature = ', value);
     const device: Device = this.accessory.context.device;
-
     const temperature = this.Status.convertTemperatureCelsiusFromHomekitToLG(value);
     if (temperature === this.Status.targetTemperature) {
       return;
     }
-
+    this.logger.debug('Set target temperature = ', temperature);
     await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.tempState.target',
       dataValue: temperature,
@@ -497,7 +524,7 @@ export default class AirConditioner extends BaseDevice {
 
     const speedValue = Math.max(1, Math.round(value as number));
 
-    this.platform.log.info('Set fan speed = ', speedValue);
+    this.platform.log.debug('Set fan speed = ', speedValue);
     const device: Device = this.accessory.context.device;
     const windStrength = parseInt(Object.keys(FanSpeed)[speedValue - 1]) || FanSpeed.HIGH;
     this.platform.ThinQ?.deviceControl(device.id, {
@@ -739,8 +766,7 @@ export default class AirConditioner extends BaseDevice {
           minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.min),
           maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.max),
           minStep: targetHeatTemperature.step || 0.01,
-        })
-        .updateValue(this.Status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.min));
+        });
     }
 
     const tempCoolMinRange = device.deviceModel.value(coolLowLimitKey) as EnumValue;
@@ -753,8 +779,7 @@ export default class AirConditioner extends BaseDevice {
           minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.min),
           maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.max),
           minStep: targetHeatTemperature.step || 0.01,
-        })
-        .updateValue(this.Status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.min));
+        });
     }
 
     this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
@@ -830,7 +855,7 @@ export default class AirConditioner extends BaseDevice {
 }
 
 export class ACStatus {
-  constructor(protected data: any, protected device: Device, protected config: any) {
+  constructor(protected data: any, protected device: Device, protected config: any, private logger: Logger) {
   }
 
   /**
@@ -838,18 +863,18 @@ export class ACStatus {
    * list: us
    */
   public get isFahrenheitUnit() {
-    return this.config?.ac_temperature_unit?.toLowerCase() === 'f';
+    return this.config.ac_temperature_unit.toLowerCase() === 'f';
   }
 
   public convertTemperatureCelsiusFromHomekitToLG(temperatureInCelsius: CharacteristicValue) {
-    console.log('convertTemperatureCelsiusFromHomekitToLG', temperatureInCelsius);
+    this.logger.info('convertTemperatureCelsiusFromHomekitToLG', temperatureInCelsius);
 
     if (!this.isFahrenheitUnit) {
       return temperatureInCelsius;
     }
 
     const temperatureInFahrenheit = Math.round(cToF(Number(temperatureInCelsius))); // ensure temperatureInCelsius is a number
-    console.log('temperatureInFahrenheit', temperatureInFahrenheit);
+    this.logger.info('temperatureInFahrenheit', temperatureInFahrenheit);
     // lookup celsius value by fahrenheit value from table TempFahToCel
     const temperature = this.device.deviceModel.lookupMonitorValue('TempFahToCel', temperatureInFahrenheit.toString());
 
@@ -866,9 +891,13 @@ export class ACStatus {
    */
   public convertTemperatureCelsiusFromLGToHomekit(temperatureInCelsius: number): number {
     if (!this.isFahrenheitUnit) {
+      this.logger.info('Returning original temperature value:', temperatureInCelsius);
       return temperatureInCelsius;
     }
-
+    this.logger.warn('Doing some fancy unit conversions...', temperatureInCelsius);
+    this.logger.warn('Doing some fancy unit conversions...');
+    this.logger.warn('Doing some fancy unit conversions...');
+    this.logger.warn('Doing some fancy unit conversions...');
     // lookup fahrenheit value by celsius value from table TempCelToFah
     let temperatureInFahrenheit = this.device.deviceModel.lookupMonitorValue('TempCelToFah', `${temperatureInCelsius}`);
     if (isNaN(temperatureInFahrenheit)) {
@@ -878,6 +907,7 @@ export class ACStatus {
 
     // if not found in both tables, return original value
     if (isNaN(temperatureInFahrenheit)) {
+      this.logger.warn('Returning original temperature value:', temperatureInCelsius);
       return temperatureInCelsius;
     }
 
@@ -886,9 +916,12 @@ export class ACStatus {
     const celsius = parseFloat(String((temperatureInFahrenheit - 32) * 5 / 9));
     const withoutRounded = celsius.toString().match(/^-?\d+(?:\.\d{0,2})?/);
     if (withoutRounded) {
+
+      this.logger.warn('Returning rounded temperature value:', parseFloat(withoutRounded[0]));
       return parseFloat(withoutRounded[0]);
     }
 
+    this.logger.warn('Returning something strange and float parsed', parseFloat(celsius.toFixed(2)));
     return parseFloat(celsius.toFixed(2));
   }
 
@@ -910,10 +943,12 @@ export class ACStatus {
   }
 
   public get currentTemperature() {
+    this.logger.info('currentTemperature', this.data['airState.tempState.current']);
     return this.convertTemperatureCelsiusFromLGToHomekit(this.data['airState.tempState.current'] as number);
   }
 
   public get targetTemperature() {
+    this.logger.info('targetTemperature', this.data['airState.tempState.target']);
     return this.convertTemperatureCelsiusFromLGToHomekit(this.data['airState.tempState.target'] as number);
   }
 
@@ -931,10 +966,17 @@ export class ACStatus {
     };
   }
 
-  // fan service
+  // Should return 0 - 100 int
   public get windStrength() {
+    this.logger.warn('Calculating wind strength...');
     const index = Object.keys(FanSpeed).indexOf(parseInt(this.data['airState.windStrength']).toString());
-    return index !== -1 ? index + 1 : Object.keys(FanSpeed).length / 2;
+    const result = index !== -1 ? index + 1 : Object.keys(FanSpeed).length / 2;
+    this.logger.warn('Wind strength result:', result);
+    return result;
+  }
+
+  public get isWindStrengthAuto() {
+    return this.data['airState.windStrength'] === FanSpeed.AUTO;
   }
 
   public get isSwingOn() {
@@ -948,7 +990,7 @@ export class ACStatus {
   }
 
   public get currentConsumption() {
-    const consumption = parseInt(this.data['airState.energy.onCurrent']);
+    const consumption = this.data['airState.energy.onCurrent'];
     if (isNaN(consumption)) {
       return 0;
     }
