@@ -10,13 +10,14 @@ export enum ACModelType {
   RAC = 'RAC',
 }
 
+export const FAN_SPEED_AUTO = 8;
+
 export enum FanSpeed {
   LOW = 2,
   LOW_MEDIUM = 3,
   MEDIUM = 4,
   MEDIUM_HIGH = 5,
-  HIGH = 6,
-  AUTO = 8,
+  HIGH = 6
 }
 
 enum OpMode {
@@ -38,10 +39,11 @@ export type Config = {
   ac_fan_control: boolean,
   ac_jet_control: boolean,
   ac_temperature_unit: string,
-  ac_buttons: {name: string, op_mode: string}[],
+  ac_buttons: { name: string, op_mode: string }[],
   ac_air_clean: boolean,
   ac_energy_save: boolean,
 }
+
 
 /**
  * Represents an LG ThinQ Air Conditioner device.
@@ -92,7 +94,7 @@ export default class AirConditioner extends BaseDevice {
     this.createHeaterCoolerService();
     this.service.addOptionalCharacteristic(this.platform.customCharacteristics.TotalConsumption);
 
-    if (this.config?.ac_air_quality as boolean && this.Status.airQuality) {
+    if (this.config.ac_air_quality as boolean && this.Status.airQuality) {
       this.createAirQualityService();
     } else if (this.serviceAirQuality) {
       accessory.removeService(this.serviceAirQuality);
@@ -137,10 +139,10 @@ export default class AirConditioner extends BaseDevice {
     }
 
     // more feature
-    if (this.config.ac_jet_control as boolean && this.isJetModeEnabled(device)) {
+    if (this.config.ac_jet_control as boolean && this.isJetModeEnabled(device.model)) {
       this.serviceJetMode = accessory.getService('Jet Mode') || accessory.addService(Switch, 'Jet Mode', 'Jet Mode');
       this.serviceJetMode.addOptionalCharacteristic(platform.Characteristic.ConfiguredName);
-      this.serviceJetMode.setCharacteristic(platform.Characteristic.ConfiguredName,  device.name + ' - Jet Mode');
+      this.serviceJetMode.setCharacteristic(platform.Characteristic.ConfiguredName, device.name + ' Jet Mode');
       this.serviceJetMode.getCharacteristic(platform.Characteristic.On)
         .onSet(this.setJetModeActive.bind(this));
     } else if (this.serviceJetMode) {
@@ -160,7 +162,7 @@ export default class AirConditioner extends BaseDevice {
       if (!this.serviceEnergySaveMode) {
         this.serviceEnergySaveMode = accessory.addService(Switch, 'Energy save', 'Energy save');
         this.serviceEnergySaveMode.addOptionalCharacteristic(platform.Characteristic.ConfiguredName);
-        this.serviceEnergySaveMode.setCharacteristic(platform.Characteristic.ConfiguredName,  device.name + ' - Energy save');
+        this.serviceEnergySaveMode.setCharacteristic(platform.Characteristic.ConfiguredName, device.name + ' Energy save');
       }
       this.serviceEnergySaveMode.getCharacteristic(platform.Characteristic.On)
         .onSet(this.setEnergySaveActive.bind(this));
@@ -174,7 +176,7 @@ export default class AirConditioner extends BaseDevice {
       if (!this.serviceAirClean) {
         this.serviceAirClean = accessory.addService(Switch, 'Air Purify', 'Air Purify');
         this.serviceAirClean.addOptionalCharacteristic(platform.Characteristic.ConfiguredName);
-        this.serviceAirClean.setCharacteristic(platform.Characteristic.ConfiguredName,  device.name + ' - Air Purify');
+        this.serviceAirClean.setCharacteristic(platform.Characteristic.ConfiguredName, device.name + ' Air Purify');
       }
       this.serviceAirClean.getCharacteristic(platform.Characteristic.On)
         .onSet(this.setAirCleanActive.bind(this));
@@ -230,13 +232,13 @@ export default class AirConditioner extends BaseDevice {
     const device: Device = this.accessory.context.device;
 
     if (this.Status.isPowerOn && this.Status.opMode === 0) {
-      this.platform.ThinQ?.deviceControl(device.id, {
+      await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.powerSave.basic',
         dataValue: value ? 1 : 0,
-      }).then(() => {
-        device.data.snapshot['airState.powerSave.basic'] = value ? 1 : 0;
-        this.updateAccessoryCharacteristic(device);
       });
+      this.accessory.context.device.data.snapshot['airState.powerSave.basic'] = value ? 1 : 0;
+      this.updateAccessoryenergySaveModeModelsCharacteristic();
+
     }
   }
 
@@ -247,15 +249,14 @@ export default class AirConditioner extends BaseDevice {
    */
   async setAirCleanActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
-
-    if (this.Status.isPowerOn && this.Status.opMode === 0) {
-      this.platform.ThinQ?.deviceControl(device.id, {
+    const status = this.Status;
+    if (status.isPowerOn && status.opMode === 0) {
+      await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.wMode.airClean',
         dataValue: value ? 1 : 0,
-      }).then(() => {
-        device.data.snapshot['airState.wMode.airClean'] = value ? 1 : 0;
-        this.updateAccessoryCharacteristic(device);
       });
+      this.accessory.context.device.data.snapshot['airState.wMode.airClean'] = value ? 1 : 0;
+      this.updateAccessoryairCleanModelsCharacteristic();
     }
   }
 
@@ -272,8 +273,8 @@ export default class AirConditioner extends BaseDevice {
         dataKey: 'airState.miscFuncState.silentAWHP',
         dataValue: value ? 1 : 0,
       });
-      device.data.snapshot['airState.miscFuncState.silentAWHP'] = value ? 1 : 0;
-      this.updateAccessoryCharacteristic(device);
+      this.accessory.context.device.data.snapshot['airState.miscFuncState.silentAWHP'] = value ? 1 : 0;
+      this.updateAccessoryquietModeModelsCharacteristic();
     }
   }
 
@@ -284,19 +285,20 @@ export default class AirConditioner extends BaseDevice {
    */
   async setJetModeActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
-
-    if (this.Status.isPowerOn && this.Status.opMode === 0) {
+    const status = this.Status;
+    if (status.isPowerOn && status.opMode === 0) {
       await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.wMode.jet',
         dataValue: value ? 1 : 0,
       });
-      device.data.snapshot['airState.wMode.jet'] = value ? 1 : 0;
-      this.updateAccessoryCharacteristic(device);
+      this.accessory.context.device.data.snapshot['airState.wMode.jet'] = value ? 1 : 0;
+      this.updateAccessoryJetModeCharacteristic();
     }
   }
 
   async setFanState(value: CharacteristicValue) {
-    if (!this.Status.isPowerOn) {
+    const status = this.Status;
+    if (!status.isPowerOn) {
       return;
     }
 
@@ -308,8 +310,9 @@ export default class AirConditioner extends BaseDevice {
       dataKey: 'airState.windStrength',
       dataValue: windStrength,
     });
-    device.data.snapshot['airState.windStrength'] = windStrength;
-    this.updateAccessoryCharacteristic(device);
+    this.accessory.context.device.data.snapshot['airState.windStrength'] = windStrength;
+    this.updateAccessoryFanStateCharacteristics();
+    this.updateAccessoryFanV2Characteristic();
   }
 
   /**
@@ -318,120 +321,309 @@ export default class AirConditioner extends BaseDevice {
    * @param device - The device object containing the current state.
    */
   public updateAccessoryCharacteristic(device: Device) {
-    this.accessory.context.device = device;
+    super.updateAccessoryCharacteristic(device);
+    this.updateAccessoryActiveCharacteristic();
+    this.updateAccessoryCurrentTemperatureCharacteristic();
+    this.updateAccessoryStateCharacteristics();
+    this.updateAccessoryTemperatureCharacteristics();
+    this.updateAccessoryFanStateCharacteristics();
+    this.updateAccessoryTotalConsumptionCharacteristic();
+    this.updateAccessoryAirQualityCharacteristic();
+    this.updateAccessoryTemperatureSensorCharacteristic();
+    this.updateAccessoryHumiditySensorCharacteristic();
+    this.updateAccessoryFanV2Characteristic();
+    this.updateAccessoryLedControlCharacteristic();
+    this.updateAccessoryJetModeCharacteristic();
+    this.updateAccessoryquietModeModelsCharacteristic();
+    this.updateAccessoryenergySaveModeModelsCharacteristic();
+    this.updateAccessoryairCleanModelsCharacteristic();
+  }
 
-    const {
-      Characteristic,
-      Characteristic: {
-        Active,
-        CurrentHeaterCoolerState,
-      },
-    } = this.platform;
+  /**
+   * Updates the "Active" characteristic of the accessory's service to reflect the current power status.
+   * 
+   * This method checks the power status of the device (`isPowerOn`) and updates the "Active" characteristic
+   * accordingly. If the device is powered on, the characteristic is set to `ACTIVE`, otherwise it is set to `INACTIVE`.
+   */
+  public updateAccessoryActiveCharacteristic() {
+    this.service.updateCharacteristic(this.platform.Characteristic.Active,
+      this.Status.isPowerOn ? this.platform.Characteristic.Active.ACTIVE : this.platform.Characteristic.Active.INACTIVE);
+  }
 
-    this.service.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? Active.ACTIVE : Active.INACTIVE);
-    if (this.Status.currentTemperature) {
-      this.service.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.currentTemperature);
-    }
+  /**
+   * Updates the `CurrentTemperature` characteristic of the accessory's service
+   * with the current temperature value from the device's status.
+   *
+   * This method ensures that the Homebridge platform reflects the most recent
+   * temperature reading from the air conditioner.
+   */
+  public updateAccessoryCurrentTemperatureCharacteristic() {
+    this.service.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.Status.currentTemperature);
+  }
 
+  /**
+   * Updates the state characteristics of the accessory based on the current status of the air conditioner.
+   * 
+   * This method synchronizes the accessory's characteristics with the current operational state of the air conditioner,
+   * including power status, operating mode, and temperature settings. It updates the `CurrentHeaterCoolerState` and 
+   * `TargetHeaterCoolerState` characteristics accordingly.
+   * 
+   * Behavior:
+   * - If the air conditioner is powered off, the state is set to `INACTIVE`.
+   * - If the operating mode is `COOL`, the state is set to `COOLING` and the target state to `COOL`.
+   * - If the operating mode is `HEAT`, the state is set to `HEATING` and the target state to `HEAT`.
+   * - If the operating mode is `AUTO` or undefined (`-1`), the state is determined based on the current and target temperatures:
+   *   - If the current temperature is below the target temperature, the state is set to `HEATING` and the target state to `HEAT`.
+   *   - Otherwise, the state is set to `COOLING` and the target state to `COOL`.
+   * - For other modes, no specific behavior is defined.
+   * 
+   * @remarks
+   * This method assumes that the `Status` object contains the necessary properties (`isPowerOn`, `opMode`, `currentTemperature`, 
+   * and `targetTemperature`) and that the `service` object provides the `updateCharacteristic` method.
+   */
+  public updateAccessoryStateCharacteristics() {
     if (!this.Status.isPowerOn) {
-      this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, Characteristic.CurrentHeaterCoolerState.INACTIVE);
+      this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState,
+        this.platform.Characteristic.CurrentHeaterCoolerState.INACTIVE);
     } else if (this.Status.opMode === OpMode.COOL) {
-      this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, Characteristic.CurrentHeaterCoolerState.COOLING);
-      this.service.updateCharacteristic(Characteristic.TargetHeaterCoolerState, Characteristic.TargetHeaterCoolerState.COOL);
+      this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState,
+        this.platform.Characteristic.CurrentHeaterCoolerState.COOLING);
+      this.service.updateCharacteristic(this.platform.Characteristic.TargetHeaterCoolerState,
+        this.platform.Characteristic.TargetHeaterCoolerState.COOL);
     } else if (this.Status.opMode === OpMode.HEAT) {
-      this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, Characteristic.CurrentHeaterCoolerState.HEATING);
-      this.service.updateCharacteristic(Characteristic.TargetHeaterCoolerState, Characteristic.TargetHeaterCoolerState.HEAT);
+      this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState,
+        this.platform.Characteristic.CurrentHeaterCoolerState.HEATING);
+      this.service.updateCharacteristic(this.platform.Characteristic.TargetHeaterCoolerState,
+        this.platform.Characteristic.TargetHeaterCoolerState.HEAT);
     } else if ([OpMode.AUTO, -1].includes(this.Status.opMode)) {
       // auto mode, detect based on current & target temperature
       if (this.Status.currentTemperature < this.Status.targetTemperature) {
-        this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, Characteristic.CurrentHeaterCoolerState.HEATING);
-        this.service.updateCharacteristic(Characteristic.TargetHeaterCoolerState, Characteristic.TargetHeaterCoolerState.HEAT);
+        this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState,
+          this.platform.Characteristic.CurrentHeaterCoolerState.HEATING);
+        this.service.updateCharacteristic(this.platform.Characteristic.TargetHeaterCoolerState,
+          this.platform.Characteristic.TargetHeaterCoolerState.HEAT);
       } else {
-        this.service.updateCharacteristic(Characteristic.CurrentHeaterCoolerState, Characteristic.CurrentHeaterCoolerState.COOLING);
-        this.service.updateCharacteristic(Characteristic.TargetHeaterCoolerState, Characteristic.TargetHeaterCoolerState.COOL);
+        this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState,
+          this.platform.Characteristic.CurrentHeaterCoolerState.COOLING);
+        this.service.updateCharacteristic(this.platform.Characteristic.TargetHeaterCoolerState,
+          this.platform.Characteristic.TargetHeaterCoolerState.COOL);
       }
     } else {
       // another mode
     }
+  }
 
-    if (this.Status.targetTemperature) {
-      if (this.service.getCharacteristic(CurrentHeaterCoolerState).value === CurrentHeaterCoolerState.HEATING) {
-        this.service.updateCharacteristic(Characteristic.HeatingThresholdTemperature, this.Status.targetTemperature);
-      }
-
-      if (this.service.getCharacteristic(CurrentHeaterCoolerState).value === CurrentHeaterCoolerState.COOLING) {
-        this.logger.debug('Setting cooling target temperature = ', this.Status.targetTemperature);
-        this.service.updateCharacteristic(Characteristic.CoolingThresholdTemperature, this.Status.targetTemperature);
-      }
+  /**
+   * Updates the accessory's temperature characteristics based on the current state
+   * of the heater or cooler. Depending on whether the device is in heating or cooling
+   * mode, it updates the corresponding threshold temperature characteristic.
+   *
+   * - If the current state is `HEATING`, the `HeatingThresholdTemperature` characteristic
+   *   is updated with the target temperature.
+   * - If the current state is `COOLING`, the `CoolingThresholdTemperature` characteristic
+   *   is updated with the target temperature, and a debug log is generated.
+   *
+   * @remarks
+   * This method relies on the `Status.targetTemperature` property to determine the
+   * target temperature and the `CurrentHeaterCoolerState` characteristic to determine
+   * the current operating mode of the device.
+   */
+  public updateAccessoryTemperatureCharacteristics() {
+    const temperature = this.Status.targetTemperature;
+    const currentState = this.service.getCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState).value;
+    if (currentState === this.platform.Characteristic.CurrentHeaterCoolerState.HEATING) {
+      this.service.updateCharacteristic(this.platform.Characteristic.HeatingThresholdTemperature, temperature);
     }
 
-    this.service.updateCharacteristic(Characteristic.RotationSpeed, this.Status.windStrength);
-    // eslint-disable-next-line max-len
-    this.service.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwingOn ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED);
-
-    this.service.updateCharacteristic(this.platform.customCharacteristics.TotalConsumption, this.Status.currentConsumption);
-
-    // air quality
-    if (this.config?.ac_air_quality as boolean && this.serviceAirQuality && this.Status.airQuality && this.Status.airQuality.isOn) {
-      this.serviceAirQuality.updateCharacteristic(Characteristic.AirQuality, this.Status.airQuality.overall);
-      if (this.Status.airQuality.PM2) {
-        this.serviceAirQuality.updateCharacteristic(Characteristic.PM2_5Density, this.Status.airQuality.PM2);
-      }
-
-      if (this.Status.airQuality.PM10) {
-        this.serviceAirQuality.updateCharacteristic(Characteristic.PM10Density, this.Status.airQuality.PM10);
-      }
-    }
-
-    // temperature sensor
-    if (this.config.ac_temperature_sensor as boolean && this.serviceSensor) {
-      this.serviceSensor.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.currentTemperature);
-      this.serviceSensor.updateCharacteristic(Characteristic.StatusActive, this.Status.isPowerOn);
-    }
-
-    // humidity sensor
-    if (this.config.ac_humidity_sensor as boolean && this.serviceHumiditySensor) {
-      this.serviceHumiditySensor.updateCharacteristic(Characteristic.CurrentRelativeHumidity, this.Status.currentRelativeHumidity);
-      this.serviceHumiditySensor.updateCharacteristic(Characteristic.StatusActive, this.Status.isPowerOn);
-    }
-
-    // handle fan service
-    if (this.config?.ac_fan_control as boolean && this.serviceFanV2) {
-      this.serviceFanV2.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? Active.ACTIVE : Active.INACTIVE);
-      if (this.Status.isWindStrengthAuto) {
-        this.serviceFanV2.updateCharacteristic(Characteristic.TargetFanState, Characteristic.TargetFanState.AUTO);
-      } else {
-        this.serviceFanV2.updateCharacteristic(Characteristic.TargetFanState, Characteristic.TargetFanState.MANUAL);
-        this.serviceFanV2.updateCharacteristic(Characteristic.RotationSpeed, this.Status.windStrength);
-      }
-      // eslint-disable-next-line max-len
-      this.serviceFanV2.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwingOn ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED);
-    }
-
-    if (this.config.ac_led_control as boolean && this.serviceLight) {
-      this.serviceLight.updateCharacteristic(Characteristic.On, this.Status.isLightOn);
-    }
-
-    // more feature
-    if (this.isJetModeEnabled(device) && this.serviceJetMode) {
-      this.serviceJetMode.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.wMode.jet']);
-    }
-
-    if (this.quietModeModels.includes(device.model) && this.serviceQuietMode) {
-      this.serviceQuietMode.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.miscFuncState.silentAWHP']);
-    }
-
-    if (this.energySaveModeModels.includes(device.model) && this.config.ac_energy_save as boolean) {
-      this.serviceEnergySaveMode?.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.powerSave.basic']);
-    }
-
-    if (this.airCleanModels.includes(device.model) && this.config.ac_air_clean as boolean) {
-      this.serviceAirClean?.updateCharacteristic(Characteristic.On, !!device.snapshot['airState.wMode.airClean']);
+    if (currentState === this.platform.Characteristic.CurrentHeaterCoolerState.COOLING) {
+      this.logger.debug('Setting cooling target temperature = ', temperature);
+      this.service.updateCharacteristic(this.platform.Characteristic.CoolingThresholdTemperature, temperature);
     }
   }
 
+  /**
+   * Updates the fan state characteristics of the accessory.
+   * 
+   * This method updates the `RotationSpeed` and `SwingMode` characteristics
+   * of the accessory's service based on the current status of the device.
+   * 
+   * - `RotationSpeed` is updated using the `windStrength` value from the device status.
+   * - `SwingMode` is updated based on whether the swing mode is enabled or disabled.
+   * 
+   * @remarks
+   * The `SwingMode` characteristic is set to `SWING_ENABLED` if the swing mode is on,
+   * otherwise it is set to `SWING_DISABLED`.
+   */
+  public updateAccessoryFanStateCharacteristics() {
+    const windStrength = this.Status.windStrength;
+    const isSwingOn = this.Status.isSwingOn;
+    this.service.updateCharacteristic(this.platform.Characteristic.RotationSpeed, windStrength);
+    // eslint-disable-next-line max-len
+    this.service.updateCharacteristic(this.platform.Characteristic.SwingMode, isSwingOn ? this.platform.Characteristic.SwingMode.SWING_ENABLED : this.platform.Characteristic.SwingMode.SWING_DISABLED);
+  }
+
+  /**
+   * Updates the Total Consumption characteristic of the accessory with the current consumption value.
+   * This method retrieves the current consumption from the device's status and updates the
+   * corresponding custom characteristic in the Homebridge service.
+   *
+   * @remarks
+   * Ensure that the `TotalConsumption` custom characteristic is properly defined in the platform
+   * and that the `Status.currentConsumption` value is up-to-date before calling this method.
+   */
+  public updateAccessoryTotalConsumptionCharacteristic() {
+    this.service.updateCharacteristic(this.platform.customCharacteristics.TotalConsumption, this.Status.currentConsumption);
+  }
+
+  /**
+   * Updates the air quality characteristics of the accessory based on the current air quality status.
+   * This method checks if the air quality feature is enabled and updates the corresponding characteristics
+   * in the Homebridge service with the current air quality readings.
+   *
+   * @remarks
+   * The method updates the `AirQuality`, `PM2_5Density`, and `PM10Density` characteristics if the air quality
+   * data is available and the air quality feature is enabled.
+   */
+  public updateAccessoryAirQualityCharacteristic() {
+    // air quality
+    if (this.config.ac_air_quality && this.serviceAirQuality && this.Status.airQuality && this.Status.airQuality.isOn) {
+      this.serviceAirQuality.updateCharacteristic(this.platform.Characteristic.AirQuality, this.Status.airQuality.overall);
+      if (this.Status.airQuality.PM2) {
+        this.serviceAirQuality.updateCharacteristic(this.platform.Characteristic.PM2_5Density, this.Status.airQuality.PM2);
+      }
+
+      if (this.Status.airQuality.PM10) {
+        this.serviceAirQuality.updateCharacteristic(this.platform.Characteristic.PM10Density, this.Status.airQuality.PM10);
+      }
+    }
+  }
+
+  /**
+   * Updates the temperature sensor characteristics of the accessory.
+   * 
+   * This method checks if the air conditioner temperature sensor is enabled in the configuration
+   * and if the temperature sensor service (`serviceSensor`) is available. If both conditions are met,
+   * it updates the following characteristics:
+   * 
+   * - `CurrentTemperature`: Reflects the current temperature reported by the air conditioner.
+   * - `StatusActive`: Indicates whether the air conditioner is powered on.
+   * 
+   * @remarks
+   * Ensure that the `config.ac_temperature_sensor` is properly set and that the `serviceSensor` is initialized
+   * before calling this method to avoid runtime errors.
+   */
+  public updateAccessoryTemperatureSensorCharacteristic() {
+    if (this.config.ac_temperature_sensor as boolean && this.serviceSensor) {
+      this.serviceSensor.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.Status.currentTemperature);
+      this.serviceSensor.updateCharacteristic(this.platform.Characteristic.StatusActive, this.Status.isPowerOn);
+    }
+  }
+
+  /**
+   * Updates the characteristics of the humidity sensor accessory.
+   * 
+   * This method updates the `CurrentRelativeHumidity` and `StatusActive` characteristics
+   * of the humidity sensor service if the humidity sensor is enabled in the configuration
+   * (`ac_humidity_sensor`) and the `serviceHumiditySensor` is defined.
+   * 
+   * - `CurrentRelativeHumidity` is updated with the current relative humidity value from the device status.
+   * - `StatusActive` is updated based on whether the air conditioner is powered on.
+   */
+  public updateAccessoryHumiditySensorCharacteristic() {
+    // humidity sensor
+    if (this.config.ac_humidity_sensor as boolean && this.serviceHumiditySensor) {
+      this.serviceHumiditySensor.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.Status.currentRelativeHumidity);
+      this.serviceHumiditySensor.updateCharacteristic(this.platform.Characteristic.StatusActive, this.Status.isPowerOn);
+    }
+  }
+
+  /**
+   * Updates the characteristics of the Fan V2 service for the accessory.
+   * 
+   * This method synchronizes the accessory's Fan V2 service characteristics with the current
+   * status of the air conditioner, including power state, swing mode, wind strength, and
+   * whether the fan is in auto or manual mode.
+   * 
+   * The following characteristics are updated:
+   * - `Active`: Indicates whether the fan is active or inactive based on the power state.
+   * - `TargetFanState`: Sets the fan state to AUTO or MANUAL depending on the wind strength mode.
+   * - `RotationSpeed`: Updates the fan's rotation speed if in manual mode.
+   * - `SwingMode`: Indicates whether the swing mode is enabled or disabled.
+   * 
+   * This method only performs updates if the `ac_fan_control` configuration is enabled and
+   * the `serviceFanV2` is defined.
+   */
+  public updateAccessoryFanV2Characteristic() {
+    const status = this.Status;
+    const isPowerOn = status.isPowerOn;
+    const isSwingOn = status.isSwingOn;
+    const windStrength = status.windStrength;
+    // handle fan service
+    if (this.config.ac_fan_control && this.serviceFanV2) {
+      this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.Active,
+        isPowerOn ? this.platform.Characteristic.Active.ACTIVE : this.platform.Characteristic.Active.INACTIVE);
+      if (status.isWindStrengthAuto) {
+        this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.TargetFanState, this.platform.Characteristic.TargetFanState.AUTO);
+      } else {
+        this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.TargetFanState, this.platform.Characteristic.TargetFanState.MANUAL);
+        this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.RotationSpeed, windStrength);
+      }
+      // eslint-disable-next-line max-len
+      this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.SwingMode, isSwingOn ? this.platform.Characteristic.SwingMode.SWING_ENABLED : this.platform.Characteristic.SwingMode.SWING_DISABLED);
+    }
+  }
+
+  /**
+   * Updates the LED control characteristic of the accessory.
+   * 
+   * This method checks the current status of the accessory's light and updates
+   * the corresponding characteristic in the Homebridge service if the LED control
+   * configuration is enabled and the serviceLight is defined.
+   * 
+   * @remarks
+   * - The `isLightOn` status is retrieved from the accessory's current status.
+   * - The `ac_led_control` configuration determines whether the LED control feature is enabled.
+   * - The `serviceLight` represents the Homebridge service responsible for the light characteristic.
+   */
+  public updateAccessoryLedControlCharacteristic() {
+    const isLightOn = this.Status.isLightOn;
+    if (this.config.ac_led_control && this.serviceLight) {
+      this.serviceLight.updateCharacteristic(this.platform.Characteristic.On, isLightOn);
+    }
+  }
+  public updateAccessoryJetModeCharacteristic() {
+    // more feature
+    const model = this.accessory.context.device.model;
+    if (this.isJetModeEnabled(model) && this.serviceJetMode) {
+      this.serviceJetMode.updateCharacteristic(this.platform.Characteristic.On, !!this.accessory.context.device.snapshot['airState.wMode.jet']);
+    }
+  }
+  public updateAccessoryquietModeModelsCharacteristic() {
+    const device = this.accessory.context.device;
+    const model = device.model;
+    if (this.quietModeModels.includes(model) && this.serviceQuietMode) {
+      this.serviceQuietMode.updateCharacteristic(this.platform.Characteristic.On, !!device.snapshot['airState.miscFuncState.silentAWHP']);
+    }
+  }
+  public updateAccessoryenergySaveModeModelsCharacteristic() {
+    const device = this.accessory.context.device;
+    const model = device.model;
+    if (this.energySaveModeModels.includes(model) && this.config.ac_energy_save as boolean) {
+      this.serviceEnergySaveMode?.updateCharacteristic(this.platform.Characteristic.On, !!device.snapshot['airState.powerSave.basic']);
+    }
+  }
+  public updateAccessoryairCleanModelsCharacteristic() {
+    const device = this.accessory.context.device;
+    const model = device.model;
+    if (this.airCleanModels.includes(model) && this.config.ac_air_clean as boolean) {
+      this.serviceAirClean?.updateCharacteristic(this.platform.Characteristic.On, !!device.snapshot['airState.wMode.airClean']);
+    }
+  }
+
+
   async setLight(value: CharacteristicValue) {
-    if (!this.Status.isPowerOn) {
+    const status = this.Status;
+    if (!status.isPowerOn) {
       return;
     }
 
@@ -441,12 +633,12 @@ export default class AirConditioner extends BaseDevice {
       dataValue: value ? 1 : 0,
     });
 
-    device.data.snapshot['airState.lightingState.displayControl'] = value ? 1 : 0;
-    this.updateAccessoryCharacteristic(device);
+    this.accessory.context.device.data.snapshot['airState.lightingState.displayControl'] = value ? 1 : 0;
+    this.updateAccessoryLedControlCharacteristic();
   }
 
   async setTargetState(value: CharacteristicValue) {
-    this.platform.log.debug('Set target AC mode = ', value);
+    this.logger.debug('Set target AC mode = ', value);
     this.currentTargetState = value as number;
     const {
       Characteristic: {
@@ -478,7 +670,7 @@ export default class AirConditioner extends BaseDevice {
   async setActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
     const isOn = value as boolean ? 1 : 0;
-    this.platform.log.debug('Set power on = ', isOn, ' - current status = ', this.Status.isPowerOn);
+    this.logger.debug('Set power on = ', isOn, ' current status = ', this.Status.isPowerOn);
     if (this.Status.isPowerOn && isOn) {
       return; // don't send same status
     }
@@ -489,9 +681,9 @@ export default class AirConditioner extends BaseDevice {
     }, 'Operation');
 
     if (success) {
-      device.data.snapshot['airState.operation'] = isOn;
+      this.accessory.context.device.data.snapshot['airState.operation'] = isOn;
     }
-    this.updateAccessoryCharacteristic(device);
+    this.updateAccessoryActiveCharacteristic();
   }
 
   async setTargetTemperature(value: CharacteristicValue) {
@@ -500,13 +692,13 @@ export default class AirConditioner extends BaseDevice {
     }
 
     if (typeof value !== 'number') {
-      this.platform.log.error('Invalid temperature value: ', value);
+      this.logger.error('Invalid temperature value: ', value);
       return;
     }
-    this.logger.debug('Set target temperature = ', value);
     const device: Device = this.accessory.context.device;
     const temperature = this.Status.convertTemperatureCelsiusFromHomekitToLG(value);
     if (temperature === this.Status.targetTemperature) {
+      this.logger.debug('Target temperature is same as current, no need to set.');
       return;
     }
     this.logger.debug('Set target temperature = ', temperature);
@@ -514,8 +706,8 @@ export default class AirConditioner extends BaseDevice {
       dataKey: 'airState.tempState.target',
       dataValue: temperature,
     });
-    device.data.snapshot['airState.tempState.target'] = temperature;
-    this.updateAccessoryCharacteristic(device);
+    this.accessory.context.device.data.snapshot['airState.tempState.target'] = temperature;
+    this.updateAccessoryTemperatureCharacteristics();
   }
 
   async setFanSpeed(value: CharacteristicValue) {
@@ -525,7 +717,7 @@ export default class AirConditioner extends BaseDevice {
 
     const speedValue = Math.max(1, Math.round(value as number));
 
-    this.platform.log.debug('Set fan speed = ', speedValue);
+    this.logger.debug('Set fan speed = ', speedValue);
     const device: Device = this.accessory.context.device;
     const windStrength = parseInt(Object.keys(FanSpeed)[speedValue - 1]) || FanSpeed.HIGH;
     this.platform.ThinQ?.deviceControl(device.id, {
@@ -553,24 +745,23 @@ export default class AirConditioner extends BaseDevice {
         },
         dataGetList: null,
       }, 'Set', 'favoriteCtrl');
-      device.data.snapshot['airState.wDir.vStep'] = swingValue;
-      device.data.snapshot['airState.wDir.hStep'] = swingValue;
-      this.updateAccessoryCharacteristic(device);
+      this.accessory.context.device.data.snapshot['airState.wDir.vStep'] = swingValue;
+      this.accessory.context.device.data.snapshot['airState.wDir.hStep'] = swingValue;
     } else if (this.config.ac_swing_mode === 'VERTICAL') {
       await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.wDir.vStep',
         dataValue: swingValue,
       });
-      device.data.snapshot['airState.wDir.vStep'] = swingValue;
-      this.updateAccessoryCharacteristic(device);
+      this.accessory.context.device.data.snapshot['airState.wDir.vStep'] = swingValue;
     } else if (this.config.ac_swing_mode === 'HORIZONTAL') {
       await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.wDir.hStep',
         dataValue: swingValue,
       });
-      device.data.snapshot['airState.wDir.hStep'] = swingValue;
-      this.updateAccessoryCharacteristic(device);
+      this.accessory.context.device.data.snapshot['airState.wDir.hStep'] = swingValue;
     }
+    this.updateAccessoryFanStateCharacteristics();
+    this.updateAccessoryFanV2Characteristic();
   }
 
   async setOpMode(opMode: number) {
@@ -581,8 +772,8 @@ export default class AirConditioner extends BaseDevice {
     });
   }
 
-  protected isJetModeEnabled(device: Device) {
-    return this.jetModeModels.includes(device.model); // cool mode only
+  protected isJetModeEnabled(model: string) {
+    return this.jetModeModels.includes(model); // cool mode only
   }
 
   protected createFanService() {
@@ -619,7 +810,7 @@ export default class AirConditioner extends BaseDevice {
       .updateValue(Characteristic.Active.INACTIVE);
 
     this.serviceFanV2.addOptionalCharacteristic(Characteristic.ConfiguredName);
-    this.serviceFanV2.setCharacteristic(Characteristic.ConfiguredName, device.name + ' - Fan');
+    this.serviceFanV2.setCharacteristic(Characteristic.ConfiguredName, device.name + ' Fan');
     this.serviceFanV2.getCharacteristic(Characteristic.CurrentFanState)
       .onGet(() => {
         return this.Status.isPowerOn ? Characteristic.CurrentFanState.BLOWING_AIR : Characteristic.CurrentFanState.INACTIVE;
@@ -654,8 +845,6 @@ export default class AirConditioner extends BaseDevice {
   }
 
   protected createHeaterCoolerService() {
-
-
     const device: Device = this.accessory.context.device;
     const { Characteristic } = this.platform;
     this.service.setCharacteristic(Characteristic.Name, device.name);
@@ -738,8 +927,10 @@ export default class AirConditioner extends BaseDevice {
       };
 
       if (minRange && maxRange) {
-        const minRangeOptions: number[] = Object.values(minRange.options);
-        const maxRangeOptions: number[] = Object.values(maxRange.options);
+
+        const minRangeOptions: number[] = Object.values(minRange.options).filter((v): v is number => typeof v === 'number');
+        const maxRangeOptions: number[] = Object.values(maxRange.options).filter((v): v is number => typeof v === 'number');
+
         if (minRangeOptions.length > 1) {
           temperature.min = Math.min(...minRangeOptions.filter(v => v !== 0));
         }
@@ -790,13 +981,15 @@ export default class AirConditioner extends BaseDevice {
     this.service.getCharacteristic(Characteristic.HeatingThresholdTemperature)
       .onSet(this.setTargetTemperature.bind(this));
 
-    this.service.getCharacteristic(Characteristic.RotationSpeed)
-      .setProps({
-        minValue: 0,
-        maxValue: Object.keys(FanSpeed).length / 2,
-        minStep: 0.1,
-      })
-      .onSet(this.setFanSpeed.bind(this));
+    if (!this.config.ac_fan_control) {
+      this.service.getCharacteristic(Characteristic.RotationSpeed)
+        .setProps({
+          minValue: 0,
+          maxValue: Object.keys(FanSpeed).length / 2,
+          minStep: 0.1,
+        })
+        .onSet(this.setFanSpeed.bind(this));
+    }
     this.service.getCharacteristic(Characteristic.SwingMode)
       .onSet(this.setSwingMode.bind(this));
   }
@@ -827,33 +1020,51 @@ export default class AirConditioner extends BaseDevice {
       Characteristic,
     } = this.platform;
 
+    if (!this.serviceLabelButtons) {
+      this.logger.error('ServiceLabelButtons not found cant setup button');
+      return;
+    }
+
     const serviceButton = this.accessory.getService(name) || this.accessory.addService(Switch, name, name);
-    serviceButton.updateCharacteristic(this.platform.Characteristic.Name, name);
+    serviceButton.addOptionalCharacteristic(Characteristic.ConfiguredName);
+    serviceButton.setCharacteristic(Characteristic.ConfiguredName, name);
     serviceButton.getCharacteristic(this.platform.Characteristic.On)
       .onGet(() => {
         return this.Status.opMode === opMode;
       })
-      .onSet(async (value: CharacteristicValue) => {
-        if (value as boolean) {
-          if (this.Status.opMode !== opMode) {
-            await this.setOpMode(opMode);
-            device.data.snapshot['airState.opMode'] = opMode;
-            this.updateAccessoryCharacteristic(device);
-          }
-        } else {
-          await this.setOpMode(OpMode.COOL);
-          device.data.snapshot['airState.opMode'] = OpMode.COOL;
-          this.updateAccessoryCharacteristic(device);
-          await this.setTargetState(this.currentTargetState);
-        }
+      .onSet((value: CharacteristicValue) => {
+        this.handleButtonOpmode(value, opMode);
       });
 
-    serviceButton.addOptionalCharacteristic(Characteristic.ConfiguredName);
-    if (!serviceButton.getCharacteristic(Characteristic.ConfiguredName).value) {
-      serviceButton.updateCharacteristic(Characteristic.ConfiguredName, name);
-    }
+    this.serviceLabelButtons.addLinkedService(serviceButton);
+  }
 
-    this.serviceLabelButtons?.addLinkedService(serviceButton);
+  /**
+   * Handles the operation mode button press for the air conditioner.
+   *
+   * @param value - The characteristic value indicating the button state (true for pressed, false for released).
+   * @param opMode - The operation mode to set when the button is pressed.
+   * 
+   * When the button is pressed (`value` is true) and the current operation mode (`this.Status.opMode`)
+   * is different from the provided `opMode`, the method updates the operation mode to the provided `opMode`.
+   * 
+   * When the button is released (`value` is false), the method resets the operation mode to `OpMode.COOL`,
+   * updates the accessory state characteristics, and restores the target state to the current target state.
+   * 
+   * @returns A promise that resolves when the operation mode and related states are successfully updated.
+   */
+  async handleButtonOpmode(value: CharacteristicValue, opMode: number) {
+    if (value as boolean) {
+      if (this.Status.opMode !== opMode) {
+        await this.setOpMode(opMode);
+        this.accessory.context.device.data.snapshot['airState.opMode'] = opMode;
+      }
+    } else {
+      await this.setOpMode(OpMode.COOL);
+      this.accessory.context.device.data.snapshot['airState.opMode'] = OpMode.COOL;
+      this.updateAccessoryStateCharacteristics();
+      await this.setTargetState(this.currentTargetState);
+    }
   }
 }
 
@@ -966,7 +1177,7 @@ export class ACStatus {
   }
 
   public get isWindStrengthAuto() {
-    return this.data['airState.windStrength'] === FanSpeed.AUTO;
+    return this.data['airState.windStrength'] === FAN_SPEED_AUTO;
   }
 
   public get isSwingOn() {
