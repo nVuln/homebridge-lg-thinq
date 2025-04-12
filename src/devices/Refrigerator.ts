@@ -340,18 +340,18 @@ export class RefrigeratorStatus {
 
   public get freezerTemperature() {
     if (this.tempUnit === 'FAHRENHEIT') {
-      return fToC(parseInt(this.deviceModel.lookupMonitorValue2('freezerTemp_F', this.data?.freezerTemp, '0')));
+      return fToC(parseInt(`${this.deviceModel.lookupMonitorValue2('freezerTemp_F', this.data?.freezerTemp, '0')}`));
     }
 
-    return parseInt(this.deviceModel.lookupMonitorValue2('freezerTemp_C', this.data?.freezerTemp, '0'));
+    return parseInt(`${this.deviceModel.lookupMonitorValue2('freezerTemp_C', this.data?.freezerTemp, '0')}`);
   }
 
   public get fridgeTemperature() {
     if (this.tempUnit === 'FAHRENHEIT') {
-      return fToC(parseInt(this.deviceModel.lookupMonitorValue2('fridgeTemp_F', this.data?.fridgeTemp, '0')));
+      return fToC(parseInt(`${this.deviceModel.lookupMonitorValue2('fridgeTemp_F', this.data?.fridgeTemp, '0')}`));
     }
 
-    return parseInt(this.deviceModel.lookupMonitorValue2('fridgeTemp_C', this.data?.fridgeTemp, '0'));
+    return parseInt(`${this.deviceModel.lookupMonitorValue2('fridgeTemp_C', this.data?.fridgeTemp, '0')}`);
   }
 
   public get isDoorClosed() {

@@ -58,20 +58,20 @@ export class Status extends RefrigeratorStatus {
 
     const defaultValue = this.deviceModel.lookupMonitorValue2('TempFreezer', this.data?.freezerTemp, '0');
     if (this.tempUnit === 'FAHRENHEIT') {
-      return fToC(parseInt(this.deviceModel.lookupMonitorValue2('TempFreezer_F', this.data?.freezerTemp, defaultValue)));
+      return fToC(parseInt(`${this.deviceModel.lookupMonitorValue2('TempFreezer_F', this.data?.freezerTemp, `${defaultValue}`)}`));
     }
 
-    return parseInt(this.deviceModel.lookupMonitorValue2('TempFreezer_C', this.data?.freezerTemp, defaultValue));
+    return parseInt(`${this.deviceModel.lookupMonitorValue2('TempFreezer_C', this.data?.freezerTemp, `${defaultValue}`)}`);
   }
 
   public get fridgeTemperature() {
 
     const defaultValue = this.deviceModel.lookupMonitorValue2('TempRefrigerator', this.data?.fridgeTemp, '0');
     if (this.tempUnit === 'FAHRENHEIT') {
-      return fToC(parseInt(this.deviceModel.lookupMonitorValue2('TempRefrigerator_F', this.data?.fridgeTemp, defaultValue)));
+      return fToC(parseInt(`${this.deviceModel.lookupMonitorValue2('TempRefrigerator_F', this.data?.fridgeTemp, `${defaultValue}`)}`));
     }
 
-    return parseInt(this.deviceModel.lookupMonitorValue2('TempRefrigerator_C', this.data?.fridgeTemp, defaultValue));
+    return parseInt(`${this.deviceModel.lookupMonitorValue2('TempRefrigerator_C', this.data?.fridgeTemp, `${defaultValue}`)}`);
   }
 
   public get isExpressFridgeOn() {

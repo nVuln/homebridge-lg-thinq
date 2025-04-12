@@ -51,7 +51,7 @@ export interface BitValue {
 
 export interface EnumValue {
   type: ValueType.Enum;
-  options: Record<string, number>;
+  options: Record<string, string | number>;
 }
 
 export interface RangeValue {
