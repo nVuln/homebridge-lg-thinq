@@ -687,7 +687,8 @@ export default class AirConditioner extends BaseDevice {
   }
 
   async setTargetTemperature(value: CharacteristicValue) {
-    if (!this.Status.isPowerOn) {
+    const status = this.Status;
+    if (!status.isPowerOn) {
       return;
     }
 
@@ -696,12 +697,29 @@ export default class AirConditioner extends BaseDevice {
       return;
     }
     const device: Device = this.accessory.context.device;
-    const temperature = this.Status.convertTemperatureCelsiusFromHomekitToLG(value);
-    if (temperature === this.Status.targetTemperature) {
+    this.logger.warn('Received target temperature = ', value);
+    if (this.service.getCharacteristic(
+      this.platform.Characteristic.TargetHeaterCoolerState).value === this.platform.Characteristic.TargetHeaterCoolerState.COOL) {
+      const range = status.getTemperatureRange(status.getTemperatureRangeForCooling());
+      if (value < range.min || value > range.max) {
+        this.logger.error('Target temperature is out of range: ', value, ' range = ', range);
+        return;
+      }
+    } else if (this.service.getCharacteristic(
+      this.platform.Characteristic.TargetHeaterCoolerState).value === this.platform.Characteristic.TargetHeaterCoolerState.HEAT) {
+      const range = status.getTemperatureRange(status.getTemperatureRangeForHeating());
+      if (value < range.min || value > range.max) {
+        this.logger.error('Target temperature is out of range: ', value, ' range = ', range);
+        return;
+      }
+    }
+
+    const temperature = status.convertTemperatureCelsiusFromHomekitToLG(value);
+    if (temperature === status.targetTemperature) {
       this.logger.debug('Target temperature is same as current, no need to set.');
       return;
     }
-    this.logger.debug('Set target temperature = ', temperature);
+    this.logger.warn('Set target temperature = ', temperature);
     await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.tempState.target',
       dataValue: temperature,
@@ -885,8 +903,9 @@ export default class AirConditioner extends BaseDevice {
     this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
       .onSet(this.setTargetState.bind(this));
 
-    if (this.Status.currentTemperature) {
-      this.service.updateCharacteristic(Characteristic.CurrentTemperature, this.Status.currentTemperature);
+    const status = this.Status;
+    if (status.currentTemperature) {
+      this.service.updateCharacteristic(Characteristic.CurrentTemperature, status.currentTemperature);
     }
 
     /**
@@ -898,81 +917,32 @@ export default class AirConditioner extends BaseDevice {
     if (currentTemperatureValue) {
       this.service.getCharacteristic(Characteristic.CurrentTemperature)
         .setProps({
-          minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(currentTemperatureValue.min),
-          maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(currentTemperatureValue.max),
+          minValue: status.convertTemperatureCelsiusFromLGToHomekit(currentTemperatureValue.min),
+          maxValue: status.convertTemperatureCelsiusFromLGToHomekit(currentTemperatureValue.max),
           minStep: 0.01,
         });
     }
 
-    let heatLowLimitKey, heatHighLimitKey, coolLowLimitKey, coolHighLimitKey;
 
-    if (this.Status.type === ACModelType.AWHP) {
-      heatLowLimitKey = 'support.airState.tempState.waterTempHeatMin';
-      heatHighLimitKey = 'support.airState.tempState.waterTempHeatMax';
-      coolLowLimitKey = 'support.airState.tempState.waterTempCoolMin';
-      coolHighLimitKey = 'support.airState.tempState.waterTempCoolMax';
-    } else {
-      heatLowLimitKey = 'support.heatLowLimit';
-      heatHighLimitKey = 'support.heatHighLimit';
-      coolLowLimitKey = 'support.coolLowLimit';
-      coolHighLimitKey = 'support.coolHighLimit';
-    }
-
-    const targetTemperature = (minRange: EnumValue, maxRange: EnumValue): RangeValue => {
-      let temperature: RangeValue = {
-        type: ValueType.Range,
-        min: 0,
-        max: 0,
-        step: 0.01,
-      };
-
-      if (minRange && maxRange) {
-
-        const minRangeOptions: number[] = Object.values(minRange.options).filter((v): v is number => typeof v === 'number');
-        const maxRangeOptions: number[] = Object.values(maxRange.options).filter((v): v is number => typeof v === 'number');
-
-        if (minRangeOptions.length > 1) {
-          temperature.min = Math.min(...minRangeOptions.filter(v => v !== 0));
-        }
-        if (maxRangeOptions.length > 1) {
-          temperature.max = Math.max(...maxRangeOptions.filter(v => v !== 0));
-        }
-      }
-
-      if (!temperature || !temperature.min || !temperature.max) {
-        temperature = device.deviceModel.value('airState.tempState.limitMin') as RangeValue;
-      }
-
-      if (!temperature || !temperature.min || !temperature.max) {
-        temperature = device.deviceModel.value('airState.tempState.target') as RangeValue;
-      }
-
-      return temperature;
-    };
-
-    const tempHeatMinRange = device.deviceModel.value(heatLowLimitKey) as EnumValue;
-    const tempHeatMaxRange = device.deviceModel.value(heatHighLimitKey) as EnumValue;
-    const targetHeatTemperature = targetTemperature(tempHeatMinRange, tempHeatMaxRange);
+    const targetHeatTemperature = status.getTemperatureRange(status.getTemperatureRangeForHeating());
 
     if (targetHeatTemperature) {
       this.service.getCharacteristic(Characteristic.HeatingThresholdTemperature)
         .setProps({
-          minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.min),
-          maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.max),
+          minValue: status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.min),
+          maxValue: status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.max),
           minStep: targetHeatTemperature.step || 0.01,
         });
     }
 
-    const tempCoolMinRange = device.deviceModel.value(coolLowLimitKey) as EnumValue;
-    const tempCoolMaxRange = device.deviceModel.value(coolHighLimitKey) as EnumValue;
-    const targetCoolTemperature = targetTemperature(tempCoolMinRange, tempCoolMaxRange);
+    const targetCoolTemperature = status.getTemperatureRange(status.getTemperatureRangeForCooling());
 
     if (targetCoolTemperature) {
       this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
         .setProps({
-          minValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.min),
-          maxValue: this.Status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.max),
-          minStep: targetHeatTemperature.step || 0.01,
+          minValue: status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.min),
+          maxValue: status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.max),
+          minStep: targetCoolTemperature.step || 0.01,
         });
     }
 
@@ -1144,12 +1114,10 @@ export class ACStatus {
   }
 
   public get currentTemperature() {
-    this.logger.info('currentTemperature', this.data['airState.tempState.current']);
     return this.convertTemperatureCelsiusFromLGToHomekit(this.data['airState.tempState.current'] as number);
   }
 
   public get targetTemperature() {
-    this.logger.info('targetTemperature', this.data['airState.tempState.target']);
     return this.convertTemperatureCelsiusFromLGToHomekit(this.data['airState.tempState.target'] as number);
   }
 
@@ -1169,10 +1137,9 @@ export class ACStatus {
 
   // Should return 0 - 100 int
   public get windStrength() {
-    this.logger.warn('Calculating wind strength...');
     const index = Object.keys(FanSpeed).indexOf(parseInt(this.data['airState.windStrength']).toString());
     const result = index !== -1 ? index + 1 : Object.keys(FanSpeed).length / 2;
-    this.logger.warn('Wind strength result:', result);
+    this.logger.debug('Wind strength result:', result);
     return result;
   }
 
@@ -1201,5 +1168,99 @@ export class ACStatus {
 
   public get type() {
     return this.device.deviceModel.data.Info.modelType || ACModelType.RAC;
+  }
+
+  /**
+   * Retrieves the temperature range based on the provided minimum and maximum range values.
+   *
+   * @param [minRange, maxRange] - A tuple containing the minimum and maximum range values as `EnumValue` objects.
+   * @returns A `RangeValue` object representing the temperature range, including its type, minimum, maximum, and step values.
+   *
+   * The method first attempts to calculate the temperature range using the provided `minRange` and `maxRange` values.
+   * If these values are not sufficient to determine a valid range, it falls back to retrieving the range from the device model's
+   * `airState.tempState.limitMin` or `airState.tempState.target` properties.
+   */
+  public getTemperatureRange([minRange, maxRange]: [EnumValue, EnumValue]): RangeValue {
+    let temperature: RangeValue = {
+      type: ValueType.Range,
+      min: 0,
+      max: 0,
+      step: 0.01,
+    };
+
+    if (minRange && maxRange) {
+
+      const minRangeOptions: number[] = Object.values(minRange.options).filter((v): v is number => typeof v === 'number');
+      const maxRangeOptions: number[] = Object.values(maxRange.options).filter((v): v is number => typeof v === 'number');
+
+      if (minRangeOptions.length > 1) {
+        temperature.min = Math.min(...minRangeOptions.filter(v => v !== 0));
+      }
+      if (maxRangeOptions.length > 1) {
+        temperature.max = Math.max(...maxRangeOptions.filter(v => v !== 0));
+      }
+    }
+
+    if (!temperature || !temperature.min || !temperature.max) {
+      temperature = this.device.deviceModel.value('airState.tempState.limitMin') as RangeValue;
+    }
+
+    if (!temperature || !temperature.min || !temperature.max) {
+      temperature = this.device.deviceModel.value('airState.tempState.target') as RangeValue;
+    }
+
+    return temperature;
+  }
+
+  /**
+   * Retrieves the temperature range for heating based on the air conditioner's model type.
+   *
+   * For AWHP models, the range is determined using water temperature heating limits.
+   * For other models, the range is determined using general heating limits.
+   *
+   * @returns A tuple containing two `EnumValue` objects:
+   *          - The first element represents the minimum heating temperature.
+   *          - The second element represents the maximum heating temperature.
+   */
+  public getTemperatureRangeForHeating(): [EnumValue, EnumValue] {
+    let heatLowLimitKey, heatHighLimitKey;
+
+    if (this.type === ACModelType.AWHP) {
+      heatLowLimitKey = 'support.airState.tempState.waterTempHeatMin';
+      heatHighLimitKey = 'support.airState.tempState.waterTempHeatMax';
+    } else {
+      heatLowLimitKey = 'support.heatLowLimit';
+      heatHighLimitKey = 'support.heatHighLimit';
+    }
+
+    const tempHeatMinRange = this.device.deviceModel.value(heatLowLimitKey) as EnumValue;
+    const tempHeatMaxRange = this.device.deviceModel.value(heatHighLimitKey) as EnumValue;
+    return [tempHeatMinRange, tempHeatMaxRange];
+  }
+
+  /**
+   * Retrieves the temperature range for cooling based on the air conditioner's model type.
+   *
+   * For AWHP models, the range is determined using water temperature cooling limits.
+   * For other models, the range is determined using general cooling limits.
+   *
+   * @returns A tuple containing two `EnumValue` objects:
+   *          - The first element represents the minimum cooling temperature.
+   *          - The second element represents the maximum cooling temperature.
+   */
+  public getTemperatureRangeForCooling(): [EnumValue, EnumValue] {
+    let coolLowLimitKey, coolHighLimitKey;
+
+    if (this.type === ACModelType.AWHP) {
+      coolLowLimitKey = 'support.airState.tempState.waterTempCoolMin';
+      coolHighLimitKey = 'support.airState.tempState.waterTempCoolMax';
+    } else {
+      coolLowLimitKey = 'support.coolLowLimit';
+      coolHighLimitKey = 'support.coolHighLimit';
+    }
+
+    const tempCoolMinRange = this.device.deviceModel.value(coolLowLimitKey) as EnumValue;
+    const tempCoolMaxRange = this.device.deviceModel.value(coolHighLimitKey) as EnumValue;
+    return [tempCoolMinRange, tempCoolMaxRange];
   }
 }
