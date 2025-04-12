@@ -141,7 +141,7 @@ export class API {
       } else {
         // Log other errors
         if (axios.isAxiosError(err)) {
-          this.logger.error('axios request error: ', err.response?.data);
+          this.logger.error('axios request error: ', err.response?.data, data);
           this.logger.error(err.stack || 'No stack error');
         } else if (!(err instanceof NotConnectedError)) {
           this.logger.error('request error: ', err);
