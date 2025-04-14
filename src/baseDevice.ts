@@ -31,10 +31,9 @@ export class BaseDevice extends EventEmitter {
   }
 
   public update(snapshot: any) {
-    const device: Device = this.accessory.context.device;
-    this.platform.log.debug('[' + device.name + '] Received snapshot: ', JSON.stringify(snapshot));
-    device.data.snapshot = { ...device.snapshot, ...snapshot };
-    this.updateAccessoryCharacteristic(device);
+    this.platform.log.debug('[' + this.accessory.context.device.name + '] Received snapshot: ', JSON.stringify(snapshot));
+    this.accessory.context.device.data.snapshot = { ...this.accessory.context.device.snapshot, ...snapshot };
+    this.updateAccessoryCharacteristic(this.accessory.context.device);
   }
 
   public get config(): Record<string, any> {
