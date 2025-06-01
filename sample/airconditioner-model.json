@@ -1,0 +1,3080 @@
+{
+  "Info": {
+    "productType": "AC",
+    "country": "KR",
+    "modelType": "RAC",
+    "model": "Full ModelJson",
+    "modelName": "Full Model",
+    "networkType": "WIFI",
+    "version": "14.32",
+    "productCode": "AI01"
+  },
+  "Module": {
+    "WPM": {
+      "GAM_CEN01_Main": "203",
+      "GAM_DRY01_Main": "203",
+      "GAM_ENM01_Moment": "203",
+      "GAM_ENM02_Weekly": "203",
+      "GAM_ENM03_Monthly": "203",
+      "GAM_FIL01_Main": "203",
+      "GAM_FIL02_Date": "203",
+      "GAM_FRZ01_Main": "005",
+      "GAM_FOT01_Main": "005",
+      "GAM_ICA01_Main": "203",
+      "GAM_POG01_Main": "203",
+      "GAM_POL01_Inside": "203",
+      "GAM_POL02_Outside": "203",
+      "GAM_QVP01_Select": "201",
+      "GAM_QVP02_Naming": "201",
+      "GAM_QVP03_Complete": "201",
+      "GAM_QVP04_Init": "201",
+      "GAM_QVP10_Main": "203",
+      "GAM_QVP11_GuideExample": "203",
+      "GAM_SCH01_Main": "203",
+      "GAM_SCH02_AddEdit": "203",
+      "GAM_SCH03_Delete": "203",
+      "GAM_SCH12_AdvancedAddEdit": "203",
+      "GAM_SCH13_AdvancedDelete": "203",
+      "GAM_SET01_Main": "203",
+      "GAM_SET02_PushList": "203",
+      "GAM_SET04_EnergySet": "203",
+      "GAM_SET05_EnergyFee": "203",
+      "GAM_SET09_Region": "005",
+      "GAM_SET11_TempUnit": "203",
+      "GAM_SET16_QVoiceOption": "203",
+      "GAM_SET18_QVoiceSelect": "203",
+      "GAM_SET20_IDUVoiceOption": "203",
+      "GAM_SET21_VoiceGenderControl": "203",
+      "GAM_SET22_VoiceVolumeControl": "201",
+      "GAM_SET23_DisplayBrightnessControl": "203",
+      "GAM_SET25_StartImageSelectView": "203",
+      "GAM_SET26_OnOffMelodySelect": "203",
+      "GAM_SET27_ProductMelody": "203",
+      "GAM_SMT01_SmartCare": "005",
+      "GAM_SMT02_RecommendTemp": "005",
+      "GAM_SMT03_SetTempOption": "201",
+      "GAM_WMG01_Main": "203",
+      "GAM_WMG02_Mode": "203"
+    },
+    "Menu": []
+  },
+  "ConfigEx": {
+    "resyncModelJson": true,
+    "customModeSearchChangeEx": [
+      {
+        "from": "@AC_OP_SUB_MODE_REST_W",
+        "to": "@AC_OP_SUB_MODE_HEAL_W",
+        "key": 4,
+        "modelName": [
+          "RAC_0A0001_WW",
+          "RAC_4B1001_WW",
+          "RAC_4B0001_WW"
+        ]
+      }
+    ],
+    "customModeSearchChange": {
+      "RAC_0A0001_WW": [
+        {
+          "key": 4,
+          "changeName": "@AC_OP_SUB_MODE_HEAL_W"
+        }
+      ]
+    }
+  },
+  "Value": {
+    "support.airState.opMode": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON",
+        "1": "@AC_MAIN_OPERATION_MODE_COOL_W",
+        "2": "@AC_MAIN_OPERATION_MODE_DRY_W",
+        "3": "@AC_MAIN_OPERATION_MODE_FAN_W",
+        "4": "@AC_MAIN_OPERATION_MODE_AI_W"
+      }
+    },
+    "support.airState.windStrength": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON",
+        "3": "@AC_MAIN_WIND_STRENGTH_LOW_W",
+        "4": "@AC_MAIN_WIND_STRENGTH_LOW_MID_W",
+        "5": "@AC_MAIN_WIND_STRENGTH_MID_W",
+        "6": "@AC_MAIN_WIND_STRENGTH_MID_HIGH_W",
+        "7": "@AC_MAIN_WIND_STRENGTH_HIGH_W",
+        "9": "@AC_MAIN_WIND_STRENGTH_NATURE_W"
+      }
+    },
+    "support.airState.autoDry.windStrength": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.airState.wDir": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@AC_MAIN_WIND_DIRECTION_FIX_W"
+      }
+    },
+    "support.vaneNum": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": 0
+      }
+    },
+    "support.airState.wMode": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@OFF"
+      }
+    },
+    "support.pacMode": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.pacModeExt": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.racMode": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON",
+        "2": "@ENERGYSAVING",
+        "3": "@AUTODRY"
+      }
+    },
+    "support.racModeExt": {
+      "_comment": "FuncSync_RACëª¨ë“œ_Ext",
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.reserve": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON",
+        "1": "@SLEEP_TIMER",
+        "2": "@EASY_TIMER",
+        "3": "@ONOFF_TIMER",
+        "6": "@WEEKLY_SCHEDULE"
+      }
+    },
+    "support.reserve2": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.light": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON",
+        "2": "@BRIGHTNESS_CONTROL"
+      }
+    },
+    "support.airState.tempState.unit": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON",
+        "1": "@C",
+        "2": "@F"
+      }
+    },
+    "support.tempCtrl": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@1_0UNIT_CONTROL",
+        "1": "@0_5UNIT_CONTROL"
+      }
+    },
+    "support.micom": {
+      "data_type": "enum",
+      "value_mapping": {
+        "3": "@3",
+        "6": "@6",
+        "7": "@7",
+        "11": "@11",
+        "17": "@17",
+        "20": "@20",
+        "22": "@22",
+        "23": "@23"
+      }
+    },
+    "support.airState.groupType": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": 0,
+        "1": 1
+      }
+    },
+    "support.accumMode": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NOT_SUPPORT",
+        "1": "@ACCUMULATE_INDOOR"
+      }
+    },
+    "support.airState.miscFuncState.extraOp": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@EMERGENCY_OPER",
+        "1": "@CENTRAL_ALL_LOCK"
+      }
+    },
+    "support.racSubMode": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON",
+        "1": "@AC_MAIN_WIND_MODE_COOL_JET_W",
+        "3": "@AC_MAIN_WIND_DIRECTION_STEP_UP_DOWN_W"
+      }
+    },
+    "support.racSubMode2": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.sacSubMode": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.airState.opSubMode": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NOT_SUPPORT"
+      }
+    },
+    "support.airState.ductZone.type": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.airState.ductZone.control": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": 0
+      }
+    },
+    "support.airState.opModeExt2": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.mFilter": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.vision": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.airPolution": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.aroma": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.qVoice": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.qVoiceOption": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.standByPwr": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.airState.notification.detailList": {
+      "_comment": "FuncSync_í‘¸ì‰¬ ì§€ì›",
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.airState.notification.detailListExt": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.airState.filterMngState.desorption": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.smartFunc": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON",
+        "1": "@wifiDiagnosis",
+        "2": "@Fota",
+        "3": "@audibleDiagnosis",
+        "4": "@SMART_DATA"
+      }
+    },
+    "support.coolLowLimit": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": 0,
+        "18": 18
+      }
+    },
+    "support.coolHighLimit": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": 0,
+        "30": 30
+      }
+    },
+    "support.heatLowLimit": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": 0,
+        "16": 16
+      }
+    },
+    "support.heatHighLimit": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": 0,
+        "30": 30
+      }
+    },
+    "support.acoLowLimit": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": 0,
+        "18": 18
+      }
+    },
+    "support.acoHighLimit": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": 0,
+        "30": 30
+      }
+    },
+    "support.humidity.control": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.airState.circulate.strength": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.airState.circulate.rotate": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NONSUPPORT"
+      }
+    },
+    "support.twoSetMode": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@1SET"
+      }
+    },
+    "support.dRED": {
+      "comment": "FuncSync_DRED",
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON"
+      }
+    },
+    "support.airState.screen.image": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON_SUPPORT"
+      }
+    },
+    "support.airState.melody": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NON_SUPPORT"
+      }
+    },
+    "support.upgradable": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NOT_SUPPORT"
+      }
+    },
+    "support.airState.commonFunc": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NOT_SUPPORT"
+      }
+    },
+    "support.airState.additionalFunc": {
+      "data_type": "enum",
+      "value_mapping": {
+        "0": "@NOT_SUPPORT"
+      }
+    },
+    "airState.operation": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_MAIN_OPERATION_OFF_W",
+        "1": "@AC_MAIN_OPERATION_ON_W",
+        "2": "@AC_MAIN_OPERATION_RIGHT_ON_W",
+        "256": "@AC_MAIN_OPERATION_LEFT_ON_W",
+        "257": "@AC_MAIN_OPERATION_ALL_ON_W"
+      }
+    },
+    "airState.opMode": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_MAIN_OPERATION_MODE_COOL_W",
+        "1": "@AC_MAIN_OPERATION_MODE_DRY_W",
+        "2": "@AC_MAIN_OPERATION_MODE_FAN_W",
+        "3": "@AC_MAIN_OPERATION_MODE_AI_W",
+        "4": "@AC_MAIN_OPERATION_MODE_HEAT_W",
+        "5": "@AC_MAIN_OPERATION_MODE_AIRCLEAN_W",
+        "6": "@AC_MAIN_OPERATION_MODE_ACO_W",
+        "7": "@AC_MAIN_OPERATION_MODE_AROMA_W",
+        "8": "@AC_MAIN_OPERATION_MODE_ENERGY_SAVING_W",
+        "9": "@AC_MAIN_OPERATION_MODE_CLEANING_W",
+        "10": "@AC_MAIN_OPERATION_MODE_SLEEPING_W",
+        "11": "@AC_MAIN_OPERATION_MODE_SILENT_W",
+        "12": "@AC_MAIN_OPERATION_MODE_HUMIDITY_W",
+        "13": "@AC_MAIN_OPERATION_MODE_CIRCULATOR_CLEAN_W",
+        "14": "@AC_MAIN_OPERATION_MODE_BABY_CARE_W",
+        "15": "@AC_MAIN_OPERATION_MODE_DUAL_CLEAN_W",
+        "16": "@AC_MAIN_OPERATION_MODE_AUTO_W",
+        "17": "@AC_MAIN_OPERATION_MODE_SMART_DEHUM_W",
+        "18": "@AC_MAIN_OPERATION_MODE_FAST_DEHUM_W",
+        "19": "@AC_MAIN_OPERATION_MODE_CILENT_DEHUM_W",
+        "20": "@AC_MAIN_OPERATION_MODE_CONCENTRATION_DRY_W",
+        "21": "@AC_MAIN_OPERATION_MODE_CLOTHING_DRY_W",
+        "22": "@AC_MAIN_OPERATION_MODE_IONIZER_W",
+        "23": "@AC_MAIN_OPERATION_MODE_ANTIBUGS_W",
+        "32": "@AC_MAIN_OPERATION_MODE_AIRCLEAN_RAC_W",
+        "46": "@AC_MAIN_OPERATION_MODE_AIRCLEAN_2023_RAC_W"
+      }
+    },
+    "airState.windStrength": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_MAIN_WIND_STRENGTH_SLOW_W",
+        "1": "@AC_MAIN_WIND_STRENGTH_SLOW_LOW_W",
+        "2": "@AC_MAIN_WIND_STRENGTH_LOW_W",
+        "3": "@AC_MAIN_WIND_STRENGTH_LOW_MID_W",
+        "4": "@AC_MAIN_WIND_STRENGTH_MID_W",
+        "5": "@AC_MAIN_WIND_STRENGTH_MID_HIGH_W",
+        "6": "@AC_MAIN_WIND_STRENGTH_HIGH_W",
+        "7": "@AC_MAIN_WIND_STRENGTH_POWER_W",
+        "8": "@AC_MAIN_WIND_STRENGTH_NATURE_W",
+        "9": "@AC_MAIN_WIND_STRENGTH_LONGPOWER_W",
+        "10": "@AC_MAIN_WIND_STRENGTH_SHOWER_W",
+        "11": "@AC_MAIN_WIND_STRENGTH_FOREST_W",
+        "12": "@AC_MAIN_WIND_SMARTCARE_W",
+        "13": "@AP_MAIN_WIND_STRENGTH_FASTWIND_W",
+        "16": "@AC_MAIN_WIND_STRENGTH_SUPER_BREEZE_W",
+        "256": "@AC_MAIN_WIND_STRENGTH_SLOW_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_RIGHT_W",
+        "257": "@AC_MAIN_WIND_STRENGTH_SLOW_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_LOW_RIGHT_W",
+        "258": "@AC_MAIN_WIND_STRENGTH_SLOW_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_RIGHT_W",
+        "259": "@AC_MAIN_WIND_STRENGTH_SLOW_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_MID_RIGHT_W",
+        "260": "@AC_MAIN_WIND_STRENGTH_SLOW_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_RIGHT_W",
+        "261": "@AC_MAIN_WIND_STRENGTH_SLOW_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_HIGH_RIGHT_W",
+        "262": "@AC_MAIN_WIND_STRENGTH_SLOW_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_HIGH_RIGHT_W",
+        "263": "@AC_MAIN_WIND_STRENGTH_SLOW_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_POWER_RIGHT_W",
+        "264": "@AC_MAIN_WIND_STRENGTH_SLOW_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_AUTO_RIGHT_W",
+        "511": "@AC_MAIN_WIND_STRENGTH_SLOW_LOW_LEFT_W",
+        "512": "@AC_MAIN_WIND_STRENGTH_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_RIGHT_W",
+        "513": "@AC_MAIN_WIND_STRENGTH_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_LOW_RIGHT_W",
+        "514": "@AC_MAIN_WIND_STRENGTH_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_RIGHT_W",
+        "515": "@AC_MAIN_WIND_STRENGTH_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_MID_RIGHT_W",
+        "516": "@AC_MAIN_WIND_STRENGTH_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_RIGHT_W",
+        "517": "@AC_MAIN_WIND_STRENGTH_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_HIGH_RIGHT_W",
+        "518": "@AC_MAIN_WIND_STRENGTH_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_HIGH_RIGHT_W",
+        "519": "@AC_MAIN_WIND_STRENGTH_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_POWER_RIGHT_W",
+        "520": "@AC_MAIN_WIND_STRENGTH_LOW_LEFT_W|AC_MAIN_WIND_STRENGTH_AUTO_RIGHT_W",
+        "767": "@AC_MAIN_WIND_STRENGTH_LOW_LEFT_W",
+        "768": "@AC_MAIN_WIND_STRENGTH_LOW_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_RIGHT_W",
+        "769": "@AC_MAIN_WIND_STRENGTH_LOW_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_LOW_RIGHT_W",
+        "770": "@AC_MAIN_WIND_STRENGTH_LOW_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_RIGHT_W",
+        "771": "@AC_MAIN_WIND_STRENGTH_LOW_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_MID_RIGHT_W",
+        "772": "@AC_MAIN_WIND_STRENGTH_LOW_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_RIGHT_W",
+        "773": "@AC_MAIN_WIND_STRENGTH_LOW_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_HIGH_RIGHT_W",
+        "774": "@AC_MAIN_WIND_STRENGTH_LOW_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_HIGH_RIGHT_W",
+        "775": "@AC_MAIN_WIND_STRENGTH_LOW_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_POWER_RIGHT_W",
+        "776": "@AC_MAIN_WIND_STRENGTH_LOW_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_AUTO_RIGHT_W",
+        "1023": "@AC_MAIN_WIND_STRENGTH_LOW_MID_LEFT_W",
+        "1024": "@AC_MAIN_WIND_STRENGTH_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_RIGHT_W",
+        "1025": "@AC_MAIN_WIND_STRENGTH_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_LOW_RIGHT_W",
+        "1026": "@AC_MAIN_WIND_STRENGTH_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_RIGHT_W",
+        "1027": "@AC_MAIN_WIND_STRENGTH_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_MID_RIGHT_W",
+        "1028": "@AC_MAIN_WIND_STRENGTH_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_RIGHT_W",
+        "1029": "@AC_MAIN_WIND_STRENGTH_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_HIGH_RIGHT_W",
+        "1030": "@AC_MAIN_WIND_STRENGTH_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_HIGH_RIGHT_W",
+        "1031": "@AC_MAIN_WIND_STRENGTH_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_POWER_RIGHT_W",
+        "1032": "@AC_MAIN_WIND_STRENGTH_MID_LEFT_W|AC_MAIN_WIND_STRENGTH_AUTO_RIGHT_W",
+        "1279": "@AC_MAIN_WIND_STRENGTH_MID_LEFT_W",
+        "1280": "@AC_MAIN_WIND_STRENGTH_MID_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_RIGHT_W",
+        "1281": "@AC_MAIN_WIND_STRENGTH_MID_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_LOW_RIGHT_W",
+        "1282": "@AC_MAIN_WIND_STRENGTH_MID_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_RIGHT_W",
+        "1283": "@AC_MAIN_WIND_STRENGTH_MID_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_MID_RIGHT_W",
+        "1284": "@AC_MAIN_WIND_STRENGTH_MID_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_RIGHT_W",
+        "1285": "@AC_MAIN_WIND_STRENGTH_MID_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_HIGH_RIGHT_W",
+        "1286": "@AC_MAIN_WIND_STRENGTH_MID_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_HIGH_RIGHT_W",
+        "1287": "@AC_MAIN_WIND_STRENGTH_MID_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_POWER_RIGHT_W",
+        "1288": "@AC_MAIN_WIND_STRENGTH_MID_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_AUTO_RIGHT_W",
+        "1535": "@AC_MAIN_WIND_STRENGTH_MID_HIGH_LEFT_W",
+        "1536": "@AC_MAIN_WIND_STRENGTH_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_RIGHT_W",
+        "1537": "@AC_MAIN_WIND_STRENGTH_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_LOW_RIGHT_W",
+        "1538": "@AC_MAIN_WIND_STRENGTH_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_RIGHT_W",
+        "1539": "@AC_MAIN_WIND_STRENGTH_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_MID_RIGHT_W",
+        "1540": "@AC_MAIN_WIND_STRENGTH_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_RIGHT_W",
+        "1541": "@AC_MAIN_WIND_STRENGTH_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_HIGH_RIGHT_W",
+        "1542": "@AC_MAIN_WIND_STRENGTH_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_HIGH_RIGHT_W",
+        "1543": "@AC_MAIN_WIND_STRENGTH_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_POWER_RIGHT_W",
+        "1544": "@AC_MAIN_WIND_STRENGTH_HIGH_LEFT_W|AC_MAIN_WIND_STRENGTH_AUTO_RIGHT_W",
+        "1791": "@AC_MAIN_WIND_STRENGTH_HIGH_LEFT_W",
+        "1792": "@AC_MAIN_WIND_STRENGTH_POWER_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_RIGHT_W",
+        "1793": "@AC_MAIN_WIND_STRENGTH_POWER_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_LOW_RIGHT_W",
+        "1794": "@AC_MAIN_WIND_STRENGTH_POWER_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_RIGHT_W",
+        "1795": "@AC_MAIN_WIND_STRENGTH_POWER_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_MID_RIGHT_W",
+        "1796": "@AC_MAIN_WIND_STRENGTH_POWER_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_RIGHT_W",
+        "1797": "@AC_MAIN_WIND_STRENGTH_POWER_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_HIGH_RIGHT_W",
+        "1798": "@AC_MAIN_WIND_STRENGTH_POWER_LEFT_W|AC_MAIN_WIND_STRENGTH_HIGH_RIGHT_W",
+        "1799": "@AC_MAIN_WIND_STRENGTH_POWER_LEFT_W|AC_MAIN_WIND_STRENGTH_POWER_RIGHT_W",
+        "1800": "@AC_MAIN_WIND_STRENGTH_POWER_LEFT_W|AC_MAIN_WIND_STRENGTH_AUTO_RIGHT_W",
+        "2047": "@AC_MAIN_WIND_STRENGTH_POWER_LEFT_W",
+        "2048": "@AC_MAIN_WIND_STRENGTH_AUTO_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_RIGHT_W",
+        "2049": "@AC_MAIN_WIND_STRENGTH_AUTO_LEFT_W|AC_MAIN_WIND_STRENGTH_SLOW_LOW_RIGHT_W",
+        "2050": "@AC_MAIN_WIND_STRENGTH_AUTO_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_RIGHT_W",
+        "2051": "@AC_MAIN_WIND_STRENGTH_AUTO_LEFT_W|AC_MAIN_WIND_STRENGTH_LOW_MID_RIGHT_W",
+        "2052": "@AC_MAIN_WIND_STRENGTH_AUTO_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_RIGHT_W",
+        "2053": "@AC_MAIN_WIND_STRENGTH_AUTO_LEFT_W|AC_MAIN_WIND_STRENGTH_MID_HIGH_RIGHT_W",
+        "2054": "@AC_MAIN_WIND_STRENGTH_AUTO_LEFT_W|AC_MAIN_WIND_STRENGTH_HIGH_RIGHT_W",
+        "2055": "@AC_MAIN_WIND_STRENGTH_AUTO_LEFT_W|AC_MAIN_WIND_STRENGTH_POWER_RIGHT_W",
+        "2056": "@AC_MAIN_WIND_STRENGTH_AUTO_LEFT_W|AC_MAIN_WIND_STRENGTH_AUTO_RIGHT_W",
+        "2303": "@AC_MAIN_WIND_STRENGTH_AUTO_LEFT_W",
+        "2313": "@AC_MAIN_WIND_STRENGTH_LONGPOWER_LEFT_W|AC_MAIN_WIND_STRENGTH_LONGPOWER_RIGHT_W",
+        "2570": "@AC_MAIN_WIND_STRENGTH_SHOWER_LEFT_W|AC_MAIN_WIND_STRENGTH_SHOWER_RIGHT_W",
+        "2827": "@AC_MAIN_WIND_STRENGTH_FOREST_LEFT_W|AC_MAIN_WIND_STRENGTH_FOREST_RIGHT_W",
+        "3084": "@AC_MAIN_WIND_STRENGTH_TURBO_LEFT_W|AC_MAIN_WIND_STRENGTH_TURBO_RIGHT_W",
+        "65280": "@AC_MAIN_WIND_STRENGTH_SLOW_RIGHT_W",
+        "65281": "@AC_MAIN_WIND_STRENGTH_SLOW_LOW_RIGHT_W",
+        "65282": "@AC_MAIN_WIND_STRENGTH_LOW_RIGHT_W",
+        "65283": "@AC_MAIN_WIND_STRENGTH_LOW_MID_RIGHT_W",
+        "65284": "@AC_MAIN_WIND_STRENGTH_MID_RIGHT_W",
+        "65285": "@AC_MAIN_WIND_STRENGTH_MID_HIGH_RIGHT_W",
+        "65286": "@AC_MAIN_WIND_STRENGTH_HIGH_RIGHT_W",
+        "65287": "@AC_MAIN_WIND_STRENGTH_POWER_RIGHT_W",
+        "65288": "@AC_MAIN_WIND_STRENGTH_AUTO_RIGHT_W"
+      }
+    },
+    "airState.autoDry.windStrength": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_MAIN_WIND_STRENGTH_SLOW_W",
+        "1": "@AC_MAIN_WIND_STRENGTH_SLOW_LOW_W",
+        "2": "@AC_MAIN_WIND_STRENGTH_LOW_W",
+        "3": "@AC_MAIN_WIND_STRENGTH_LOW_MID_W",
+        "4": "@AC_MAIN_WIND_STRENGTH_MID_W",
+        "5": "@AC_MAIN_WIND_STRENGTH_MID_HIGH_W",
+        "6": "@AC_MAIN_WIND_STRENGTH_HIGH_W"
+      }
+    },
+    "airState.ctrlFrom": {
+      "data_type": "enum",
+      "default": "1",
+      "value_mapping": {
+        "1": 1,
+        "2": 2,
+        "3": 3,
+        "4": 4,
+        "5": 5
+      }
+    },
+    "airState.wDir.up": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON",
+        "2": "@AC_MAIN_WIND_DIRECTION_UPFOCUS_W"
+      }
+    },
+    "airState.wDir.down": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON",
+        "2": "@AC_MAIN_WIND_DIRECTION_DOWNFOCUS_W"
+      }
+    },
+    "airState.wDir.left": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON",
+        "2": "@AC_MAIN_WIND_DIRECTION_LEFTFOCUS_W"
+      }
+    },
+    "airState.wDir.right": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON",
+        "2": "@AC_MAIN_WIND_DIRECTION_RIGHTFOCUS_W"
+      }
+    },
+    "airState.wDir.leftRight": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON",
+        "2": "@RIGHT_ON",
+        "256": "@LEFT_ON",
+        "257": "@ALL_ON"
+      }
+    },
+    "airState.wDir.auto": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1,
+        "2": 2,
+        "256": 256,
+        "257": 257
+      }
+    },
+    "airState.wDir.upDown": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.wDir.swirl": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.wDir.side": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.wDir.vStep": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@1",
+        "2": "@2",
+        "3": "@3",
+        "4": "@4",
+        "5": "@5",
+        "6": "@6",
+        "14": "14",
+        "16": 16,
+        "25": "25",
+        "32": 32,
+        "36": "36",
+        "48": 48,
+        "64": 64,
+        "80": 80,
+        "96": 96,
+        "100": "@100",
+        "101": 101,
+        "102": 102,
+        "103": 103,
+        "104": 104,
+        "105": 105,
+        "256": 256,
+        "512": 512,
+        "768": 768,
+        "1024": 1024,
+        "1080": 1080,
+        "1536": 1536,
+        "4096": 4096,
+        "8192": 8192,
+        "12288": 12288,
+        "16384": 16384,
+        "20480": 20480,
+        "24576": 24576,
+        "36388": "@OFF",
+        "65536": 65536
+      }
+    },
+    "airState.wDir.hStep": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@1",
+        "2": "@2",
+        "3": "@3",
+        "4": "@4",
+        "5": "@5",
+        "6": 6,
+        "13": "@13",
+        "16": 16,
+        "32": 32,
+        "35": "@35",
+        "48": 48,
+        "64": 64,
+        "80": 80,
+        "96": 96,
+        "100": "@100",
+        "101": 101,
+        "102": 102,
+        "103": 103,
+        "104": 104,
+        "256": 256,
+        "512": 512,
+        "768": 768,
+        "1024": 1024,
+        "1080": 1080,
+        "1536": 1536,
+        "4096": 4096,
+        "8192": 8192,
+        "12288": 12288,
+        "16384": 16384,
+        "20480": 20480,
+        "24576": 24576,
+        "65536": 65536
+      }
+    },
+    "airState.wMode.flowForest": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.wMode.flowLongPower": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.wMode.smartCare": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.wMode.flowShower": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.wMode.turbo": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.wMode.iceValley": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.wMode.airClean": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_MAIN_AIRCLEAN_OFF_W",
+        "1": "@AC_MAIN_AIRCLEAN_ON_W"
+      }
+    },
+    "airState.wMode.lowHeating": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.wMode.humanCare": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_NO_SETTING_S",
+        "1": "@AC_MAIN_WIND_MODE_HUMAN_DIRECT_W",
+        "2": "@AC_MAIN_WIND_MODE_HUMAN_INDIRECT_W"
+      }
+    },
+    "airState.wMode.jet": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@COOL_JET",
+        "2": "@HEAT_JET",
+        "3": "@DRY_JET_W",
+        "4": "@HIMALAYAS_COOL",
+        "5": "@FAN_JET",
+        "6": "@AUTO_MODE_JET"
+      }
+    },
+    "airState.wMode.indirectWind": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.tempState.target": {
+      "data_type": "range",
+      "default": 18,
+      "value_validation": {
+        "min": 18,
+        "max": 30
+      }
+    },
+    "airState.bellSound.appControl": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@ON",
+        "1": "@OFF"
+      }
+    },
+    "airState.bellSound.control": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@BUZZER_ON",
+        "1": "@BUZZER_OFF",
+        "100": "@BUZZER_OFF",
+        "120": "@BUZZER_VOLUME_20",
+        "140": "@BUZZER_VOLUME_40",
+        "160": "@BUZZER_VOLUME_60",
+        "180": "@BUZZER_VOLUME_80",
+        "200": "@BUZZER_VOLUME_100"
+      }
+    },
+    "TempCelToFah": {
+      "_comment": "## ì„­ì”¨ í™”ì”¨ ë³€í™˜ í…Œì´ë¸”",
+      "data_type": "enum",
+      "default": "60",
+      "value_mapping": {
+        "0": 32,
+        "1": 34,
+        "2": 36,
+        "3": 38,
+        "4": 40,
+        "5": 41,
+        "6": 42,
+        "7": 44,
+        "8": 46,
+        "9": 48,
+        "10": 50,
+        "11": 52,
+        "12": 54,
+        "13": 56,
+        "14": 58,
+        "15": 59,
+        "16": 60,
+        "17": 62,
+        "18": 64,
+        "19": 66,
+        "20": 68,
+        "21": 70,
+        "22": 72,
+        "23": 74,
+        "24": 76,
+        "25": 77,
+        "26": 78,
+        "27": 80,
+        "28": 82,
+        "29": 84,
+        "30": 86,
+        "31": 88,
+        "32": 90,
+        "33": 92,
+        "34": 94,
+        "35": 95,
+        "36": 96,
+        "37": 98,
+        "38": 100,
+        "39": 102,
+        "40": 104,
+        "0.5": 33,
+        "1.5": 35,
+        "2.5": 37,
+        "3.5": 39,
+        "4.5": 40,
+        "5.5": 41,
+        "6.5": 43,
+        "7.5": 45,
+        "8.5": 47,
+        "9.5": 49,
+        "10.5": 51,
+        "11.5": 53,
+        "12.5": 55,
+        "13.5": 57,
+        "14.5": 58,
+        "15.5": 59,
+        "16.5": 61,
+        "17.5": 63,
+        "18.5": 65,
+        "19.5": 67,
+        "20.5": 69,
+        "21.5": 71,
+        "22.5": 73,
+        "23.5": 75,
+        "24.5": 76,
+        "25.5": 77,
+        "26.5": 79,
+        "27.5": 81,
+        "28.5": 83,
+        "29.5": 85,
+        "30.5": 87,
+        "31.5": 89,
+        "32.5": 91,
+        "33.5": 93,
+        "34.5": 94,
+        "35.5": 95,
+        "36.5": 97,
+        "37.5": 99,
+        "38.5": 101,
+        "39.5": 103
+      }
+    },
+    "TempFahToCel": {
+      "_comment": "## í™”ì”¨ ì„­ì”¨ ë³€í™˜ í…Œì´ë¸”",
+      "data_type": "enum",
+      "default": "60",
+      "value_mapping": {
+        "32": 0,
+        "33": 0.5,
+        "34": 1,
+        "35": 1.5,
+        "36": 2,
+        "37": 2.5,
+        "38": 3,
+        "39": 3.5,
+        "40": 4,
+        "41": 5,
+        "42": 6,
+        "43": 6.5,
+        "44": 7,
+        "45": 7.5,
+        "46": 8,
+        "47": 8.5,
+        "48": 9,
+        "49": 9.5,
+        "50": 10,
+        "51": 10.5,
+        "52": 11,
+        "53": 11.5,
+        "54": 12,
+        "55": 12.5,
+        "56": 13,
+        "57": 13.5,
+        "58": 14,
+        "59": 15,
+        "60": 16,
+        "61": 16.5,
+        "62": 17,
+        "63": 17.5,
+        "64": 18,
+        "65": 18.5,
+        "66": 19,
+        "67": 19.5,
+        "68": 20,
+        "69": 20.5,
+        "70": 21,
+        "71": 21.5,
+        "72": 22,
+        "73": 22.5,
+        "74": 23,
+        "75": 23.5,
+        "76": 24,
+        "77": 25,
+        "78": 26,
+        "79": 26.5,
+        "80": 27,
+        "81": 27.5,
+        "82": 28,
+        "83": 28.5,
+        "84": 29,
+        "85": 29.5,
+        "86": 30,
+        "87": 30.5,
+        "88": 31,
+        "89": 31.5,
+        "90": 32,
+        "91": 32.5,
+        "92": 33,
+        "93": 33.5,
+        "94": 34,
+        "95": 35,
+        "96": 36,
+        "97": 36.5,
+        "98": 37,
+        "99": 37.5,
+        "100": 38,
+        "101": 38.5,
+        "102": 39,
+        "103": 39.5,
+        "104": 40
+      }
+    },
+    "modeEx": {
+      "_comment": "## ëª¨ë“œ ë³„ ì˜¨ë„, í’ëŸ‰ ì˜ˆì™¸ì²˜ë¦¬_ì°½ë¬¸í˜•, [ì„¤ì •ì˜¨ë„, í’ëŸ‰]",
+      "value_mapping": {
+        "@AC_MAIN_OPERATION_MODE_COOL_W": [
+          true,
+          true
+        ],
+        "@AC_MAIN_OPERATION_MODE_DRY_W": [
+          false,
+          true
+        ],
+        "@AC_MAIN_OPERATION_MODE_FAN_W": [
+          false,
+          true
+        ],
+        "@AC_MAIN_OPERATION_MODE_AI_W": [
+          true,
+          false
+        ],
+        "@AC_MAIN_OPERATION_MODE_HEAT_W": [
+          true,
+          true
+        ],
+        "@AC_MAIN_OPERATION_MODE_AIRCLEAN_W": [
+          false,
+          true
+        ],
+        "@AC_MAIN_OPERATION_MODE_ACO_W": [
+          true,
+          true
+        ],
+        "@AC_MAIN_OPERATION_MODE_ENERGY_SAVER_W": [
+          true,
+          true
+        ],
+        "@AC_MAIN_OPERATION_MODE_ANTIBUGS_W": [
+          false,
+          false
+        ],
+        "@AC_MAIN_OPERATION_MODE_AIRCLEAN_RAC_W": [
+          false,
+          true
+        ],
+        "@AC_MAIN_OPERATION_MODE_AIRCLEAN_2023_RAC_W": [
+          false,
+          true
+        ],
+        "@AC_MAIN_OPERATION_MODE_DRY_TEMP_CTRL_W": [
+          true,
+          false
+        ]
+      }
+    },
+    "airState.tempState.current": {
+      "data_type": "range",
+      "default": 11,
+      "value_validation": {
+        "min": 1,
+        "max": 39
+      }
+    },
+    "airState.tempState.unit": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@C",
+        "1": "@F",
+        "2": "@K"
+      }
+    },
+    "airState.tempState.step": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 10
+      }
+    },
+    "airState.tempState.limitMax": {
+      "data_type": "range",
+      "default": 16,
+      "value_validation": {
+        "min": 16,
+        "max": 30
+      }
+    },
+    "airState.tempState.limitMin": {
+      "data_type": "range",
+      "default": 16,
+      "value_validation": {
+        "min": 16,
+        "max": 30
+      }
+    },
+    "airState.reservation.sleepTime": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 420
+      }
+    },
+    "airState.reservation.targetTimeToStart": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 1440
+      }
+    },
+    "airState.reservation.targetTimeToStop": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 1440
+      }
+    },
+    "airState.reservation.absoluteStartTime": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 2400
+      }
+    },
+    "airState.reservation.absoluteStopTime": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 2400
+      }
+    },
+    "airState.reservation.powerDry": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 2400
+      }
+    },
+    "airState.powerSave.basic": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON",
+        "2": "@AC_MODE_ENERGY_PRIORITY_ON",
+        "3": "@AC_MODE_COMFORT_PRIORITY_ON",
+        "4": "@AC_MODE_ENERGY_PRIORITY_OFF",
+        "5": "@AC_MODE_COMFORT_PRIORITY_OFF",
+        "10": "@10",
+        "20": "@20",
+        "30": "@30",
+        "40": "@40",
+        "50": "@50",
+        "60": "@60",
+        "70": "@70",
+        "80": "@80",
+        "90": "@90",
+        "100": "@100"
+      }
+    },
+    "airState.powerSave.hum": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.precisionDiagnosis": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 255
+      }
+    },
+    "airState.voice.recog": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON",
+        "2": "@INTERACTIVE"
+      }
+    },
+    "airState.voice.volume": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@MIN",
+        "2": "@MID",
+        "3": "@MAX"
+      }
+    },
+    "airState.voice.sensitivity": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@MIN",
+        "1": "@MID",
+        "2": "@MAX"
+      }
+    },
+    "airState.voice.setting": {
+      "data_type": "range",
+      "default": 1,
+      "value_validation": {
+        "min": 1,
+        "max": 9
+      }
+    },
+    "airState.voice.spkVolume": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 100
+      }
+    },
+    "airState.voice.QVoiceOption": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_VOICE_LG_WHISEN",
+        "1": "@AC_VOICE_HI_LG"
+      }
+    },
+    "airState.voice.feedbackSound": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.quality.PM1": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 999
+      }
+    },
+    "airState.quality.PM2": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 999
+      }
+    },
+    "airState.quality.PM10": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 999
+      }
+    },
+    "airState.quality.odor": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 1000
+      }
+    },
+    "airState.quality.overall": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 1000
+      }
+    },
+    "airState.quality.sensorMon": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.quality.airMon": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AP_SETTING_SENSORMON_OPERATIONING_W",
+        "1": "@AP_SETTING_SENSORMON_ALWAYS_W"
+      }
+    },
+    "airState.quality.CO2": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 4095
+      }
+    },
+    "airState.quality.CO2Level": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@",
+        "1": "@",
+        "2": "@",
+        "3": "@",
+        "4": "@"
+      }
+    },
+    "airState.diagCode": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 300
+      }
+    },
+    "airState.groupType": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@PAC",
+        "1": "@RAC",
+        "2": "@CAC",
+        "3": "@AWHP",
+        "4": "@VENT",
+        "5": "@DUCT",
+        "6": "@CVT",
+        "7": "@DX_VENT",
+        "8": "@POT",
+        "9": "@WIN",
+        "10": "@CST",
+        "11": "@CONSOL",
+        "12": "@AIR",
+        "13": "@HUM"
+      }
+    },
+    "airState.prodType": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1,
+        "2": 2
+      }
+    },
+    "airState.rac.addFunc": {
+      "data_type": "enum",
+      "default": "NS",
+      "value_mapping": {
+        "0": "@AIRCLEAN",
+        "1": "@ENERGYSAVING",
+        "2": "@AUTODRY",
+        "3": "@DANGGYMOGY",
+        "4": "@CIRCULATOR_OPERATION",
+        "5": "@ANION",
+        "6": "@LEARNNING",
+        "7": "@NODRY",
+        "8": "@HEATER",
+        "NS": "@NON"
+      }
+    },
+    "airState.rac.operation": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.filterMngState.useTime": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0
+      }
+    },
+    "airState.filterMngState.remainTime": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0
+      }
+    },
+    "airState.filterMngState.maxTime": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0
+      }
+    },
+    "airState.filterMngState.changeDate": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0
+      }
+    },
+    "airState.filterMngState.type": {
+      "data_type": "enum",
+      "default": "1",
+      "value_mapping": {
+        "1": 1,
+        "2": 2
+      }
+    },
+    "airState.filterMngState.useTimeTop": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0
+      }
+    },
+    "airState.filterMngState.maxTimeTop": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0
+      }
+    },
+    "airState.filterMngState.useTimeMiddle": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0
+      }
+    },
+    "airState.filterMngState.maxTimMiddle": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0
+      }
+    },
+    "airState.filterMngState.useTimeBottom": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0
+      }
+    },
+    "airState.filterMngState.maxTimeBottom": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0
+      }
+    },
+    "airState.filterMngState.useTimeDeodor": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0
+      }
+    },
+    "airState.filterMngState.maxTimeDeodor": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0
+      }
+    },
+    "airState.filterMngState.desorption": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1,
+        "2": 2,
+        "3": 3,
+        "4": 4
+      }
+    },
+    "airState.lightingState.displayControl": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@RAC_LED_ON",
+        "1": "@RAC_LED_OFF",
+        "2": "@NON",
+        "3": "@NON",
+        "4": "@NON",
+        "5": "@NON",
+        "6": "@NON",
+        "7": "@NON",
+        "8": "@NON",
+        "9": "@NON",
+        "10": "@NON",
+        "11": "@AC_LED_OFF_W",
+        "12": "@AC_LED_ON_W",
+        "13": "@AC_LED_AUTO_W"
+      }
+    },
+    "airState.lightingState.mood": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1
+      }
+    },
+    "airState.lightingState.signal": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1
+      }
+    },
+    "airState.lightingState.magicColor": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@COLLWHITE",
+        "2": "@WARMWHITE01",
+        "3": "@WARMWHITE02"
+      }
+    },
+    "airState.lightingState.magicBrightness": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "1": "@DARK",
+        "2": "@MID",
+        "3": "@BRIGHT"
+      }
+    },
+    "airState.ductZone.control": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1,
+        "2": 2,
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7
+      }
+    },
+    "airState.ductZone.type": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1,
+        "2": 2
+      }
+    },
+    "airState.aroma.color": {
+      "data_type": "enum",
+      "default": "1",
+      "value_mapping": {
+        "1": "@LAVENDAR",
+        "2": "@ROSEMARY",
+        "3": "@HEALING"
+      }
+    },
+    "airState.aroma.sound": {
+      "data_type": "enum",
+      "default": "1",
+      "value_mapping": {
+        "1": "@LAVENDAR",
+        "2": "@ROSEMARY",
+        "3": "@HEALING"
+      }
+    },
+    "airState.aroma.state": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_MAIN_AROMA_OFF_W",
+        "1": "@AC_MAIN_AROMA_ON_W"
+      }
+    },
+    "airState.energy.totlaCurrent": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 40
+      }
+    },
+    "airState.energy.inCurrent": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 40
+      }
+    },
+    "airState.energy.outCurrent": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 40
+      }
+    },
+    "airState.energy.accumulated": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 40
+      }
+    },
+    "airState.energy.accumulatedTime": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 1440
+      }
+    },
+    "airState.energy.desired": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 280
+      }
+    },
+    "airState.energy.desiredDay": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 40
+      }
+    },
+    "airState.energy.desiredWeek": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 280
+      }
+    },
+    "airState.energy.desiredMonth": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 1250
+      }
+    },
+    "airState.energy.savingState": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.homeCare.onOff": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.homeCare.delay": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 10800
+      }
+    },
+    "airState.homeCare.interval": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 900
+      }
+    },
+    "airState.homeCare.imageNum": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 10
+      }
+    },
+    "airState.circulate.strength": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AP_MAIN_MID_CIRCULATORSTRENGTH_LOWST_LOW_W",
+        "1": "@AP_MAIN_MID_CIRCULATORSTRENGTH_LOWST_W",
+        "2": "@AP_MAIN_MID_CIRCULATORSTRENGTH_LOW_W",
+        "3": "@AP_MAIN_MID_CIRCULATORSTRENGTH_LOW_MID_W",
+        "4": "@AP_MAIN_MID_CIRCULATORSTRENGTH_MID_W",
+        "5": "@AP_MAIN_MID_CIRCULATORSTRENGTH_MID_HIGH_W",
+        "6": "@AP_MAIN_MID_CIRCULATORSTRENGTH_HIGH_W",
+        "7": "@AP_MAIN_MID_CIRCULATORSTRENGTH_POWER_W",
+        "8": "@AP_MAIN_MID_CIRCULATORSTRENGTH_AUTO_W",
+        "9": "@AP_MAIN_MID_CIRCULATORSTRENGTH_LINK_W"
+      }
+    },
+    "airState.circulate.rotate": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1
+      }
+    },
+    "airState.miscFuncState.antiBugs": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1
+      }
+    },
+    "airState.miscFuncState.airRemoval": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1
+      }
+    },
+    "airState.miscFuncState.airFast": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1
+      }
+    },
+    "airState.miscFuncState.airUVDisinfection": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1
+      }
+    },
+    "airState.miscFuncState.watertankLight": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1
+      }
+    },
+    "airState.miscFuncState.cleanDry": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1
+      }
+    },
+    "airState.miscFuncState.humidification": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1
+      }
+    },
+    "airState.miscFuncState.filterCleanAuto": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 103
+      }
+    },
+    "airState.miscFuncState.filterCleanManual": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 103
+      }
+    },
+    "airState.miscFuncState.Uvnano": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.miscFuncState.robotCleanManual": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.miscFuncState.robotCleanAuto": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.miscFuncState.autoDry": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON",
+        "2": "@STEP2",
+        "3": "@STEP3",
+        "255": "@AIAUTODRY"
+      }
+    },
+    "airState.miscFuncState.autoDryRemainTime": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 60
+      }
+    },
+    "airState.miscFuncState.extraOp": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@OFF",
+        "2": "@AC_MAIN_LOCK_VALUE_ALL_W",
+        "4": "@AC_MAIN_LOCK_VALUE_TEMP_W",
+        "6": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_W",
+        "8": "@AC_MAIN_LOCK_VALUE_FAN_W",
+        "10": "@AC_MAIN_LOCK_VALUE_ALL_FAN_W",
+        "12": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_W",
+        "14": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_W",
+        "16": "@AC_MAIN_LOCK_VALUE_MODE_W",
+        "18": "@AC_MAIN_LOCK_VALUE_ALL_MODE_W",
+        "20": "@AC_MAIN_LOCK_VALUE_TEMP_MODE_W",
+        "22": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_MODE_W",
+        "24": "@AC_MAIN_LOCK_VALUE_FAN_MODE_W",
+        "26": "@AC_MAIN_LOCK_VALUE_ALL_FAN_MODE_W",
+        "28": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_MODE_W",
+        "30": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_MODE_W",
+        "32": "@AC_MAIN_LOCK_VALUE_LIMIT_W",
+        "34": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_W",
+        "36": "@AC_MAIN_LOCK_VALUE_TEMP_W",
+        "38": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_W",
+        "40": "@AC_MAIN_LOCK_VALUE_LIMIT_FAN_W",
+        "42": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_FAN_W",
+        "44": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_W",
+        "46": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_W",
+        "48": "@AC_MAIN_LOCK_VALUE_LIMIT_MODE_W",
+        "50": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_MODE_W",
+        "52": "@AC_MAIN_LOCK_VALUE_TEMP_MODE_W",
+        "54": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_MODE_W",
+        "56": "@AC_MAIN_LOCK_VALUE_LIMIT_FAN_MODE_W",
+        "58": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_FAN_MODE_W",
+        "60": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_MODE_W",
+        "62": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_MODE_W",
+        "64": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_W",
+        "66": "@AC_MAIN_LOCK_VALUE_ALL_GROUPCONTROL_W",
+        "68": "@AC_MAIN_LOCK_VALUE_TEMP_GROUPCONTROL_W",
+        "70": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_GROUPCONTROL_W",
+        "72": "@AC_MAIN_LOCK_VALUE_FAN_GROUPCONTROL_W",
+        "74": "@AC_MAIN_LOCK_VALUE_ALL_FAN_GROUPCONTROL_W",
+        "76": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_GROUPCONTROL_W",
+        "78": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_GROUPCONTROL_W",
+        "80": "@AC_MAIN_LOCK_VALUE_MODE_GROUPCONTROL_W",
+        "82": "@AC_MAIN_LOCK_VALUE_ALL_MODE_GROUPCONTROL_W",
+        "84": "@AC_MAIN_LOCK_VALUE_TEMP_MODE_GROUPCONTROL_W",
+        "86": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_MODE_GROUPCONTROL_W",
+        "88": "@AC_MAIN_LOCK_VALUE_FAN_MODE_GROUPCONTROL_W",
+        "90": "@AC_MAIN_LOCK_VALUE_ALL_FAN_MODE_GROUPCONTROL_W",
+        "92": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_MODE_GROUPCONTROL_W",
+        "94": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_MODE_GROUPCONTROL_W",
+        "96": "@AC_MAIN_LOCK_VALUE_LIMIT_GROUPCONTROL_W",
+        "98": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_GROUPCONTROL_W",
+        "100": "@AC_MAIN_LOCK_VALUE_TEMP_GROUPCONTROL_W",
+        "102": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_GROUPCONTROL_W",
+        "104": "@AC_MAIN_LOCK_VALUE_LIMIT_FAN_GROUPCONTROL_W",
+        "106": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_FAN_GROUPCONTROL_W",
+        "108": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_GROUPCONTROL_W",
+        "110": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_GROUPCONTROL_W",
+        "112": "@AC_MAIN_LOCK_VALUE_LIMIT_MODE_GROUPCONTROL_W",
+        "114": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_MODE_GROUPCONTROL_W",
+        "116": "@AC_MAIN_LOCK_VALUE_TEMP_MODE_GROUPCONTROL_W",
+        "118": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_MODE_GROUPCONTROL_W",
+        "120": "@AC_MAIN_LOCK_VALUE_LIMIT_FAN_MODE_GROUPCONTROL_W",
+        "122": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_FAN_MODE_GROUPCONTROL_W",
+        "124": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_MODE_GROUPCONTROL_W",
+        "126": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_MODE_GROUPCONTROL_W",
+        "128": "@AC_MAIN_LOCK_VALUE_DRYCONTACT_W",
+        "130": "@AC_MAIN_LOCK_VALUE_ALL_DRYCONTACT_W",
+        "132": "@AC_MAIN_LOCK_VALUE_TEMP_DRYCONTACT_W",
+        "134": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_DRYCONTACT_W",
+        "136": "@AC_MAIN_LOCK_VALUE_FAN_DRYCONTACT_W",
+        "138": "@AC_MAIN_LOCK_VALUE_ALL_FAN_DRYCONTACT_W",
+        "140": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_DRYCONTACT_W",
+        "142": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_DRYCONTACT_W",
+        "144": "@AC_MAIN_LOCK_VALUE_MODE_DRYCONTACT_W",
+        "146": "@AC_MAIN_LOCK_VALUE_ALL_MODE_DRYCONTACT_W",
+        "148": "@AC_MAIN_LOCK_VALUE_TEMP_MODE_DRYCONTACT_W",
+        "150": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_MODE_DRYCONTACT_W",
+        "152": "@AC_MAIN_LOCK_VALUE_FAN_MODE_DRYCONTACT_W",
+        "154": "@AC_MAIN_LOCK_VALUE_ALL_FAN_MODE_DRYCONTACT_W",
+        "156": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_MODE_DRYCONTACT_W",
+        "158": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_MODE_DRYCONTACT_W",
+        "160": "@AC_MAIN_LOCK_VALUE_LIMIT_DRYCONTACT_W",
+        "162": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_DRYCONTACT_W",
+        "164": "@AC_MAIN_LOCK_VALUE_TEMP_DRYCONTACT_W",
+        "166": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_DRYCONTACT_W",
+        "168": "@AC_MAIN_LOCK_VALUE_LIMIT_FAN_DRYCONTACT_W",
+        "170": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_FAN_DRYCONTACT_W",
+        "172": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_DRYCONTACT_W",
+        "174": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_DRYCONTACT_W",
+        "176": "@AC_MAIN_LOCK_VALUE_LIMIT_MODE_DRYCONTACT_W",
+        "178": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_MODE_DRYCONTACT_W",
+        "180": "@AC_MAIN_LOCK_VALUE_TEMP_MODE_DRYCONTACT_W",
+        "182": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_MODE_DRYCONTACT_W",
+        "184": "@AC_MAIN_LOCK_VALUE_LIMIT_FAN_MODE_DRYCONTACT_W",
+        "186": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_FAN_MODE_DRYCONTACT_W",
+        "188": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_MODE_DRYCONTACT_W",
+        "190": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_MODE_DRYCONTACT_W",
+        "192": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_DRYCONTACT_W",
+        "194": "@AC_MAIN_LOCK_VALUE_ALL_GROUPCONTROL_DRYCONTACT_W",
+        "196": "@AC_MAIN_LOCK_VALUE_TEMP_GROUPCONTROL_DRYCONTACT_W",
+        "198": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_GROUPCONTROL_DRYCONTACT_W",
+        "200": "@AC_MAIN_LOCK_VALUE_FAN_GROUPCONTROL_DRYCONTACT_W",
+        "202": "@AC_MAIN_LOCK_VALUE_ALL_FAN_GROUPCONTROL_DRYCONTACT_W",
+        "204": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_GROUPCONTROL_DRYCONTACT_W",
+        "206": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_GROUPCONTROL_DRYCONTACT_W",
+        "208": "@AC_MAIN_LOCK_VALUE_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "210": "@AC_MAIN_LOCK_VALUE_ALL_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "212": "@AC_MAIN_LOCK_VALUE_TEMP_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "214": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "216": "@AC_MAIN_LOCK_VALUE_FAN_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "218": "@AC_MAIN_LOCK_VALUE_ALL_FAN_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "220": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "222": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "224": "@AC_MAIN_LOCK_VALUE_LIMIT_GROUPCONTROL_DRYCONTACT_W",
+        "226": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_GROUPCONTROL_DRYCONTACT_W",
+        "228": "@AC_MAIN_LOCK_VALUE_TEMP_GROUPCONTROL_DRYCONTACT_W",
+        "230": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_GROUPCONTROL_DRYCONTACT_W",
+        "232": "@AC_MAIN_LOCK_VALUE_LIMIT_FAN_GROUPCONTROL_DRYCONTACT_W",
+        "234": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_FAN_GROUPCONTROL_DRYCONTACT_W",
+        "236": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_GROUPCONTROL_DRYCONTACT_W",
+        "238": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_GROUPCONTROL_DRYCONTACT_W",
+        "240": "@AC_MAIN_LOCK_VALUE_LIMIT_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "242": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "244": "@AC_MAIN_LOCK_VALUE_TEMP_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "246": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "248": "@AC_MAIN_LOCK_VALUE_LIMIT_FAN_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "250": "@AC_MAIN_LOCK_VALUE_ALL_LIMIT_FAN_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "252": "@AC_MAIN_LOCK_VALUE_TEMP_FAN_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "254": "@AC_MAIN_LOCK_VALUE_ALL_TEMP_FAN_MODE_GROUPCONTROL_DRYCONTACT_W",
+        "256": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "258": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "260": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "262": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "264": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "266": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "268": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "270": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "272": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "274": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "276": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "278": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "280": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "282": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "284": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "286": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "288": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "290": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "292": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "294": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "296": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "298": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "300": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "302": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "304": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "306": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "308": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "310": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "312": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "314": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "316": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "318": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "320": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "322": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "324": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "326": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "328": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "330": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "332": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "334": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "336": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "338": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "340": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "342": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "344": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "346": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "348": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "350": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "352": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "354": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "356": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "358": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "360": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "362": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "364": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "366": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "368": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "370": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "372": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "374": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "376": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "378": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "380": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "382": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "384": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "386": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "388": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "390": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "392": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "394": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "396": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "398": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "400": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "402": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "404": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "406": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "408": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "410": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "412": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "414": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "416": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "418": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "420": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "422": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "424": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "426": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "428": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "430": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "432": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "434": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "436": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "438": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "440": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "442": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "444": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "446": "@AC_MAIN_LOCK_VALUE_CENTRALCONTROL_W",
+        "448": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "450": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "452": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "454": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "456": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "458": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "460": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "462": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "464": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "466": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "468": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "470": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "472": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "474": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "476": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "478": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "480": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "482": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "484": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "486": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "488": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "490": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "492": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "494": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "496": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "498": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "500": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "502": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "504": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "506": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "508": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "510": "@AC_MAIN_LOCK_VALUE_GROUPCONTROL_CENTRALCONTROL_W",
+        "512": "@512"
+      }
+    },
+    "airState.miscFuncState.dRED": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": 0,
+        "1": 1,
+        "2": 2,
+        "3": 3
+      }
+    },
+    "airState.miscFuncState.safeOpRemainTime": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 60
+      }
+    },
+    "airState.miscFuncState.AutoICA": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_AUTO_ICA_NOT_NOW_W",
+        "1": "@AC_ICA_LEVEL_1_W",
+        "2": "@AC_ICA_LEVEL_2_W",
+        "3": "@AC_ICA_LEVEL_3_W",
+        "4": "@AC_ICA_LEVEL_4_W",
+        "5": "@AC_ICA_LEVEL_5_W",
+        "6": "@AC_ICA_LEVEL_6_W"
+      }
+    },
+    "airState.miscFuncState.AutoICA.onOff": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_AUTO_ICA_OFF_W",
+        "1": "@AC_AUTO_ICA_ON_W"
+      }
+    },
+    "airState.miscFuncState.ICA": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_ICA_OFF_W",
+        "1": "@AC_ICA_LEVEL_1_W",
+        "2": "@AC_ICA_LEVEL_2_W",
+        "3": "@AC_ICA_LEVEL_3_W",
+        "4": "@AC_ICA_LEVEL_4_W",
+        "5": "@AC_ICA_LEVEL_5_W",
+        "6": "@AC_ICA_LEVEL_6_W"
+      }
+    },
+    "airState.miscFuncState.ICA.civilianSupply": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@NOT_CIVILIAN",
+        "1": "@CIVILIAN",
+        "2": "@NOT_DEFINE"
+      }
+    },
+    "airState.miscFuncState.ICA.minimumCurrent": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 20
+      }
+    },
+    "airState.outside.quality.PM2": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 1000
+      }
+    },
+    "airState.outside.humidity.current": {
+      "data_type": "range",
+      "default": 35,
+      "value_validation": {
+        "min": 35,
+        "max": 90
+      }
+    },
+    "airState.outside.temperature.current": {
+      "data_type": "range",
+      "default": -40,
+      "value_validation": {
+        "min": -40,
+        "max": 60
+      }
+    },
+    "airState.notification.list": {
+      "data_type": "enum",
+      "default": "1",
+      "value_mapping": {
+        "1": "@AP_SETTING_ALARM_MANSU_W",
+        "2": "@AP_SETTING_ALARM_LOWHEAT_W",
+        "3": "@AP_SETTING_ALARM_DUST_W",
+        "4": "@AP_SETTING_ALARM_FILTER_CHANGE_W",
+        "5": "@AP_SETTING_ALARM_FILTER_CHANGE_W",
+        "6": "@AP_SETTING_ALARM_WATERTANK_LACK_W",
+        "7": "@AP_SETTING_ALARM_HOMECARE_W",
+        "8": 8,
+        "256": 256
+      }
+    },
+    "airState.notification.detailList": {
+      "data_type": "enum",
+      "default": "1",
+      "value_mapping": {
+        "1": "@AP_SETTING_ALARM_MANSU_W",
+        "2": "@AP_SETTING_ALARM_LOWHEAT_W",
+        "3": "@AP_SETTING_ALARM_DUST_W",
+        "4": "@AP_SETTING_ALARM_FILTER_CHANGE_W",
+        "5": "@AP_SETTING_ALARM_FILTER_CHANGE_W",
+        "6": "@AP_SETTING_ALARM_WATERTANK_LACK_W",
+        "7": "@AP_SETTING_ALARM_HOMECARE_W",
+        "8": 8,
+        "9": "@AP_SETTING_ALARM_FILTER_CHANGE_W",
+        "10": "@AP_SETTING_ALARM_FILTER_CHANGE_W",
+        "11": "@AP_SETTING_ALARM_FILTER_CHANGE_W",
+        "12": "@AP_SETTING_ALARM_FILTER_CHANGE_W",
+        "13": "@AP_SETTING_ALARM_DUST_W",
+        "14": "@AP_SETTING_ALARM_D_PLUS_TOP_FILTER_W",
+        "15": "@AP_SETTING_ALARM_D_PLUS_BOTTOM_FILTER_W",
+        "16": "@AP_SETTING_ALARM_FILTER_DEODORIZATION_W",
+        "17": "@AP_SETTING_ALARM_RECOMMEND_W",
+        "18": 18
+      }
+    },
+    "airState.vision.numData": {
+      "data_type": "range",
+      "default": 1,
+      "value_validation": {
+        "min": 1,
+        "max": 3
+      }
+    },
+    "airState.vision.sensing.angle": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 105
+      }
+    },
+    "airState.vision.sensing.ds": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 2
+      }
+    },
+    "airState.humidity.current": {
+      "data_type": "range",
+      "default": 35,
+      "value_validation": {
+        "min": 35,
+        "max": 90
+      }
+    },
+    "airState.humidity.desired": {
+      "data_type": "range",
+      "default": 20,
+      "value_validation": {
+        "min": 20,
+        "max": 90
+      }
+    },
+    "airState.mon.timeout": {
+      "data_type": "range",
+      "default": 0,
+      "value_validation": {
+        "min": 0,
+        "max": 3600
+      }
+    },
+    "airState.smartCare.status": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_SMARTCARE_STATUS_OFF_W",
+        "1": "@AC_SMARTCARE_STATUS_SPEED_COOL_W",
+        "2": "@AC_SMARTCARE_STATUS_PLEASANT_W",
+        "3": "@AC_SMARTCARE_STATUS_SAVING_W",
+        "4": "@AC_SMARTCARE_STATUS_CUSTOM_TEMPERATURE_W",
+        "5": "@AC_SMARTCARE_STATUS_DEHUMIDIFICATION_W"
+      }
+    },
+    "airState.tempState.twoSetCurrent": {
+      "comment": "##ì‹¤ë‚´ì˜¨ë„_2set",
+      "data_type": "range",
+      "default": "18",
+      "value_validation": {
+        "min": 1,
+        "max": 39.5,
+        "step": 0.5
+      }
+    },
+    "airState.tempState.twoSetDeadBand": {
+      "comment": "2set deadband value",
+      "data_type": "range",
+      "default": "0",
+      "value_validation": {
+        "min": 0,
+        "max": 10,
+        "step": 0.5
+      }
+    },
+    "airState.tempState.twoSetCoolTemp": {
+      "comment": "2set cool set temp",
+      "data_type": "range",
+      "default": "18",
+      "value_validation": {
+        "min": 10,
+        "max": 37.5,
+        "step": 0.5
+      }
+    },
+    "airState.tempState.twoSetHeatTemp": {
+      "comment": "2set heat set temp",
+      "data_type": "range",
+      "default": "16",
+      "value_validation": {
+        "min": 4,
+        "max": 32,
+        "step": 0.5
+      }
+    },
+    "airState.tempState.twoSetState": {
+      "comment": "2set temp setting status",
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.tempState.twoSetAcoState": {
+      "comment": "2set aco cycle",
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@NOP",
+        "1": "@COOL",
+        "2": "@HEAT"
+      }
+    },
+    "airState.tempState.twoSetCoolUSL": {
+      "comment": "2set cool temp upper",
+      "data_type": "range",
+      "default": "0",
+      "value_validation": {
+        "min": 0,
+        "max": 100,
+        "step": 0.5
+      }
+    },
+    "airState.tempState.twoSetCoolLSL": {
+      "comment": "2set cool temp lower",
+      "data_type": "range",
+      "default": "0",
+      "value_validation": {
+        "min": 0,
+        "max": 100,
+        "step": 0.5
+      }
+    },
+    "airState.tempState.twoSetHeatUSL": {
+      "comment": "2set heat temp upper",
+      "data_type": "range",
+      "default": "0",
+      "value_validation": {
+        "min": 0,
+        "max": 100,
+        "step": 0.5
+      }
+    },
+    "airState.tempState.twoSetHeatLSL": {
+      "comment": "2set heat temp lower",
+      "data_type": "range",
+      "default": "0",
+      "value_validation": {
+        "min": 0,
+        "max": 100,
+        "step": 0.5
+      }
+    },
+    "airState.screen.image": {
+      "data_type": "enum",
+      "default": "1",
+      "value_mapping": {
+        "0": "@AC_START_IMAGE_DEFAULT_W",
+        "1": "@AC_START_IMAGE_SPRING_1",
+        "2": "@AC_START_IMAGE_SPRING_2",
+        "3": "@AC_START_IMAGE_WINTER_1",
+        "4": "@AC_START_IMAGE_WINTER_2",
+        "5": "@AC_START_IMAGE_WINTER_3",
+        "6": "@AC_START_IMAGE_WINTER_4",
+        "7": "@AC_START_IMAGE_WINTER_5",
+        "8": "@AC_START_IMAGE_SUMMER_1",
+        "9": "@AC_START_IMAGE_SUMMER_2",
+        "10": "@AC_START_IMAGE_AUTUMN_1",
+        "11": "@AC_START_IMAGE_AUTUMN_2"
+      }
+    },
+    "airState.melody": {
+      "data_type": "enum",
+      "default": "1",
+      "value_mapping": {
+        "0": "@AC_ONOFF_MELODY_DEFAULT_W",
+        "1": "@AC_ONOFF_MELODY_VIVALDI_WINTER",
+        "2": "@AC_ONOFF_MELODY_JINGLE_BELLS_CHORUS",
+        "3": "@AC_ONOFF_MELODY_WE_WISH_YOU_A_MERRY_CHRISTMAS",
+        "4": "@AC_ONOFF_MELODY_BEETHOVEN_PASTORALE",
+        "5": "@AC_ONOFF_MELODY_VIVALDI_SPRING",
+        "6": "@AC_ONOFF_MELODY_DVORAK_HUMORESQUE",
+        "7": "@AC_ONOFF_MELODY_ELGAR_SALUT_D_AMOUR",
+        "8": "@AC_ONOFF_MELODY_VIVALDI_AUTUMN",
+        "9": "@AC_ONOFF_MELODY_DANCE_OF_THE_SUGAR_PLUM_FAIRY",
+        "10": "@AC_ONOFF_MELODY_RADETZKY_MARSCH",
+        "11": "@AC_ONOFF_MELODY_JINGLE_BELLS_INTRO"
+      }
+    },
+    "airState.rrc.original.mode": {
+      "comment": "RRC original mode",
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_RRC_MODE_HOME",
+        "1": "@AC_RRC_MODE_SLEEP",
+        "2": "@AC_RRC_MODE_AWAY",
+        "3": "@AC_RRC_MODE_AWAKE"
+      }
+    },
+    "airState.rrc.running.mode": {
+      "comment": "RRC running mode",
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_RRC_MODE_HOME",
+        "1": "@AC_RRC_MODE_SLEEP",
+        "2": "@AC_RRC_MODE_AWAY",
+        "3": "@AC_RRC_MODE_AWAKE"
+      }
+    },
+    "airState.rrc.hold.status": {
+      "comment": "RRC hold status",
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    },
+    "airState.rrc.hold.type": {
+      "comment": "RRC hold type",
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@NONE",
+        "1": "@SCHEDULE",
+        "2": "@SETTEMP",
+        "3": "@MODE",
+        "4": "@CYCLE",
+        "5": "@DEADBAND",
+        "6": "@LOCK",
+        "7": "@ERROR"
+      }
+    },
+    "airState.rrc.schedule.season": {
+      "comment": "RRC schedule season",
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_SUMMER_W",
+        "1": "@AC_WINTER_W"
+      }
+    },
+    "airState.allCleaning.status": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@AC_ALL_CLEANING_STOP_W",
+        "1": "@AC_ALL_CLEANING_FILTER_CLCEAN_W",
+        "2": "@AC_ALL_CLEANING_COOL_W",
+        "3": "@AC_ALL_CLEANING_FREEZE_CLEAN_W",
+        "4": "@AC_ALL_CLEANING_AI_AUTODRY_W",
+        "100": "@AC_ALL_CLEANING_START_W",
+        "254": "@AC_ALL_CLEANING_USE_OTHER_W",
+        "255": "@AC_ALL_CLEANING_DISABLED_W"
+      }
+    },
+    "airState.miscFuncState.absencePowerSaving": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@NOT_USED",
+        "1": "@AC_ABSENCE_POWERSAVING_POWER_OFF",
+        "2": "@AC_ABSENCE_POWERSAVING_HUMSAVING",
+        "3": "@AC_ABSENCE_POWERSAVING_AFTER_OFF_W"
+      }
+    },
+    "airState.miscFuncState.absenceDetectionTime": {
+      "data_type": "enum",
+      "default": "60",
+      "value_mapping": {
+        "30": 30,
+        "40": 40,
+        "50": 50,
+        "60": 60,
+        "90": 90,
+        "120": 120
+      }
+    },
+    "airState.additionalFunc.deepSleep": {
+      "data_type": "enum",
+      "default": "0",
+      "value_mapping": {
+        "0": "@OFF",
+        "1": "@ON"
+      }
+    }
+  },
+  "ControlDevice": [
+    {
+      "ctrlKey": "basicCtrl",
+      "comment": "ì›ê²©ì œì–´-ê¸°ë³¸ì œì–´, ìš´ì „ëª¨ë“œ, ë°”ëžŒì„¸ê¸°, í¬ë§ì˜¨ë„ì„¤ì •, ê³µê¸°ì²­ì • On/Off, ê³µê¸°ì œê·  On/Off",
+      "command": "Operation|Get|Set",
+      "dataKey": "airState.operation|airState.opMode|airState.windStrength|airState.tempState.target|airState.miscFuncState.airFast|airState.miscFuncState.airRemoval",
+      "dataValue": "{%airState.operation%}|{%airState.opMode%}|{%airState.windStrength%}|{%airState.tempState.target%}|{%airState.miscFuncState.airFast%}|{%airState.miscFuncState.airRemoval%}"
+    },
+    {
+      "ctrlKey": "wModeCtrl",
+      "comment": "ì›ê²©ì œì–´-íŠ¹ìˆ˜ë°”ëžŒ",
+      "command": "Get|Set",
+      "dataSetList": {
+        "airState.wMode.flowForest": "{%airState.wMode.flowForest%}",
+        "airState.wMode.flowLongPower": "{%airState.wMode.flowLongPower%}",
+        "airState.wMode.flowShower": "{%airState.wMode.flowShower%}",
+        "airState.wMode.iceValley": "{%airState.wMode.iceValley%}",
+        "airState.wMode.turbo": "{%airState.wMode.turbo%}",
+        "airState.wMode.jet": "{%airState.wMode.jet%}",
+        "airState.wMode.humanCare": "{%airState.wMode.humanCare%}",
+        "airState.wMode.lowHeating": "{%airState.wMode.lowHeating%}",
+        "airState.wMode.airClean": "{%airState.wMode.airClean%}",
+        "airState.wMode.smartCare": "{%airState.wMode.smartCare%}",
+        "airState.wMode.indirectWind": "{%airState.wMode.indirectWind%}"
+      },
+      "dataGetList": [
+        "airState.wMode.flowForest",
+        "airState.wMode.flowLongPower",
+        "airState.wMode.flowShower",
+        "airState.wMode.iceValley",
+        "airState.wMode.turbo",
+        "airState.wMode.jet",
+        "airState.wMode.humanCare",
+        "airState.wMode.lowHeating",
+        "airState.wMode.airClean",
+        "airState.wMode.smartCare",
+        "airState.wMode.indirectWind"
+      ]
+    },
+    {
+      "ctrlKey": "wDirCtrl",
+      "comment": "ì›ê²©ì œì–´-ë°”ëžŒë°©í–¥",
+      "command": "Get|Set",
+      "dataKey": "airState.wDir.auto|airState.wDir.up|airState.wDir.down|airState.wDir.left|airState.wDir.right|airState.wDir.side|airState.wDir.upDown|airState.wDir.leftRight|airState.wDir.swirl|airState.wDir.vStep|airState.wDir.hStep",
+      "dataValue": "{%airState.wDir.auto%}|{%airState.wDir.up%}|{%airState.wDir.down%}|{%airState.wDir.left%}|{%airState.wDir.right%}|{%airState.wDir.side%}|{%airState.wDir.upDown%}|{%airState.wDir.leftRight%}|{%airState.wDir.swirl%}|{%airState.wDir.vStep%}|{%airState.wDir.hStep%}"
+    },
+    {
+      "ctrlKey": "favoriteCtrl",
+      "comment": "ì›ê²©ì œì–´(Favorite),ì—ì–´ìº¡ìŠ-ë‚˜ë§Œì˜ ë°”ëžŒ",
+      "command": "Get|Set",
+      "dataSetList": {
+        "airState.operation": "{%airState.operation%}",
+        "airState.opMode": "{%airState.opMode%}",
+        "airState.windStrength": "{%airState.windStrength%}",
+        "airState.tempState.target": "{%airState.tempState.target%}",
+        "airState.wMode.airClean": "{%airState.wMode.airClean%}",
+        "airState.wDir.vStep": "{%airState.wDir.vStep%}",
+        "airState.wDir.hStep": "{%airState.wDir.hStep%}",
+        "airState.wMode.jet": "{%airState.wMode.jet%}",
+        "airState.powerSave.basic": "{%airState.powerSave.basic%}",
+        "airState.wMode.iceValley": "{%airState.wMode.iceValley%}"
+      },
+      "dataGetList": [
+        "airState.operation",
+        "airState.opMode",
+        "airState.windStrength",
+        "airState.tempState.target",
+        "airState.wMode.airClean",
+        "airState.wDir.vStep",
+        "airState.wDir.hStep",
+        "airState.wMode.jet",
+        "airState.powerSave.basic",
+        "airState.wMode.iceValley"
+      ]
+    },
+    {
+      "ctrlKey": "reservationCtrl",
+      "comment": "ì›ê²©ì œì–´-ì˜ˆì•½",
+      "command": "Get|Set",
+      "dataSetList": {
+        "airState.reservation.targetTimeToStop": "{%airState.reservation.targetTimeToStop%}",
+        "airState.reservation.targetTimeToStart": "{%airState.reservation.targetTimeToStart%}",
+        "airState.reservation.sleepTime": "{%airState.reservation.sleepTime%}",
+        "airState.reservation.absoluteStopTime": "{%airState.reservation.absoluteStopTime%}",
+        "airState.reservation.absoluteStartTime": "{%airState.reservation.absoluteStartTime%}",
+        "airState.reservation.monOnTime": "{%airState.reservation.monOnTime%}",
+        "airState.reservation.monOffTime": "{%airState.reservation.monOffTime%}",
+        "airState.reservation.tueOnTime": "{%airState.reservation.tueOnTime%}",
+        "airState.reservation.tueOffTime": "{%airState.reservation.tueOffTime%}",
+        "airState.reservation.wedOnTime": "{%airState.reservation.wedOnTime%}",
+        "airState.reservation.wedOffTime": "{%airState.reservation.wedOffTime%}",
+        "airState.reservation.thuOnTime": "{%airState.reservation.thuOnTime%}",
+        "airState.reservation.thuOffTime": "{%airState.reservation.thuOffTime%}",
+        "airState.reservation.friOnTime": "{%airState.reservation.friOnTime%}",
+        "airState.reservation.friOffTime": "{%airState.reservation.friOffTime%}",
+        "airState.reservation.satOnTime": "{%airState.reservation.satOnTime%}",
+        "airState.reservation.satOffTime": "{%airState.reservation.satOffTime%}",
+        "airState.reservation.sunOnTime": "{%airState.reservation.sunOnTime%}",
+        "airState.reservation.sunOffTime": "{%airState.reservation.sunOffTime%}",
+        "airState.reservation.advancedSchedule": "{%airState.reservation.advancedSchedule%}"
+      },
+      "dataGetList": [
+        "airState.reservation.targetTimeToStop",
+        "airState.reservation.targetTimeToStart",
+        "airState.reservation.sleepTime",
+        "airState.reservation.absoluteStopTime",
+        "airState.reservation.absoluteStartTime",
+        "airState.reservation.monOnTime",
+        "airState.reservation.monOffTime",
+        "airState.reservation.tueOnTime",
+        "airState.reservation.tueOffTime",
+        "airState.reservation.wedOnTime",
+        "airState.reservation.wedOffTime",
+        "airState.reservation.thuOnTime",
+        "airState.reservation.thuOffTime",
+        "airState.reservation.friOnTime",
+        "airState.reservation.friOffTime",
+        "airState.reservation.satOnTime",
+        "airState.reservation.satOffTime",
+        "airState.reservation.sunOnTime",
+        "airState.reservation.sunOffTime",
+        "airState.reservation.advancedSchedule"
+      ]
+    },
+    {
+      "ctrlKey": "settingInfo",
+      "comment": "ì›ê²©ì œì–´-ì„¤ì •",
+      "command": "Get|Set",
+      "dataKey": "airState.powerSave.basic|airState.miscFuncState.autoDry|airState.lightingState.magicBrightness|airState.lightingState.mood|airState.voice.spkVolume|airState.tempState.unit",
+      "dataValue": "{%airState.powerSave.basic%}|{%airState.miscFuncState.autoDry%}|{%airState.lightingState.magicBrightness}|{%airState.lightingState.mood%}|{%airState.voice.spkVolume%}|{%airState.tempState.unit%}"
+    },
+    {
+      "ctrlKey": "remoteMon",
+      "comment": "ì›ê²©ëª¨ë‹ˆí„°ë§",
+      "command": "Stop|Start"
+    },
+    {
+      "ctrlKey": "diagData",
+      "comment": "ìžê°€ì§„ë‹¨",
+      "command": "Get"
+    },
+    {
+      "ctrlKey": "filterMngStateCtrl",
+      "comment": "í•„í„°ë§¤ë‹ˆì €",
+      "command": "Get|Set",
+      "dataSetList": {
+        "airState.filterMngState.useTime": "{%airState.filterMngState.useTime%}",
+        "airState.filterMngState.remainTime": "{%airState.filterMngState.remainTime%}",
+        "airState.filterMngState.maxTime": "{%airState.filterMngState.filterMngState.maxTime%}",
+        "airState.filterMngState.changeDate": "{%airState.filterMngState.changeDate%}",
+        "airState.filterMngState.type": "{%airState.filterMngState.type%}",
+        "airState.filterMngState.useTimeTop": "{%airState.filterMngState.useTimeTop%}",
+        "airState.filterMngState.maxTimeTop": "{%airState.filterMngState.maxTimeTop%}",
+        "airState.filterMngState.useTimeMiddle": "{%airState.filterMngState.useTimeMiddle%}",
+        "airState.filterMngState.maxTimMiddle": "{%airState.filterMngState.maxTimMiddle%}",
+        "airState.filterMngState.useTimeBottom": "{%airState.filterMngState.useTimeBottom%}",
+        "airState.filterMngState.maxTimeBottom": "{%airState.filterMngState.maxTimeBottom%}"
+      },
+      "dataGetList": [
+        "airState.filterMngState.useTime",
+        "airState.filterMngState.remainTime",
+        "airState.filterMngState.maxTime",
+        "airState.filterMngState.changeDate",
+        "airState.filterMngState.type",
+        "airState.filterMngState.useTimeTop",
+        "airState.filterMngState.maxTimeTop",
+        "airState.filterMngState.useTimeMiddle",
+        "airState.filterMngState.maxTimMiddle",
+        "airState.filterMngState.useTimeBottom",
+        "airState.filterMngState.maxTimeBottom"
+      ]
+    },
+    {
+      "ctrlKey": "energyDesiredCtrl",
+      "comment": "ì—ë„ˆì§€ ê´€ë¦¬,ì—ë„ˆì§€ ëª©í‘œì¹˜ ì„¤ì •",
+      "command": "Get|Set",
+      "dataSetList": {
+        "airState.energy.desiredDay": "{%airState.energy.desiredDay%}",
+        "airState.energy.desiredWeek": "{%airState.energy.desiredWeek%}",
+        "airState.energy.desiredMonth": "{%airState.energy.desiredMonth%}"
+      },
+      "dataGetList": [
+        "airState.energy.desiredDay",
+        "airState.energy.desiredWeek",
+        "airState.energy.desiredMonth"
+      ]
+    },
+    {
+      "ctrlKey": "qualityMngCtrl",
+      "comment": "ê³µê¸°ì˜¤ì—¼ë„ ê´€ë¦¬",
+      "command": "Get|Set",
+      "dataKey": "airState.quality.PM1|airState.quality.PM2|airState.quality.PM10|airState.quality.odor|airState.quality.sensorMon|airState.quality.airMon|airState.quality.overall",
+      "dataValue": "{%airState.quality.PM1%}|{%airState.quality.PM2%}|{%airState.quality.PM10%}|{%airState.quality.odor%}|{%airState.quality.sensorMon%}|{%airState.quality.airMon%}|{%airState.quality.overall%}"
+    },
+    {
+      "ctrlKey": "homeCareCtrl",
+      "comment": "í™ˆì¼€ì–´ ì œì–´ ëª…ë ¹",
+      "command": "Get|Set",
+      "dataKey": "airState.homeCare.onOff|airState.homeCare.delay|airState.homeCare.interval",
+      "dataValue": "{%airState.homeCare.onOff%}|{%airState.homeCare.delay%}|{%airState.homeCare.interval%}"
+    },
+    {
+      "ctrlKey": "voiceSetting",
+      "comment": "ìŒì„±ì¸ì‹ ì„¤ì •",
+      "command": "Get|Set",
+      "dataKey": "airState.voice.recog|airState.voice.setting|airState.voice.volume|airState.voice.sensitivity|airState.voice.QVoiceOption|airState.voice.feedbackSound",
+      "dataValue": "{%airState.voice.recog%}|{%airState.voice.setting%}|{%airState.voice.volume%}|{%airState.voice.sensitivity%}|{%airState.voice.QVoiceOption%}|{%airState.voice.feedbackSound%}"
+    },
+    {
+      "ctrlKey": "miscCtrl",
+      "comment": "ê¸°íƒ€ ë¶€ê°€ê¸°ëŠ¥ ì œì–´",
+      "command": "Get|Set",
+      "dataKey": "airState.ductZone.control|airState.aroma.state|airState.aroma.color|airState.aroma.sound",
+      "dataValue": "{%airState.ductZone.control%}|{%airState.aroma.state%}|{%airState.aroma.color%}|{%airState.aroma.sound%}"
+    },
+    {
+      "ctrlKey": "racAddCtrl",
+      "comment": "RAC ì¶”ê°€ ì œì–´",
+      "command": "Get|Set",
+      "dataKey": "airState.rac.addFunc",
+      "dataValue": "{%airState.rac.addFunc%}"
+    },
+    {
+      "ctrlKey": "allEventEnable",
+      "comment": "ì‹¤ì‹œê°„ ëª¨ë‹ˆí„°ë§ë°ì´í„° ì„¤ì •",
+      "command": "Get|Set",
+      "dataKey": "airState.mon.timeout",
+      "dataValue": "{%airState.mon.timeout%}"
+    },
+    {
+      "ctrlKey": "energyStateCtrl",
+      "comment": "ì—ë„ˆì§€ ë°ì´í„° ì¡°íšŒ",
+      "command": "Get|Set",
+      "dataKey": "airState.energy.inCurrent|airState.energy.outCurrent|airState.energy.totalCurrent",
+      "dataValue": "{%airState.energy.inCurrent%}|{%airState.energy.outCurrent%}|{%airState.energy.totalCurrent%}"
+    }
+  ],
+  "DrPush": [
+    {
+      "title": "@AC_SETTING_PUSH_DR_START_TITLE_ALARM_W",
+      "description": "@AC_SETTING_PUSH_DR_START_CONTENT_MIN_ALARM_W",
+      "groupCode": "40105"
+    },
+    {
+      "title": "@AC_SETTING_PUSH_DR_END_TITLE_ALARM_W",
+      "description": "@AC_SETTING_PUSH_DR_END_CONTENT_ALARM_W",
+      "groupCode": "40106"
+    }
+  ],
+  "SmartMode": {
+    "MODE010": {
+      "_comment": "ì™¸ì¶œëª¨ë“œ",
+      "actionName": "@AC_SMARTMODE_ACTION_NAME_010",
+      "control": [
+        {
+          "ctrlKey": "basicCtrl",
+          "command": "Set",
+          "dataKey": "airState.operation",
+          "dataValue": "0"
+        }
+      ]
+    },
+    "MODE020": {
+      "_comment": "ê·€ê°€ëª¨ë“œ",
+      "actionName": "@AC_SMARTMODE_ACTION_NAME_020",
+      "control": [
+        {
+          "ctrlKey": "basicCtrl",
+          "command": "Set",
+          "dataKey": "airState.operation",
+          "dataValue": "2"
+        }
+      ]
+    },
+    "MODE030": {
+      "_comment": "íœ´ê°€ëª¨ë“œ",
+      "actionName": "@AC_SMARTMODE_ACTION_NAME_030",
+      "control": [
+        {
+          "ctrlKey": "basicCtrl",
+          "command": "Set",
+          "dataKey": "airState.operation",
+          "dataValue": "0"
+        }
+      ]
+    },
+    "MODE040": {
+      "_comment": "ì·¨ì¹¨ëª¨ë“œ",
+      "actionName": "@AC_SMARTMODE_ACTION_NAME_040",
+      "control": [
+        {
+          "ctrlKey": "reservationCtrl",
+          "command": "Set",
+          "dataSetList": {
+            "airState.reservation.sleepTime": "60"
+          }
+        }
+      ]
+    },
+    "MODE050": {
+      "_comment": "ì¾Œì ëª¨ë“œ",
+      "actionName": "@AC_SMARTMODE_ACTION_NAME_050",
+      "control": [
+        {
+          "ctrlKey": "basicCtrl",
+          "command": "Set",
+          "dataKey": "airState.operation",
+          "dataValue": "2"
+        }
+      ]
+    }
+  },
+  "voicePairingConfig": {
+    "goNewPairingPage": true,
+    "allDeviceEnable": false,
+    "available": {
+      "REFRIGERATOR": "REF",
+      "WATERPURIFIER": "WATER_PURI",
+      "WINE_REFRIGERATOR": "WINE_REF",
+      "WASHER": "WASH",
+      "DRYER": "DRY",
+      "STYLER": "STY",
+      "DISHWASHER": "DISH",
+      "OVEN": "OVEN",
+      "COOKTOP": "COOK",
+      "AIRCONDITIONER": "AC",
+      "AIRPURIFIER": "AIR_Puri",
+      "DEHUMIDIFIER": "DHUM",
+      "CEILING_FAN": "FAN",
+      "ROBOTKING": "ROBOT_CLEAN"
+    },
+    "voicePairingGuide": [
+      {
+        "key": "ALL",
+        "productName": "@AC_PRODUCT_CATEGORY_14_TYPE_TOTAL_W",
+        "guideList": [
+          "@AC_VOICE_CTRL_GUIDE_CHECK_WM_STATUS_S"
+        ]
+      },
+      {
+        "key": "AIRCONDITIONER",
+        "productName": "@CP_PROD_CATEGORY_AIR_CONDITIONER_ITEM_W",
+        "guideList": [
+          "@AC_VOICE_CTRL_GUIDE_OPERATION_ON_OFF_S",
+          "@AC_VOICE_CTRL_GUIDE_CHANGE_AC_MODE_S",
+          "@AC_VOICE_CTRL_GUIDE_SET_AC_TEMPERATURE_S",
+          "@AC_VOICE_CTRL_GUIDE_CHANGE_AC_TEMPERATURE_S"
+        ]
+      },
+      {
+        "key": "AIRPURIFIER",
+        "productName": "@CP_PROD_CATEGORY_AIR_PURIFIER_W",
+        "guideList": [
+          "@AC_VOICE_CTRL_GUIDE_OPERATION_ON_OFF_S",
+          "@AC_VOICE_CTRL_GUIDE_CHANGE_WINDSTRENGTH_S"
+        ]
+      },
+      {
+        "key": "ROBOTKING",
+        "productName": "@CP_PROD_CATEGORY_RK_W",
+        "guideList": [
+          "@AC_VOICE_CTRL_GUIDE_CLEAN_START_FINISH_S",
+          "@AC_VOICE_CTRL_GUIDE_CHARGE_S"
+        ]
+      },
+      {
+        "key": "STYLER",
+        "productName": "@CP_PROD_CATEGORY_STYLER_W",
+        "guideList": [
+          "@AC_VOICE_CTRL_GUIDE_OPERATION_ON_OFF_S",
+          "@AC_VOICE_CTRL_GUIDE_REMAIN_TIME_S"
+        ]
+      },
+      {
+        "key": "REFRIGERATOR",
+        "productName": "@CP_PROD_CATEGORY_REFRIGERATOR_W",
+        "guideList": [
+          "@AC_VOICE_CTRL_GUIDE_CHECK_TEMP_STATUS_S",
+          "@AC_VOICE_CTRL_GUIDE_CHANGE_REF_MODE_S",
+          "@AC_VOICE_CTRL_GUIDE_SET_REF_TEMPERATURE_S"
+        ]
+      },
+      {
+        "key": "DEHUMIDIFIER",
+        "productName": "@CP_PROD_CATEGORY_DEHUMIDIFIER_W",
+        "guideList": [
+          "@AC_VOICE_CTRL_GUIDE_OPERATION_ON_OFF_S",
+          "@AC_VOICE_CTRL_GUIDE_CHECK_HUM_STATUS_S"
+        ]
+      },
+      {
+        "key": "WASHER",
+        "productName": "@CP_PROD_CATEGORY_WM_W",
+        "guideList": [
+          "@AC_VOICE_CTRL_GUIDE_OPERATION_OFF_S",
+          "@AC_VOICE_CTRL_GUIDE_START_WM_S",
+          "@AC_VOICE_CTRL_GUIDE_REMAIN_TIME_S"
+        ]
+      },
+      {
+        "key": "DRYER",
+        "productName": "@CP_NICKNAME_DRYER_2_W",
+        "guideList": [
+          "@AC_VOICE_CTRL_GUIDE_OPERATION_OFF_S",
+          "@AC_VOICE_CTRL_GUIDE_START_DRYER_S",
+          "@AC_VOICE_CTRL_GUIDE_REMAIN_TIME_S"
+        ]
+      },
+      {
+        "key": "OVEN",
+        "productName": "@CP_PROD_CATEGORY_LWO_W",
+        "guideList": [
+          "@AC_VOICE_CTRL_GUIDE_REMAIN_TIME_S"
+        ]
+      },
+      {
+        "key": "WATERPURIFIER",
+        "productName": "@CP_PROD_CATEGORY_WATER_PURIFIER_W",
+        "guideList": [
+          "@AC_VOICE_CTRL_GUIDE_WATER_USE_S"
+        ]
+      },
+      {
+        "key": "DISHWASHER",
+        "productName": "@CP_PROD_CATEGORY_DISHWASHER_W",
+        "guideList": [
+          "@AC_VOICE_CTRL_GUIDE_REMAIN_TIME_S"
+        ]
+      },
+      {
+        "key": "COOKTOP",
+        "productName": "@SP_UX30_CATEGORY_COOKTOP_W",
+        "guideList": [
+          "@AC_VOICE_CTRL_GUIDE_CHECK_DEVICE_STATUS_S"
+        ]
+      },
+      {
+        "key": "WINE_REFRIGERATOR",
+        "productName": "@CP_NICKNAME_WINE_CELLAR_W",
+        "guideList": [
+          "@AC_VOICE_CTRL_GUIDE_CHANGE_WINE_CELLAR_MODE_S",
+          "@AC_VOICE_CTRL_GUIDE_CHECK_TEMP_STATUS_S"
+        ]
+      },
+      {
+        "key": "CEILING_FAN",
+        "productName": "@CP_NICKNAME_CEILING_FAN_W",
+        "guideList": [
+          "@AC_VOICE_CTRL_GUIDE_OPERATION_ON_OFF_S",
+          "@AC_VOICE_CTRL_GUIDE_CHANGE_WINDSTRENGTH_S"
+        ]
+      }
+    ]
+  },
+  "myOwnParts": {
+    "supportCountry": {
+      "KR": "Korea"
+    },
+    "supportDevice": {
+      "pac": "Stand",
+      "rac": "Wall"
+    },
+    "apiVer": "2",
+    "useHttps": true
+  },
+  "Config": {
+    "audibleDiagnosis": "true",
+    "fota": "true",
+    "subscribeProduct": "false",
+    "forceShowCIC": "true"
+  }
+}

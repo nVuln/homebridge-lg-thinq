@@ -1,0 +1,49 @@
+{
+  "airState.windStrength": 8,
+  "airState.wMode.lowHeating": 0,
+  "airState.diagCode": 0,
+  "airState.lightingState.displayControl": 1,
+  "airState.wDir.hStep": 0,
+  "mid": 12345667,
+  "airState.energy.onCurrent": 564,
+  "airState.wMode.airClean": 0,
+  "airState.quality.sensorMon": 0,
+  "airState.miscFuncState.antiBugs": 0,
+  "airState.tempState.target": 26,
+  "airState.miscFuncState.autoDryRemainTime": 0,
+  "airState.operation": 1,
+  "airState.wDir.swing": 1,
+  "airState.wMode.jet": 0,
+  "airState.wDir.vStep": 100,
+  "timestamp": 1744336986633,
+  "airState.powerSave.basic": 0,
+  "airState.quality.PM10": 0,
+  "fwUpgradeInfo": {
+    "upgSched": {
+      "upgUtc": "0",
+      "cmd": "none"
+    }
+  },
+  "static": {
+    "deviceType": "401",
+    "countryCode": "EC"
+  },
+  "airState.quality.overall": 0,
+  "airState.tempState.current": 26.5,
+  "airState.miscFuncState.extraOp": 0,
+  "airState.reservation.sleepTime": 0,
+  "airState.miscFuncState.autoDry": 0,
+  "airState.reservation.targetTimeToStart": 0,
+  "meta": {
+    "allDeviceInfoUpdate": false,
+    "messageId": "A4FCD-wY3oHEsuA"
+  },
+  "airState.quality.PM1": 0,
+  "airState.wMode.smartCare": 0,
+  "airState.quality.PM2": 0,
+  "online": true,
+  "airState.opMode": 0,
+  "airState.reservation.targetTimeToStop": 0,
+  "airState.filterMngStates.maxTime": 0,
+  "airState.filterMngStates.useTime": 0
+}
