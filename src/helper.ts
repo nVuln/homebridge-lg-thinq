@@ -44,7 +44,18 @@ export class Helper {
       case 'STYLER': return Styler;
       case 'HOOD': return RangeHood;
       case 'MICROWAVE': return Microwave;
-      case 'OVEN': return Oven;
+      case 'OVEN': {
+        // Some models are reported as OVEN (301) but expose Microwave-like LWO* keys under snapshot.ovenState
+        // Route those to Microwave implementation to avoid undefined access (upper* vs LWO* fields)
+        const snapshot = (device as any).data?.snapshot?.ovenState;
+        const hasLWOKeys = snapshot && (typeof snapshot.LWOState !== 'undefined'
+          || Object.keys(snapshot).some((k: string) => k.startsWith('LWO')));
+        const deviceCode = (device as any).data?.deviceCode;
+        if (hasLWOKeys || deviceCode === 'KI04') {
+          return Microwave;
+        }
+        return Oven;
+      }
     }
 
     return null;

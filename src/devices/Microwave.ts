@@ -39,19 +39,19 @@ export default class Microwave extends baseDevice {
   protected timeOut = 0;
 
   /** Service */
-  private serviceHood: Service;
-  private serviceLight: Service;
-  private microwavePower: Service;
-  private ovenService: Service;
-  private ovenState: Service;
-  private lightVent: Service;
-  private ovenMode: Service;
-  private ovenTemp: Service;
-  private ovenOptions: Service;
-  private ovenStart: Service;
-  private ovenTimer: Service;
-  private ovenTime: Service;
-  private ovenEndTime: Service;
+  private serviceHood!: Service;
+  private serviceLight!: Service;
+  private microwavePower!: Service;
+  private ovenService!: Service;
+  private ovenState!: Service;
+  private lightVent!: Service;
+  private ovenMode!: Service;
+  private ovenTemp!: Service;
+  private ovenOptions!: Service;
+  private ovenStart!: Service;
+  private ovenTimer!: Service;
+  private ovenTime!: Service;
+  private ovenEndTime!: Service;
   private ovenTimerService: Service;
   private ovenAlarmService: Service;
   private microwaveSwitch: Service;
@@ -69,91 +69,106 @@ export default class Microwave extends baseDevice {
   private startOvenSwitch: Service;
   private ovenTempControl: Service;
   private offSwitch: Service;
+  private recipeDumplingsSwitch: Service;
 
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
   ) {
+    // keep original pattern: prefer getService(name) then addService
     super(platform, accessory);
     const { Service: { Valve, Fan, Lightbulb, ContactSensor, OccupancySensor, IrrigationSystem }, Characteristic } = this.platform;
     const device = accessory.context.device;
 
-    this.serviceHood = this.accessory.getService('Microwave Fan') ||
-      this.accessory.addService(this.platform.Service.Fanv2, 'Microwave Fan', 'YourUniqueIdentifier-59F');
-    this.serviceHood.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
-    this.serviceHood.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Fan');
-    this.serviceHood.getCharacteristic(Characteristic.Active)
-      .on('get', (callback) => {
-        let currentValue = 0;
-        if (this.Status.data?.mwoVentSpeedLevel > 0) {
-          currentValue = 1;
-        }
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        this.ventSpeed = value as number;
-        if (this.ventSpeed !== this.Status.data?.mwoVentSpeedLevel) {
+    
+
+    const hasVent = typeof this.Status.data?.mwoVentSpeedLevel !== 'undefined';
+    if (hasVent) {
+      this.serviceHood = this.accessory.getService('Microwave Fan') ||
+        this.accessory.addService(this.platform.Service.Fanv2, 'Microwave Fan', 'YourUniqueIdentifier-59F');
+      this.serviceHood.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
+      this.serviceHood.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Fan');
+      this.serviceHood.getCharacteristic(Characteristic.Active)
+        .on('get', (callback) => {
+          let currentValue = 0;
+          if (this.Status.data?.mwoVentSpeedLevel > 0) {
+            currentValue = 1;
+          }
+          callback(null, currentValue);
+        })
+        .on('set', (value, callback) => {
+          this.ventSpeed = value as number;
+          if (this.ventSpeed !== this.Status.data?.mwoVentSpeedLevel) {
+            this.sendLightVentCommand();
+          }
+          callback(null);
+        });
+      this.serviceHood.getCharacteristic(Characteristic.RotationSpeed)
+        .on('get', (callback) => {
+          this.ventSpeed = this.Status.data?.mwoVentSpeedLevel;
+          callback(null, this.ventSpeed);
+        })
+        .on('set', (value, callback) => {
+          this.ventSpeed = value as number;
           this.sendLightVentCommand();
-        }
-        callback(null);
-      });
-    this.serviceHood.getCharacteristic(Characteristic.RotationSpeed)
-      .on('get', (callback) => {
-        this.ventSpeed = this.Status.data?.mwoVentSpeedLevel;
-        callback(null, this.ventSpeed);
-      })
-      .on('set', (value, callback) => {
-        this.ventSpeed = value as number;
-        this.sendLightVentCommand();
-        callback(null);
-      });
-    this.serviceHood.getCharacteristic(Characteristic.RotationSpeed)
-      .setProps({
-        minValue: 0,
-        maxValue: 5,
-        minStep: 1,
-      });
+          callback(null);
+        });
+      this.serviceHood.getCharacteristic(Characteristic.RotationSpeed)
+        .setProps({
+          minValue: 0,
+          maxValue: 5,
+          minStep: 1,
+        });
+    }
     // vent lamp
-    this.serviceLight = this.accessory.getService('Microwave Light') ||
-      this.accessory.addService(this.platform.Service.Lightbulb, 'Microwave Light', 'YourUniqueIdentifier-59L');
-    this.serviceLight.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
-    this.serviceLight.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Light');
-    this.serviceLight.getCharacteristic(Characteristic.On)
-      .on('set', (value, callback) => {
-        if (value === false) {
-          this.lampLevel = 0;
-          this.sendLightVentCommand();
-        } else {
-          this.lampLevel = 2;
-          this.sendLightVentCommand();
-        }
-        callback(null);
-      })
-      .on('get', (callback) => {
-        let currentValue = false;
-        if (this.Status.data?.mwoLampLevel > 0) {
-          currentValue = true;
-        }
-        callback(null, currentValue);
-      });
-    this.serviceLight.getCharacteristic(Characteristic.Brightness)
-      .on('get', (callback) => {
-        this.lampLevel = this.Status.data?.mwoLampLevel;
-        callback(null, this.lampLevel);
-      })
-      .on('set', (value, callback) => {
-        this.lampLevel = value as number;
-        if (this.lampLevel !== this.Status.data?.mwoLampLevel) {
-          this.sendLightVentCommand();
-        }
-        callback(null);
-      });
-    this.serviceLight.getCharacteristic(Characteristic.Brightness)
-      .setProps({
-        minValue: 0,
-        maxValue: 2,
-        minStep: 1,
-      });
+    const hasLamp = typeof this.Status.data?.mwoLampLevel !== 'undefined';
+    if (hasLamp) {
+      this.serviceLight = this.accessory.getService('Microwave Light') ||
+        this.accessory.addService(this.platform.Service.Lightbulb, 'Microwave Light', 'YourUniqueIdentifier-59L');
+      this.serviceLight.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
+      this.serviceLight.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Light');
+      this.serviceLight.getCharacteristic(Characteristic.On)
+        .on('set', (value, callback) => {
+          if (value === false) {
+            this.lampLevel = 0;
+            this.sendLightVentCommand();
+          } else {
+            this.lampLevel = 2;
+            this.sendLightVentCommand();
+          }
+          callback(null);
+        })
+        .on('get', (callback) => {
+          let currentValue = false;
+          if (this.Status.data?.mwoLampLevel > 0) {
+            currentValue = true;
+          }
+          callback(null, currentValue);
+        });
+      this.serviceLight.getCharacteristic(Characteristic.Brightness)
+        .on('get', (callback) => {
+          const rawLamp = Number(this.Status.data?.mwoLampLevel);
+          const level = Number.isFinite(rawLamp) ? Math.max(0, Math.min(2, rawLamp)) : 0;
+          this.lampLevel = level;
+          callback(null, level);
+        })
+        .on('set', (value, callback) => {
+          this.lampLevel = Number(value);
+          if (!Number.isFinite(this.lampLevel)) { this.lampLevel = 0; }
+          if (this.lampLevel < 0) { this.lampLevel = 0; }
+          if (this.lampLevel > 2) { this.lampLevel = 2; }
+          if (this.lampLevel !== this.Status.data?.mwoLampLevel) {
+            this.sendLightVentCommand();
+          }
+          callback(null);
+        });
+      this.serviceLight.getCharacteristic(Characteristic.Brightness)
+        .setProps({
+          minValue: 0,
+          maxValue: 2,
+          minStep: 1,
+        });
+    }
 
     this.offSwitch = accessory.getService('Turn Off Microwave') ||
       accessory.addService(this.platform.Service.Switch, 'Turn Off Microwave', 'CataNicoGaTa-Control8Off');
@@ -179,232 +194,243 @@ export default class Microwave extends baseDevice {
         callback(null);
       });
 
-    this.microwavePower = this.accessory.getService('Microwave Power') ||
-      this.accessory.addService(this.platform.Service.Lightbulb, 'Microwave Power', 'YourUniqueIdentifier-59SP');
-    this.microwavePower.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
-    this.microwavePower.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Power');
-    this.microwavePower.getCharacteristic(this.platform.Characteristic.On)
-      .on('set', (value, callback) => {
-        if (value == false) {
-          this.mwPower = 0;
-        } else {
-          this.mwPower = 100;
+    const hasPower = typeof this.Status.data?.LWOMGTPowerLevel !== 'undefined' && !String(this.Status.data?.LWOMGTPowerLevel).includes('NOT_DEFINE_VALUE');
+    if (hasPower) {
+      this.microwavePower = this.accessory.getService('Microwave Power') ||
+        this.accessory.addService(this.platform.Service.Lightbulb, 'Microwave Power', 'YourUniqueIdentifier-59SP');
+      this.microwavePower.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
+      this.microwavePower.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Power');
+      this.microwavePower.getCharacteristic(this.platform.Characteristic.On)
+        .on('set', (value, callback) => {
+          if (value == false) {
+            this.mwPower = 0;
+          } else {
+            this.mwPower = 100;
+          }
+          callback(null);
+        })
+        .on('get', (callback) => {
+          const raw = String(this.Status.data?.LWOMGTPowerLevel ?? '');
+          const digits = raw.replace(/[^0-9]/g, '');
+          const level = digits ? parseInt(digits, 10) : 0;
+          const currentValue = level > 0;
+          callback(null, currentValue);
+        });
 
-        }
-        callback(null);
-      })
-      .on('get', (callback) => {
-        let currentValue = false;
-        if (parseInt(this.Status.data?.LWOMGTPowerLevel) * 10 > 0) {
-          currentValue = true;
-        }
-        callback(null, currentValue);
-      });
-
-    this.microwavePower.getCharacteristic(this.platform.Characteristic.Brightness)
-      .on('get', (callback) => {
-        const currentValue = parseInt(this.Status.data?.LWOMGTPowerLevel) * 10;
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        this.mwPower = value as number;
-        callback(null);
-      });
-    this.microwavePower.getCharacteristic(this.platform.Characteristic.Brightness)
-      .setProps({
-        minValue: 0,
-        maxValue: 100,
-        minStep: 10,
-      });
+      this.microwavePower.getCharacteristic(this.platform.Characteristic.Brightness)
+        .on('get', (callback) => {
+          const raw = String(this.Status.data?.LWOMGTPowerLevel ?? '');
+          const digits = raw.replace(/[^0-9]/g, '');
+          const level = digits ? parseInt(digits, 10) : 0;
+          const currentValue = Number.isFinite(level) ? Math.max(0, Math.min(10, level)) * 10 : 0;
+          callback(null, currentValue);
+        })
+        .on('set', (value, callback) => {
+          const v = Number(value);
+          this.mwPower = Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : 0;
+          callback(null);
+        });
+      this.microwavePower.getCharacteristic(this.platform.Characteristic.Brightness)
+        .setProps({
+          minValue: 0,
+          maxValue: 100,
+          minStep: 10,
+        });
+    }
 
     /////////////
-    this.ovenService = this.accessory.getService(this.config.name) ||
-      this.accessory.addService(this.platform.Service.Television, this.config.name, 'NicoCataGaTa-OvenOven7');
-    this.ovenService.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'LG Microwave Oven');
-    this.ovenService.setPrimaryService(true);
-    this.ovenService.setCharacteristic(this.platform
-      .Characteristic.SleepDiscoveryMode, this.platform.Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE);
-    this.ovenService.getCharacteristic(this.platform.Characteristic.Active)
-      .on('get', (callback) => {
-        const currentValue = this.ovenServiceActive();
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        if (value === 0) {
-          if (this.Status.data?.LWOState.includes('INITIAL')) {
-            this.stopOven();
-            this.timeOut = 1500;
+    if (true) {
+      this.ovenService = (this.accessory as any).getServiceById?.(this.platform.Service.Television, 'NicoCataGaTa-MicrowaveTV')
+        || this.accessory.getService(this.platform.Service.Television)
+        || this.accessory.addService(this.platform.Service.Television, this.config.name, 'NicoCataGaTa-MicrowaveTV');
+      this.ovenService.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'LG Microwave Oven');
+      this.ovenService.setPrimaryService(true);
+      this.ovenService.setCharacteristic(this.platform
+        .Characteristic.SleepDiscoveryMode, this.platform.Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE);
+      this.ovenService.getCharacteristic(this.platform.Characteristic.Active)
+        .on('get', (callback) => {
+          const currentValue = this.ovenServiceActive();
+          callback(null, currentValue);
+        })
+        .on('set', (value, callback) => {
+          if (value === 0) {
+            if (this.Status.data?.LWOState.includes('INITIAL')) {
+              this.stopOven();
+              this.timeOut = 1500;
+              setTimeout(() => {
+                this.timeOut = 0;
+              }, this.timeOut);
+            }
             setTimeout(() => {
-              this.timeOut = 0;
+              if (this.Status.data?.mwoVentSpeedLevel !== 0 || this.Status.data?.mwoLampLevel !== 0) {
+                this.lampLevel = 0;
+                this.ventSpeed = 0;
+                this.sendLightVentCommand();
+              }
             }, this.timeOut);
           }
-          setTimeout(() => {
-            if (this.Status.data?.mwoVentSpeedLevel !== 0 || this.Status.data?.mwoLampLevel !== 0) {
-              this.lampLevel = 0;
-              this.ventSpeed = 0;
+          else {
+            if (this.Status.data?.mwoVentSpeedLevel === 0 || this.Status.data?.mwoLampLevel === 0) {
+              this.lampLevel = 2;
+              this.ventSpeed = 2;
               this.sendLightVentCommand();
             }
-          }, this.timeOut);
-        }
-        else {
-          if (this.Status.data?.mwoVentSpeedLevel === 0 || this.Status.data?.mwoLampLevel === 0) {
-            this.lampLevel = 2;
-            this.ventSpeed = 2;
-            this.sendLightVentCommand();
           }
-        }
-        callback(null);
-      });
-    this.ovenService
-      .setCharacteristic(this.platform.Characteristic.ActiveIdentifier, this.inputID);
-    this.ovenService
-      .getCharacteristic(this.platform.Characteristic.ActiveIdentifier)
-      .on('set', (inputIdentifier, callback) => {
-        if (inputIdentifier > 9 || inputIdentifier < 1) {
-          this.inputID = 1;
-        } else {
-          this.inputID = inputIdentifier as number;
-        }
-        callback();
-      })
-      .on('get', (callback) => {
-        const currentValue = this.inputID;
-        callback(null, currentValue);
-      });
-    this.ovenState = this.accessory.getService('Microwave Status') ||
-      this.accessory.addService(this.platform.Service.InputSource, 'Microwave Status', 'NicoCataGaTa-Oven1003')
-        .setCharacteristic(this.platform.Characteristic.Identifier, 1)
-        .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.ovenStatus())
-        .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
-        .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
-        .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.platform.Characteristic.CurrentVisibilityState.SHOWN);
-    this.ovenState.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.ovenStatus();
-        callback(null, currentValue);
-      });
-    this.ovenService.addLinkedService(this.ovenState);
-    this.lightVent = this.accessory.getService('Light and Vent Status') ||
-      this.accessory.addService(this.platform.Service.InputSource, 'Light and Vent Status', 'NicoCata-Always15')
-        .setCharacteristic(this.platform.Characteristic.Identifier, 2)
-        .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.lightVentStatus())
-        .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
-        .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
-        .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.lightVentState() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
-        .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.lightVentState() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
-    this.lightVent.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.lightVentStatus();
-        callback(null, currentValue);
-      });
-    this.ovenService.addLinkedService(this.lightVent);
-    this.ovenMode = this.accessory.getService('Microwave Cooking Mode') ||
-      this.accessory.addService(this.platform.Service.InputSource, 'Microwave Cooking Mode', 'NicoCataGaTa-Oven1004')
-        .setCharacteristic(this.platform.Characteristic.Identifier, 3)
-        .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.ovenModeName())
-        .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
-        .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
-        .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.onStatus() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
-        .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.onStatus() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
-    this.ovenMode.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.ovenModeName();
-        callback(null, currentValue);
-      });
-    this.ovenService.addLinkedService(this.ovenMode);
+          callback(null);
+        });
+      this.ovenService
+        .setCharacteristic(this.platform.Characteristic.ActiveIdentifier, this.inputID);
+      this.ovenService
+        .getCharacteristic(this.platform.Characteristic.ActiveIdentifier)
+        .on('set', (inputIdentifier, callback) => {
+          const id = Number(inputIdentifier);
+          if (isNaN(id) || id > 9 || id < 1) {
+            this.inputID = 1;
+          } else {
+            this.inputID = id;
+          }
+          callback();
+        })
+        .on('get', (callback) => {
+          const currentValue = this.inputID;
+          callback(null, currentValue);
+        });
+      this.ovenState = this.accessory.getService('Microwave Status') ||
+        this.accessory.addService(this.platform.Service.InputSource, 'Microwave Status', 'NicoCataGaTa-Oven1003')
+          .setCharacteristic(this.platform.Characteristic.Identifier, 1)
+          .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.ovenStatus())
+          .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
+          .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
+          .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.platform.Characteristic.CurrentVisibilityState.SHOWN);
+      this.ovenState.getCharacteristic(this.platform.Characteristic.ConfiguredName)
+        .on('get', (callback) => {
+          const currentValue = this.ovenStatus();
+          callback(null, currentValue);
+        });
+      this.ovenService.addLinkedService(this.ovenState);
+      this.lightVent = this.accessory.getService('Light and Vent Status') ||
+        this.accessory.addService(this.platform.Service.InputSource, 'Light and Vent Status', 'NicoCata-Always15')
+          .setCharacteristic(this.platform.Characteristic.Identifier, 2)
+          .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.lightVentStatus())
+          .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
+          .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
+          .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.lightVentState() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
+          .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.lightVentState() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      this.lightVent.getCharacteristic(this.platform.Characteristic.ConfiguredName)
+        .on('get', (callback) => {
+          const currentValue = this.lightVentStatus();
+          callback(null, currentValue);
+        });
+      this.ovenService.addLinkedService(this.lightVent);
+      this.ovenMode = this.accessory.getService('Microwave Cooking Mode') ||
+        this.accessory.addService(this.platform.Service.InputSource, 'Microwave Cooking Mode', 'NicoCataGaTa-Oven1004')
+          .setCharacteristic(this.platform.Characteristic.Identifier, 3)
+          .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.ovenModeName())
+          .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
+          .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
+          .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.onStatus() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
+          .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.onStatus() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      this.ovenMode.getCharacteristic(this.platform.Characteristic.ConfiguredName)
+        .on('get', (callback) => {
+          const currentValue = this.ovenModeName();
+          callback(null, currentValue);
+        });
+      this.ovenService.addLinkedService(this.ovenMode);
 
-    this.ovenTemp = this.accessory.getService('Microwave Oven Temperature') ||
-      this.accessory.addService(this.platform.Service.InputSource, 'Microwave Oven Temperature', 'NicoCataGaTa-Oven1004T')
-        .setCharacteristic(this.platform.Characteristic.Identifier, 4)
-        .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.ovenTemperature())
-        .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
-        .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
-        .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.onStatus() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
-        .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.onStatus() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
-    this.ovenTemp.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.ovenTemperature();
-        callback(null, currentValue);
-      });
-    this.ovenService.addLinkedService(this.ovenTemp);
-    this.ovenOptions = this.accessory.getService('Microwave Options') ||
-      this.accessory.addService(this.platform.Service.InputSource, 'Microwave Options', 'NicoCata-Always4')
-        .setCharacteristic(this.platform.Characteristic.Identifier, 5)
-        .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.oventOptions())
-        .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
-        .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
-        .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.onStatus() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
-        .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.onStatus() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
-    this.ovenOptions.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.oventOptions();
-        callback(null, currentValue);
-      });
-    this.ovenService.addLinkedService(this.ovenOptions);
-    this.ovenStart = this.accessory.getService('Microwave Start Time') ||
-      this.accessory.addService(this.platform.Service.InputSource, 'Microwave Start Time', 'NicoCata-Always1')
-        .setCharacteristic(this.platform.Characteristic.Identifier, 6)
-        .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.courseStartString)
-        .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
-        .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
-        .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTime ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
-        .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTime ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
-    this.ovenStart.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.courseStartString;
-        callback(null, currentValue);
-      });
-    this.ovenService.addLinkedService(this.ovenStart);
+      this.ovenTemp = this.accessory.getService('Microwave Oven Temperature') ||
+        this.accessory.addService(this.platform.Service.InputSource, 'Microwave Oven Temperature', 'NicoCataGaTa-Oven1004T')
+          .setCharacteristic(this.platform.Characteristic.Identifier, 4)
+          .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.ovenTemperature())
+          .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
+          .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
+          .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.onStatus() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
+          .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.onStatus() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      this.ovenTemp.getCharacteristic(this.platform.Characteristic.ConfiguredName)
+        .on('get', (callback) => {
+          const currentValue = this.ovenTemperature();
+          callback(null, currentValue);
+        });
+      this.ovenService.addLinkedService(this.ovenTemp);
+      this.ovenOptions = this.accessory.getService('Microwave Options') ||
+        this.accessory.addService(this.platform.Service.InputSource, 'Microwave Options', 'NicoCata-Always4')
+          .setCharacteristic(this.platform.Characteristic.Identifier, 5)
+          .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.oventOptions())
+          .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
+          .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
+          .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.onStatus() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
+          .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.onStatus() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      this.ovenOptions.getCharacteristic(this.platform.Characteristic.ConfiguredName)
+        .on('get', (callback) => {
+          const currentValue = this.oventOptions();
+          callback(null, currentValue);
+        });
+      this.ovenService.addLinkedService(this.ovenOptions);
+      this.ovenStart = this.accessory.getService('Microwave Start Time') ||
+        this.accessory.addService(this.platform.Service.InputSource, 'Microwave Start Time', 'NicoCata-Always1')
+          .setCharacteristic(this.platform.Characteristic.Identifier, 6)
+          .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.courseStartString)
+          .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
+          .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
+          .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTime ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
+          .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTime ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      this.ovenStart.getCharacteristic(this.platform.Characteristic.ConfiguredName)
+        .on('get', (callback) => {
+          const currentValue = this.courseStartString;
+          callback(null, currentValue);
+        });
+      this.ovenService.addLinkedService(this.ovenStart);
 
-    this.ovenTimer = this.accessory.getService('Microwave Timer Status') ||
-      this.accessory.addService(this.platform.Service.InputSource, 'Microwave Timer Status', 'NicoCata-Always2')
-        .setCharacteristic(this.platform.Characteristic.Identifier, 7)
-        .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.courseTimerString)
-        .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
-        .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
-        .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTimer ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
-        .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTimer ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
-    this.ovenTimer.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.courseTimerString;
-        callback(null, currentValue);
-      });
-    this.ovenService.addLinkedService(this.ovenTimer);
+      this.ovenTimer = this.accessory.getService('Microwave Timer Status') ||
+        this.accessory.addService(this.platform.Service.InputSource, 'Microwave Timer Status', 'NicoCata-Always2')
+          .setCharacteristic(this.platform.Characteristic.Identifier, 7)
+          .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.courseTimerString)
+          .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
+          .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
+          .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTimer ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
+          .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTimer ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      this.ovenTimer.getCharacteristic(this.platform.Characteristic.ConfiguredName)
+        .on('get', (callback) => {
+          const currentValue = this.courseTimerString;
+          callback(null, currentValue);
+        });
+      this.ovenService.addLinkedService(this.ovenTimer);
 
-    this.ovenTime = this.accessory.getService('Microwave Cook Time Status') ||
-      this.accessory.addService(this.platform.Service.InputSource, 'Microwave Cook Time Status', 'NicoCata-Always2T')
-        .setCharacteristic(this.platform.Characteristic.Identifier, 8)
-        .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.courseTimeString)
-        .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
-        .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
-        .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTime ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
-        .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTime ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
-    this.ovenTime.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.courseTimeString;
-        callback(null, currentValue);
-      });
-    this.ovenService.addLinkedService(this.ovenTime);
+      this.ovenTime = this.accessory.getService('Microwave Cook Time Status') ||
+        this.accessory.addService(this.platform.Service.InputSource, 'Microwave Cook Time Status', 'NicoCata-Always2T')
+          .setCharacteristic(this.platform.Characteristic.Identifier, 8)
+          .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.courseTimeString)
+          .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
+          .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
+          .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTime ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
+          .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTime ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      this.ovenTime.getCharacteristic(this.platform.Characteristic.ConfiguredName)
+        .on('get', (callback) => {
+          const currentValue = this.courseTimeString;
+          callback(null, currentValue);
+        });
+      this.ovenService.addLinkedService(this.ovenTime);
 
-    this.ovenEndTime = this.accessory.getService('Microwave End Time') ||
-      this.accessory.addService(this.platform.Service.InputSource, 'Microwave End Time', 'NicoCata-Always3')
-        .setCharacteristic(this.platform.Characteristic.Identifier, 9)
-        .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.courseTimeEndString)
-        .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
-        .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
-        .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTime ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
-        .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTime ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
-    this.ovenEndTime.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.courseTimeEndString;
-        callback(null, currentValue);
-      });
-    this.ovenService.addLinkedService(this.ovenEndTime);
+      this.ovenEndTime = this.accessory.getService('Microwave End Time') ||
+        this.accessory.addService(this.platform.Service.InputSource, 'Microwave End Time', 'NicoCata-Always3')
+          .setCharacteristic(this.platform.Characteristic.Identifier, 9)
+          .setCharacteristic(this.platform.Characteristic.ConfiguredName, this.courseTimeEndString)
+          .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
+          .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.APPLICATION)
+          .setCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTime ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN)
+          .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTime ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      this.ovenEndTime.getCharacteristic(this.platform.Characteristic.ConfiguredName)
+        .on('get', (callback) => {
+          const currentValue = this.courseTimeEndString;
+          callback(null, currentValue);
+        });
+      this.ovenService.addLinkedService(this.ovenEndTime);
+    }
 
     //////////Timers
 
-    this.ovenTimerService = this.accessory.getService('Microwave Cook Time') ||
-      this.accessory.addService(this.platform.Service.Valve, 'Microwave Cook Time', 'NicoCataGaTa-OvenT2');
+    this.ovenTimerService = (this.accessory as any).getServiceById?.(this.platform.Service.Valve, 'NicoCataGaTa-OvenT2')
+      || this.accessory.getService('Microwave Cook Time')
+      || this.accessory.addService(this.platform.Service.Valve, 'Microwave Cook Time', 'NicoCataGaTa-OvenT2');
     this.ovenTimerService.setCharacteristic(Characteristic.Name, 'Microwave Cook Time');
     this.ovenTimerService.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.ovenTimerService.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Cook Time');
@@ -452,8 +478,9 @@ export default class Microwave extends baseDevice {
         this.ovenCommandList.ovenSetDuration = value as number;
         callback(null);
       });
-    this.ovenAlarmService = this.accessory.getService('Microwave Timer') ||
-      this.accessory.addService(this.platform.Service.Valve, 'Microwave Timer', 'NicoCataGaTa-OvenT32');
+    this.ovenAlarmService = (this.accessory as any).getServiceById?.(this.platform.Service.Valve, 'NicoCataGaTa-OvenT32')
+      || this.accessory.getService('Microwave Timer')
+      || this.accessory.addService(this.platform.Service.Valve, 'Microwave Timer', 'NicoCataGaTa-OvenT32');
     this.ovenAlarmService.setCharacteristic(Characteristic.Name, 'Microwave Timer');
     this.ovenAlarmService.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.ovenAlarmService.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Timer');
@@ -500,17 +527,22 @@ export default class Microwave extends baseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value >= (6000)) {
-          value = 6000 - 1;
+        let v = Number(value);
+        if (isNaN(v)) {
+          v = 0;
         }
-        this.timerAlarmSec = value as number;
+        if (v >= 6000) {
+          v = 6000 - 1;
+        }
+        this.timerAlarmSec = v;
         callback(null);
       });
 
     ///////////Switches
 
-    this.microwaveSwitch = accessory.getService('Microwave Mode') ||
-      accessory.addService(this.platform.Service.Switch, 'Microwave Mode', 'CataNicoGaTa-80M');
+    this.microwaveSwitch = (this.accessory as any).getServiceById?.(this.platform.Service.Switch, 'CataNicoGaTa-80M')
+      || accessory.getService('Microwave Mode')
+      || accessory.addService(this.platform.Service.Switch, 'Microwave Mode', 'CataNicoGaTa-80M');
     this.microwaveSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.microwaveSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Mode');
     this.microwaveSwitch.getCharacteristic(this.platform.Characteristic.On)
@@ -527,8 +559,9 @@ export default class Microwave extends baseDevice {
       });
 
 
-    this.combiBakeSwitch = accessory.getService('Combination Bake Mode') ||
-      accessory.addService(this.platform.Service.Switch, 'Combination Bake Mode', 'CataNicoGaTa-80B');
+    this.combiBakeSwitch = (this.accessory as any).getServiceById?.(this.platform.Service.Switch, 'CataNicoGaTa-80B')
+      || accessory.getService('Combination Bake Mode')
+      || accessory.addService(this.platform.Service.Switch, 'Combination Bake Mode', 'CataNicoGaTa-80B');
     this.combiBakeSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.combiBakeSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Combination Bake Mode');
     this.combiBakeSwitch.getCharacteristic(this.platform.Characteristic.On)
@@ -543,8 +576,9 @@ export default class Microwave extends baseDevice {
         this.updateOvenModeSwitch();
         callback(null);
       });
-    this.dehydrateSwitch = accessory.getService('Dehydrate Mode') ||
-      accessory.addService(this.platform.Service.Switch, 'Dehydrate Mode', 'CataNicoGaTa-80d');
+    this.dehydrateSwitch = (this.accessory as any).getServiceById?.(this.platform.Service.Switch, 'CataNicoGaTa-80d')
+      || accessory.getService('Dehydrate Mode')
+      || accessory.addService(this.platform.Service.Switch, 'Dehydrate Mode', 'CataNicoGaTa-80d');
     this.dehydrateSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.dehydrateSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Dehydrate Mode');
     this.dehydrateSwitch.getCharacteristic(this.platform.Characteristic.On)
@@ -560,8 +594,9 @@ export default class Microwave extends baseDevice {
         callback(null);
       });
 
-    this.ovenSwitch = accessory.getService('Oven Mode') ||
-      accessory.addService(this.platform.Service.Switch, 'Oven Mode', 'CataNicoGaTa-80OVen');
+    this.ovenSwitch = (this.accessory as any).getServiceById?.(this.platform.Service.Switch, 'CataNicoGaTa-80OVen')
+      || accessory.getService('Oven Mode')
+      || accessory.addService(this.platform.Service.Switch, 'Oven Mode', 'CataNicoGaTa-80OVen');
     this.ovenSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.ovenSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Oven Mode');
     this.ovenSwitch.getCharacteristic(this.platform.Characteristic.On)
@@ -576,8 +611,9 @@ export default class Microwave extends baseDevice {
         this.updateOvenModeSwitch();
         callback(null);
       });
-    this.convectionBakeSwitch = accessory.getService('Convection Bake Mode') ||
-      accessory.addService(this.platform.Service.Switch, 'Convection Bake Mode', 'CataNicoGaTa-Control1');
+    this.convectionBakeSwitch = (this.accessory as any).getServiceById?.(this.platform.Service.Switch, 'CataNicoGaTa-Control1')
+      || accessory.getService('Convection Bake Mode')
+      || accessory.addService(this.platform.Service.Switch, 'Convection Bake Mode', 'CataNicoGaTa-Control1');
     this.convectionBakeSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.convectionBakeSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Convection Bake Mode');
     this.convectionBakeSwitch.getCharacteristic(this.platform.Characteristic.On)
@@ -593,8 +629,9 @@ export default class Microwave extends baseDevice {
         callback(null);
       });
 
-    this.convectionRoastSwitch = accessory.getService('Combination Roast Mode') ||
-      accessory.addService(this.platform.Service.Switch, 'Combination Roast Mode', 'CataNicoGaTa-Control2');
+    this.convectionRoastSwitch = (this.accessory as any).getServiceById?.(this.platform.Service.Switch, 'CataNicoGaTa-Control2')
+      || accessory.getService('Combination Roast Mode')
+      || accessory.addService(this.platform.Service.Switch, 'Combination Roast Mode', 'CataNicoGaTa-Control2');
     this.convectionRoastSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.convectionRoastSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Combination Roast Mode');
     this.convectionRoastSwitch.getCharacteristic(this.platform.Characteristic.On)
@@ -610,8 +647,9 @@ export default class Microwave extends baseDevice {
         callback(null);
       });
 
-    this.frozenMealSwitch = accessory.getService('Time Defrost Mode') ||
-      accessory.addService(this.platform.Service.Switch, 'Time Defrost Mode', 'CataNicoGaTa-Control3');
+    this.frozenMealSwitch = (this.accessory as any).getServiceById?.(this.platform.Service.Switch, 'CataNicoGaTa-Control3')
+      || accessory.getService('Time Defrost Mode')
+      || accessory.addService(this.platform.Service.Switch, 'Time Defrost Mode', 'CataNicoGaTa-Control3');
     this.frozenMealSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.frozenMealSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Time Defrost Mode');
     this.frozenMealSwitch.getCharacteristic(this.platform.Characteristic.On)
@@ -626,8 +664,9 @@ export default class Microwave extends baseDevice {
         this.updateOvenModeSwitch();
         callback(null);
       });
-    this.defrostSwitch = accessory.getService('Defrost Mode') ||
-      accessory.addService(this.platform.Service.Switch, 'Defrost Mode', 'CataNicoGaTa-Control3D');
+    this.defrostSwitch = (this.accessory as any).getServiceById?.(this.platform.Service.Switch, 'CataNicoGaTa-Control3D')
+      || accessory.getService('Defrost Mode')
+      || accessory.addService(this.platform.Service.Switch, 'Defrost Mode', 'CataNicoGaTa-Control3D');
     this.defrostSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.defrostSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Defrost Mode');
     this.defrostSwitch.getCharacteristic(this.platform.Characteristic.On)
@@ -643,8 +682,9 @@ export default class Microwave extends baseDevice {
         callback(null);
       });
 
-    this.airFrySwitch = accessory.getService('Air Fry Mode') ||
-      accessory.addService(this.platform.Service.Switch, 'Air Fry Mode', 'CataNicoGaTa-Control4');
+    this.airFrySwitch = (this.accessory as any).getServiceById?.(this.platform.Service.Switch, 'CataNicoGaTa-Control4')
+      || accessory.getService('Air Fry Mode')
+      || accessory.addService(this.platform.Service.Switch, 'Air Fry Mode', 'CataNicoGaTa-Control4');
     this.airFrySwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.airFrySwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Air Fry Mode');
     this.airFrySwitch.getCharacteristic(this.platform.Characteristic.On)
@@ -659,8 +699,9 @@ export default class Microwave extends baseDevice {
         this.updateOvenModeSwitch();
         callback(null);
       });
-    this.proofSwitch = accessory.getService('Proof Mode') ||
-      accessory.addService(this.platform.Service.Switch, 'Proof Mode', 'CataNicoGaTa-Control5');
+    this.proofSwitch = (this.accessory as any).getServiceById?.(this.platform.Service.Switch, 'CataNicoGaTa-Control5')
+      || accessory.getService('Proof Mode')
+      || accessory.addService(this.platform.Service.Switch, 'Proof Mode', 'CataNicoGaTa-Control5');
     this.proofSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.proofSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Proof Mode');
     this.proofSwitch.getCharacteristic(this.platform.Characteristic.On)
@@ -676,8 +717,9 @@ export default class Microwave extends baseDevice {
         callback(null);
       });
 
-    this.warmModeSwitch = accessory.getService('Warm Mode (High)') ||
-      accessory.addService(this.platform.Service.Switch, 'Warm Mode (High)', 'CataNicoGaTa-Control5W');
+    this.warmModeSwitch = (this.accessory as any).getServiceById?.(this.platform.Service.Switch, 'CataNicoGaTa-Control5W')
+      || accessory.getService('Warm Mode (High)')
+      || accessory.addService(this.platform.Service.Switch, 'Warm Mode (High)', 'CataNicoGaTa-Control5W');
     this.warmModeSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.warmModeSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Warm Mode (High)');
     this.warmModeSwitch.getCharacteristic(this.platform.Characteristic.On)
@@ -693,8 +735,9 @@ export default class Microwave extends baseDevice {
         this.updateOvenModeSwitch();
         callback(null);
       });
-    this.cancelSwitch = accessory.getService('Stop Microwave') ||
-      accessory.addService(this.platform.Service.Switch, 'Stop Microwave', 'CataNicoGaTa-Control6');
+    this.cancelSwitch = (this.accessory as any).getServiceById?.(this.platform.Service.Switch, 'CataNicoGaTa-Control6')
+      || accessory.getService('Stop Microwave')
+      || accessory.addService(this.platform.Service.Switch, 'Stop Microwave', 'CataNicoGaTa-Control6');
     this.cancelSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.cancelSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Stop Microwave');
     this.cancelSwitch.getCharacteristic(this.platform.Characteristic.On)
@@ -712,8 +755,9 @@ export default class Microwave extends baseDevice {
         this.updateOvenModeSwitch();
         callback(null);
       });
-    this.startOvenSwitch = accessory.getService('Start Microwave') ||
-      accessory.addService(this.platform.Service.Switch, 'Start Microwave', 'CataNicoGaTa-Control8');
+    this.startOvenSwitch = (this.accessory as any).getServiceById?.(this.platform.Service.Switch, 'CataNicoGaTa-Control8')
+      || accessory.getService('Start Microwave')
+      || accessory.addService(this.platform.Service.Switch, 'Start Microwave', 'CataNicoGaTa-Control8');
     this.startOvenSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.startOvenSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Start Microwave');
     this.startOvenSwitch.getCharacteristic(this.platform.Characteristic.On)
@@ -731,11 +775,42 @@ export default class Microwave extends baseDevice {
         callback(null);
       });
     /////////Temperature Control
-    this.ovenTempControl = this.accessory.getService('Microwave Oven Temperature Control') ||
-      this.accessory.addService(this.platform.Service.Thermostat, 'Microwave Oven Temperature Control', 'NicoCataGaTa-OvenTC')
+    this.ovenTempControl = (this.accessory as any).getServiceById?.(this.platform.Service.Thermostat, 'NicoCataGaTa-OvenTC')
+      || this.accessory.getService('Microwave Oven Temperature Control')
+      || this.accessory.addService(this.platform.Service.Thermostat, 'Microwave Oven Temperature Control', 'NicoCataGaTa-OvenTC')
         .setCharacteristic(this.platform.Characteristic.Name, 'Microwave Oven Temperature Control')
         .setCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState, this.currentHeatingState())
         .setCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits, 1);
+    // keep TV as primary service (original behavior)
+
+    // Frozen Dumplings (LWOSubCookName 3211)
+    this.recipeDumplingsSwitch = (this.accessory as any).getServiceById?.(this.platform.Service.Switch, 'CataNicoGaTa-Recipe-3211')
+      || accessory.getService('Frozen Dumplings')
+      || accessory.addService(this.platform.Service.Switch, 'Frozen Dumplings', 'CataNicoGaTa-Recipe-3211');
+    this.recipeDumplingsSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
+    this.recipeDumplingsSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Frozen Dumplings');
+    this.recipeDumplingsSwitch.getCharacteristic(this.platform.Characteristic.On)
+      .on('get', (callback) => {
+        const currentValue = false;
+        callback(null, currentValue);
+      })
+      .on('set', (value, callback) => {
+        if (value === true) {
+          this.pauseUpdate = true;
+          this.ovenCommandList.ovenMode = 'AUTO_COOK';
+          this.ovenCommandList.subCookNumber = 3211;
+          this.ovenCommandList.microwavePower = '100';
+          this.ovenCommandList.ovenSetTemperature = 0;
+          this.ovenCommandList.ovenSetDuration = 0;
+          this.ovenCommandList.targetWeight = 0;
+          this.ovenCommandList.weightUnits = 'KG';
+          this.sendOvenCommand();
+          setTimeout(() => {
+            this.recipeDumplingsSwitch.updateCharacteristic(this.platform.Characteristic.On, false);
+          }, 1000);
+        }
+        callback(null);
+      });
     this.ovenTempControl.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.ovenTempControl.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Oven Temperature Control');
     this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState)
@@ -1620,6 +1695,26 @@ export default class Microwave extends baseDevice {
     //const isVentOn = ovenState['ventSet'] === device.deviceModel.lookupMonitorName('VentSet', '@CP_ENABLE_W');
     //const isLampOn = ovenState['lampSet'] === device.deviceModel.lookupMonitorName('LampSet', '@CP_ENABLE_W');
     const { Characteristic } = this.platform;
+    if (this.Status.data?.LWOState === 'COOKING_IN_PROGRESS') {
+      const cleanLog = {
+        meta: device.snapshot?.meta,
+        mid: device.snapshot?.mid,
+        online: device.snapshot?.online,
+        ovenState: {
+          LWOMGTPowerLevel: this.Status.data?.LWOMGTPowerLevel,
+          LWOProgressBarExist: this.Status.data?.LWOProgressBarExist,
+          LWORemainTimeMinute: this.Status.data?.LWORemainTimeMinute,
+          LWOState: this.Status.data?.LWOState,
+          LWOSubCookName: this.Status.data?.LWOSubCookName,
+          LWOTargetTemperatureValue: this.Status.data?.LWOTargetTemperatureValue,
+          LWOTargetTimeMinute: this.Status.data?.LWOTargetTimeMinute,
+          upperCurrentTemperatureValue: this.Status.data?.upperCurrentTemperatureValue,
+        },
+        static: device.snapshot?.static,
+        timestamp: device.snapshot?.timestamp,
+      };
+      this.platform.log.info('[' + device.name + '] ' + JSON.stringify(cleanLog));
+    }
     //this.serviceHood.updateCharacteristic(Characteristic.On, isVentOn);
     // this.serviceHood.updateCharacteristic(Characteristic.RotationSpeed, ovenState['ventLevel']);
     //this.serviceLight.updateCharacteristic(Characteristic.On, isLampOn);
@@ -1628,7 +1723,7 @@ export default class Microwave extends baseDevice {
       if (this.Status.data?.LWOState.includes('INITIAL')) {
         this.defaultTemp = 0;
       }
-      if (this.ovenService.getCharacteristic(this.platform.Characteristic.Active).value != this.ovenServiceActive()) {
+      if (this.ovenService && this.ovenService.getCharacteristic(this.platform.Characteristic.Active).value != this.ovenServiceActive()) {
         this.ovenService.updateCharacteristic(this.platform.Characteristic.Active, this.ovenServiceActive());
       }
       if (this.ovenServiceActive() == 0) {
@@ -1685,58 +1780,67 @@ export default class Microwave extends baseDevice {
         this.courseTimerString = 'Microwave Cooking Timer Not Set';
       }
       ///////////////////
-      if (this.ovenState.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.ovenStatus()) {
+      if (this.ovenState && this.ovenState.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.ovenStatus()) {
         this.ovenState.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.ovenStatus());
       }
-      if (this.ovenMode.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.ovenModeName()) {
+      if (this.ovenMode && this.ovenMode.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.ovenModeName()) {
         this.ovenMode.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.ovenModeName());
       }
-      if (this.lightVent.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.lightVentStatus()) {
+      if (this.lightVent && this.lightVent.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.lightVentStatus()) {
         this.lightVent.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.lightVentStatus());
       }
-      if (this.ovenTemp.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.ovenTemperature()) {
+      if (this.ovenTemp && this.ovenTemp.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.ovenTemperature()) {
         this.ovenTemp.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.ovenTemperature());
       }
-      if (this.ovenStart.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.nameLengthCheck(this.courseStartString)) {
+      if (this.ovenStart && this.ovenStart.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.nameLengthCheck(this.courseStartString)) {
         this.ovenStart.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.nameLengthCheck(this.courseStartString));
       }
-      if (this.ovenTimer.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.nameLengthCheck(this.courseTimerString)) {
+      if (this.ovenTimer && this.ovenTimer.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.nameLengthCheck(this.courseTimerString)) {
         this.ovenTimer.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.nameLengthCheck(this.courseTimerString));
       }
-      if (this.ovenTime.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.nameLengthCheck(this.courseTimeString)) {
+      if (this.ovenTime && this.ovenTime.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.nameLengthCheck(this.courseTimeString)) {
         this.ovenTime.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.nameLengthCheck(this.courseTimeString));
       }
-      if (this.ovenEndTime.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.nameLengthCheck(this.courseTimeEndString)) {
+      if (this.ovenEndTime && this.ovenEndTime.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.nameLengthCheck(this.courseTimeEndString)) {
         this.ovenEndTime.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.nameLengthCheck(this.courseTimeEndString));
       }
-      if (this.ovenOptions.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.oventOptions()) {
+      if (this.ovenOptions && this.ovenOptions.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.oventOptions()) {
         this.ovenOptions.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.oventOptions());
       }
 
       /////////////Show State
-      this.ovenMode.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.onStatus() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
-      this.ovenMode.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.onStatus() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
-
-      this.ovenTemp.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.onStatus() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
-      this.ovenTemp.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.onStatus() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
-
-      this.lightVent.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.lightVentState() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
-      this.lightVent.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.lightVentState() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
-
-      this.ovenOptions.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.onStatus() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
-      this.ovenOptions.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.onStatus() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
-
-      this.ovenStart.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTime ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
-      this.ovenStart.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTime ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
-
-      this.ovenTime.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTime ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
-      this.ovenTime.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTime ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
-
-      this.ovenEndTime.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTime ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
-      this.ovenEndTime.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTime ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
-
-      this.ovenTimer.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTimer ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
-      this.ovenTimer.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTimer ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      if (this.ovenMode) {
+        this.ovenMode.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.onStatus() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
+        this.ovenMode.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.onStatus() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      }
+      if (this.ovenTemp) {
+        this.ovenTemp.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.onStatus() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
+        this.ovenTemp.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.onStatus() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      }
+      if (this.lightVent) {
+        this.lightVent.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.lightVentState() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
+        this.lightVent.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.lightVentState() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      }
+      if (this.ovenOptions) {
+        this.ovenOptions.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.onStatus() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
+        this.ovenOptions.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.onStatus() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      }
+      if (this.ovenStart) {
+        this.ovenStart.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTime ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
+        this.ovenStart.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTime ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      }
+      if (this.ovenTime) {
+        this.ovenTime.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTime ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
+        this.ovenTime.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTime ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      }
+      if (this.ovenEndTime) {
+        this.ovenEndTime.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTime ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
+        this.ovenEndTime.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTime ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      }
+      if (this.ovenTimer) {
+        this.ovenTimer.updateCharacteristic(this.platform.Characteristic.TargetVisibilityState, this.showTimer ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
+        this.ovenTimer.updateCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.showTimer ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
+      }
 
       /////////Temperature Monitor
       if (this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits).value !== this.Status.data?.LWOTargetTemperatureUnit.includes('FAH') ? 1 : 0) {
@@ -1757,50 +1861,80 @@ export default class Microwave extends baseDevice {
       if (this.ovenTempControl.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity).value !== this.localHumidity) {
         this.ovenTempControl.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.localHumidity);
       }
-      if (this.microwavePower.getCharacteristic(this.platform.Characteristic.On).value !== parseInt(this.Status.data?.LWOMGTPowerLevel) > 0 ? true : false) {
-        this.microwavePower.updateCharacteristic(this.platform.Characteristic.On, parseInt(this.Status.data?.LWOMGTPowerLevel) > 0 ? true : false);
+      const rawPowerLevel = this.Status.data?.LWOMGTPowerLevel;
+      const parsedDigits = String(rawPowerLevel ?? '').replace(/[^0-9]/g, '');
+      const safePowerLevel = parsedDigits.length ? parseInt(parsedDigits, 10) : 0;
+      const powerLevel = Number.isFinite(safePowerLevel) ? safePowerLevel : 0;
+
+      const rawLamp = Number(this.Status.data?.mwoLampLevel);
+      let lampLevel = Number.isFinite(rawLamp) ? rawLamp : 0;
+      if (lampLevel < 0) { lampLevel = 0; }
+      if (lampLevel > 2) { lampLevel = 2; }
+
+      const rawVent = Number(this.Status.data?.mwoVentSpeedLevel);
+      let ventLevel = Number.isFinite(rawVent) ? rawVent : 0;
+      if (ventLevel < 0) { ventLevel = 0; }
+      if (ventLevel > 5) { ventLevel = 5; }
+
+      if (this.microwavePower) {
+        if (this.microwavePower.getCharacteristic(this.platform.Characteristic.On).value !== (powerLevel > 0)) {
+          this.microwavePower.updateCharacteristic(this.platform.Characteristic.On, powerLevel > 0);
+        }
+
+        if (this.microwavePower.getCharacteristic(this.platform.Characteristic.Brightness).value !== powerLevel) {
+          this.microwavePower.updateCharacteristic(this.platform.Characteristic.Brightness, powerLevel);
+        }
       }
 
-      if (this.microwavePower.getCharacteristic(this.platform.Characteristic.Brightness).value !== parseInt(this.Status.data?.LWOMGTPowerLevel)) {
-        this.microwavePower.updateCharacteristic(this.platform.Characteristic.Brightness, parseInt(this.Status.data?.LWOMGTPowerLevel));
+      if (this.serviceLight) {
+        if (this.serviceLight.getCharacteristic(this.platform.Characteristic.On).value !== (lampLevel > 0)) {
+          this.serviceLight.updateCharacteristic(this.platform.Characteristic.On, lampLevel > 0);
+        }
+
+        if (this.serviceLight.getCharacteristic(this.platform.Characteristic.Brightness).value !== lampLevel) {
+          this.serviceLight.updateCharacteristic(this.platform.Characteristic.Brightness, lampLevel);
+        }
       }
 
-      if (this.serviceLight.getCharacteristic(this.platform.Characteristic.On).value !== this.Status.data?.mwoLampLevel > 0 ? true : false) {
-        this.serviceLight.updateCharacteristic(this.platform.Characteristic.On, this.Status.data?.mwoLampLevel > 0 ? true : false);
-      }
+      if (this.serviceHood) {
+        if (this.serviceHood.getCharacteristic(this.platform.Characteristic.Active).value !== (ventLevel > 0 ? 1 : 0)) {
+          this.serviceHood.updateCharacteristic(this.platform.Characteristic.Active, ventLevel > 0 ? 1 : 0);
+        }
 
-      if (this.serviceLight.getCharacteristic(this.platform.Characteristic.Brightness).value !== this.Status.data?.mwoLampLevel) {
-        this.serviceLight.updateCharacteristic(this.platform.Characteristic.Brightness, this.Status.data?.mwoLampLevel);
-      }
-
-      if (this.serviceHood.getCharacteristic(this.platform.Characteristic.Active).value !== this.Status.data?.mwoVentSpeedLevel > 0 ? 1 : 0) {
-        this.serviceHood.updateCharacteristic(this.platform.Characteristic.Active, this.Status.data?.mwoVentSpeedLevel > 0 ? 1 : 0);
-      }
-
-      if (this.serviceHood.getCharacteristic(this.platform.Characteristic.RotationSpeed).value !== this.Status.data?.mwoVentSpeedLevel) {
-        this.serviceHood.updateCharacteristic(this.platform.Characteristic.RotationSpeed, this.Status.data?.mwoVentSpeedLevel);
+        if (this.serviceHood.getCharacteristic(this.platform.Characteristic.RotationSpeed).value !== ventLevel) {
+          this.serviceHood.updateCharacteristic(this.platform.Characteristic.RotationSpeed, ventLevel);
+        }
       }
 
 
 
       ///////Timer Monitor
 
-      this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.Active, this.remainTime() > 0 ? 1 : 0);
-      if (this.oventTargetTime() == 0) {
-        this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.InUse, Characteristic.InUse.NOT_IN_USE);
-      } else if (this.onStatus() && this.oventTargetTime() != 0) {
-        this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.InUse, Characteristic.InUse.IN_USE);
+      if (this.ovenTimerService) {
+        this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.Active, this.remainTime() > 0 ? 1 : 0);
+        if (this.oventTargetTime() == 0) {
+          this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.InUse, Characteristic.InUse.NOT_IN_USE);
+        } else if (this.onStatus() && this.oventTargetTime() != 0) {
+          this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.InUse, Characteristic.InUse.IN_USE);
+        }
+
+        const rem = this.remainTime();
+        const tgt = this.oventTargetTime();
+        const remChar = this.ovenTimerService.getCharacteristic(this.platform.Characteristic.RemainingDuration);
+        const tgtChar = this.ovenTimerService.getCharacteristic(this.platform.Characteristic.SetDuration);
+        if (remChar && remChar.value !== rem) {
+          this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.RemainingDuration, rem);
+        }
+        if (tgtChar && tgtChar.value !== tgt) {
+          this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.SetDuration, tgt);
+        }
       }
 
-      if (this.ovenTimerService.getCharacteristic(this.platform.Characteristic.RemainingDuration).value !== this.remainTime()) {
-        this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.RemainingDuration, this.remainTime());
+      if (this.ovenAlarmService) {
+        this.ovenAlarmService.updateCharacteristic(Characteristic.Active, this.ovenTimerTime() > 0 ? 1 : 0);
+        this.ovenAlarmService.updateCharacteristic(Characteristic.RemainingDuration, this.ovenTimerTime());
+        this.ovenAlarmService.updateCharacteristic(Characteristic.InUse, this.ovenTimerTime() > 0 ? 1 : 0);
       }
-      if (this.ovenTimerService.getCharacteristic(this.platform.Characteristic.SetDuration).value !== this.oventTargetTime()) {
-        this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.SetDuration, this.oventTargetTime());
-      }
-      this.ovenAlarmService.updateCharacteristic(Characteristic.Active, this.ovenTimerTime() > 0 ? 1 : 0);
-      this.ovenAlarmService.updateCharacteristic(Characteristic.RemainingDuration, this.ovenTimerTime());
-      this.ovenAlarmService.updateCharacteristic(Characteristic.InUse, this.ovenTimerTime() > 0 ? 1 : 0);
     } else {
       if (this.firstPause) {
         setTimeout(() => {

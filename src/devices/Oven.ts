@@ -1058,14 +1058,14 @@ export default class Oven extends baseDevice {
         break;
       default:
         // eslint-disable-next-line no-case-declarations
-        let cookName = this.Status.data?.upperManualCookName;
-        cookName = cookName.toLocaleLowerCase();
-        // eslint-disable-next-line no-case-declarations
-        const cookNameCap =
-          cookName.charAt(0).toUpperCase()
-          + cookName.slice(1);
-
-        this.inputNameMode += cookNameCap;
+        const rawCook = this.Status.data?.upperManualCookName;
+        if (typeof rawCook === 'string' && rawCook.length > 0) {
+          const cookName = rawCook.toLocaleLowerCase();
+          const cookNameCap = cookName.charAt(0).toUpperCase() + cookName.slice(1);
+          this.inputNameMode += cookNameCap;
+        } else {
+          this.inputNameMode += 'None';
+        }
 
     }
     if (!this.inputNameMode.includes('None')) {
@@ -1111,13 +1111,14 @@ export default class Oven extends baseDevice {
         break;
       default:
         // eslint-disable-next-line no-case-declarations
-        let stateName = this.Status.data?.upperState;
-        stateName = stateName.toLocaleLowerCase();
-        // eslint-disable-next-line no-case-declarations
-        const stateNameCap =
-          stateName.charAt(0).toUpperCase()
-          + stateName.slice(1);
-        this.inputNameStatus += stateNameCap;
+        const rawState = this.Status.data?.upperState;
+        if (typeof rawState === 'string' && rawState.length > 0) {
+          const stateName = rawState.toLocaleLowerCase();
+          const stateNameCap = stateName.charAt(0).toUpperCase() + stateName.slice(1);
+          this.inputNameStatus += stateNameCap;
+        } else {
+          this.inputNameStatus += 'Unknown';
+        }
 
     }
 
