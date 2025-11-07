@@ -1,7 +1,7 @@
-import {LGThinQHomebridgePlatform} from '../platform';
-import {CharacteristicValue, PlatformAccessory} from 'homebridge';
-import {Device} from '../lib/Device';
-import {baseDevice} from '../baseDevice';
+import { LGThinQHomebridgePlatform } from '../platform.js';
+import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
+import { Device } from '../lib/Device.js';
+import { AccessoryContext, BaseDevice } from '../baseDevice.js';
 
 export enum RotateSpeed {
   LOW = 2,
@@ -11,18 +11,19 @@ export enum RotateSpeed {
 }
 
 // opMode = 14 => normal mode, can rotate speed
-export default class AirPurifier extends baseDevice {
-  protected serviceAirPurifier;
-  protected serviceAirQuality;
-  protected serviceLight;
-  protected serviceFilterMaintenance;
-  protected serviceAirFastMode;
+export default class AirPurifier extends BaseDevice {
+  protected serviceAirPurifier: Service | undefined;
+  protected serviceAirQuality: Service;
+  protected serviceLight: Service | undefined;
+  protected serviceFilterMaintenance: Service | undefined;
+  protected serviceAirFastMode: Service | undefined;
 
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
-    public readonly accessory: PlatformAccessory,
+    public readonly accessory: PlatformAccessory<AccessoryContext>,
+    logger: Logger,
   ) {
-    super(platform, accessory);
+    super(platform, accessory, logger);
 
     const {
       Service: {
@@ -64,7 +65,7 @@ export default class AirPurifier extends baseDevice {
     this.serviceAirPurifier.getCharacteristic(Characteristic.SwingMode).onSet(this.setSwingMode.bind(this));
     this.serviceAirPurifier.getCharacteristic(Characteristic.RotationSpeed)
       .onSet(this.setRotationSpeed.bind(this))
-      .setProps({minValue: 0, maxValue: Object.keys(RotateSpeed).length / 2, minStep: 0.1});
+      .setProps({ minValue: 0, maxValue: Object.keys(RotateSpeed).length / 2, minStep: 0.1 });
 
     this.serviceAirQuality = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
 
@@ -105,7 +106,6 @@ export default class AirPurifier extends baseDevice {
         .onSet(this.setAirFastActive.bind(this));
     } else if (this.serviceAirFastMode) {
       accessory.removeService(this.serviceAirFastMode);
-      this.serviceAirFastMode = null;
     }
   }
 
@@ -236,12 +236,12 @@ export default class AirPurifier extends baseDevice {
       },
     } = this.platform;
 
-    this.serviceAirPurifier.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
-    this.serviceAirPurifier.updateCharacteristic(Characteristic.CurrentAirPurifierState, this.Status.isPowerOn ? 2 : 0);
-    this.serviceAirPurifier.updateCharacteristic(TargetAirPurifierState,
+    this.serviceAirPurifier?.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
+    this.serviceAirPurifier?.updateCharacteristic(Characteristic.CurrentAirPurifierState, this.Status.isPowerOn ? 2 : 0);
+    this.serviceAirPurifier?.updateCharacteristic(TargetAirPurifierState,
       this.Status.isNormalMode ? TargetAirPurifierState.MANUAL : TargetAirPurifierState.AUTO);
-    this.serviceAirPurifier.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwing ? 1 : 0);
-    this.serviceAirPurifier.updateCharacteristic(Characteristic.RotationSpeed, this.Status.rotationSpeed);
+    this.serviceAirPurifier?.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwing ? 1 : 0);
+    this.serviceAirPurifier?.updateCharacteristic(Characteristic.RotationSpeed, this.Status.rotationSpeed);
 
     if (this.Status.filterMaxTime && this.serviceFilterMaintenance) {
       this.serviceFilterMaintenance.updateCharacteristic(Characteristic.FilterLifeLevel, this.Status.filterUsedTimePercent);
@@ -266,7 +266,7 @@ export default class AirPurifier extends baseDevice {
 }
 
 export class AirPurifierStatus {
-  constructor(protected data) {
+  constructor(protected data: any) {
   }
 
   public get isPowerOn() {

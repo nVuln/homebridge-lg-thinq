@@ -1,14 +1,16 @@
-import {default as V2, RotateSpeed} from '../../devices/AirPurifier';
-import {CharacteristicValue, PlatformAccessory} from 'homebridge';
-import {Device} from '../../lib/Device';
-import {LGThinQHomebridgePlatform} from '../../platform';
+import { default as V2, RotateSpeed } from '../../devices/AirPurifier.js';
+import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
+import { Device } from '../../lib/Device.js';
+import { LGThinQHomebridgePlatform } from '../../platform.js';
+import { AccessoryContext } from '../../baseDevice.js';
 
 export default class AirPurifier extends V2 {
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
-    public readonly accessory: PlatformAccessory,
+    public readonly accessory: PlatformAccessory<AccessoryContext>,
+    logger: Logger,
   ) {
-    super(platform, accessory);
+    super(platform, accessory, logger);
   }
 
   async setActive(value: CharacteristicValue) {

@@ -3,7 +3,7 @@ import type {
   WithUUID,
 } from 'homebridge';
 
-import TotalConsumption from './TotalConsumption';
+import TotalConsumption from './TotalConsumption.js';
 
 export default function characteristic(
   Characteristic: typeof CharacteristicType,

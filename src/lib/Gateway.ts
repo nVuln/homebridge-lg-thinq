@@ -1,5 +1,14 @@
+export interface GatewayData {
+  empTermsUri: string;
+  empSpxUri: string;
+  thinq2Uri: string;
+  thinq1Uri: string;
+  countryCode: string;
+  languageCode: string;
+}
+
 export class Gateway {
-  constructor(public data) {}
+  constructor(public data: GatewayData) {}
 
   public get emp_base_url() {
     return this.data.empTermsUri + '/';

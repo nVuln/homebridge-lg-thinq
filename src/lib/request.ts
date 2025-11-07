@@ -1,4 +1,4 @@
-import axios, {AxiosInstance} from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import {
   ManualProcessNeeded,
   ManualProcessNeededErrorCode,
@@ -7,8 +7,12 @@ import {
   TokenExpiredErrorCode,
   TokenExpiredError,
   NotConnectedErrorCodes,
-} from "../errors";
+} from '../errors/index.js';
 import axiosRetry from 'axios-retry';
+
+const MAX_REQUESTS_COUNT = 1;
+const INTERVAL_MS = 10;
+let PENDING_REQUESTS = 0;
 
 const client = axios.create();
 client.defaults.timeout = 60000; // 60s timeout
@@ -26,6 +30,18 @@ axiosRetry(client, {
   },
   shouldResetTimeout: true, // reset timeout each retries
 });
+
+client.interceptors.request.use((config) => {
+  return new Promise((resolve) => {
+    const interval = setInterval(() => {
+      if (PENDING_REQUESTS < MAX_REQUESTS_COUNT) {
+        PENDING_REQUESTS++;
+        clearInterval(interval);
+        resolve(config);
+      }
+    }, INTERVAL_MS);
+  });
+});
 client.interceptors.response.use((response) => {
   // thinq1 response
   if (typeof response.data === 'object' && 'lgedmRoot' in response.data && 'returnCd' in response.data.lgedmRoot) {
@@ -40,7 +56,8 @@ client.interceptors.response.use((response) => {
     }
   }
 
-  return response;
+  PENDING_REQUESTS = Math.max(0, PENDING_REQUESTS - 1);
+  return Promise.resolve(response);
 }, (err) => {
   if (!err.response || err.response.data?.resultCode === '9999') {
     throw new NotConnectedError();
@@ -50,7 +67,7 @@ client.interceptors.response.use((response) => {
     throw new ManualProcessNeeded('Please open the native LG App and sign in to your account to see what happened, ' +
       'maybe new agreement need your accept. Then try restarting Homebridge.');
   }
-
+  PENDING_REQUESTS = Math.max(0, PENDING_REQUESTS - 1);
   return Promise.reject(err);
 });
 

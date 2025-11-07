@@ -1,17 +1,22 @@
-import {default as RefrigeratorV2, RefrigeratorStatus} from '../../devices/Refrigerator';
-import {CharacteristicValue} from 'homebridge';
-import {Device} from '../../lib/Device';
-import {fToC} from '../../helper';
+import { default as RefrigeratorV2, RefrigeratorStatus } from '../../devices/Refrigerator.js';
+import { CharacteristicValue } from 'homebridge';
+import { Device } from '../../lib/Device.js';
+import { fToC } from '../../helper.js';
 
 export default class Refrigerator extends RefrigeratorV2 {
 
   protected createThermostat(name: string, key: string) {
-    const keyMap = {
+    const keyMap: Record<string, string | undefined> = {
       fridgeTemp: 'TempRefrigerator',
       freezerTemp: 'TempFreezer',
     };
-
-    return super.createThermostat(name, keyMap[key]);
+    const newKey = keyMap[key];
+    if (newKey) {
+      return super.createThermostat(name, newKey);
+    } else {
+      this.platform.log.error('Invalid key for thermostat:', key);
+      return undefined;
+    }
   }
 
   async setTemperature(key: string, temp: string) {
@@ -50,23 +55,23 @@ export default class Refrigerator extends RefrigeratorV2 {
 
 export class Status extends RefrigeratorStatus {
   public get freezerTemperature() {
-    // eslint-disable-next-line max-len
-    const defaultValue = this.deviceModel.lookupMonitorValue( 'TempFreezer', this.data?.freezerTemp, '0');
+
+    const defaultValue = this.deviceModel.lookupMonitorValue2('TempFreezer', this.data?.freezerTemp, '0');
     if (this.tempUnit === 'FAHRENHEIT') {
-      return fToC(parseInt(this.deviceModel.lookupMonitorValue('TempFreezer_F', this.data?.freezerTemp, defaultValue)));
+      return fToC(parseInt(`${this.deviceModel.lookupMonitorValue2('TempFreezer_F', this.data?.freezerTemp, `${defaultValue}`)}`));
     }
 
-    return parseInt(this.deviceModel.lookupMonitorValue('TempFreezer_C', this.data?.freezerTemp, defaultValue));
+    return parseInt(`${this.deviceModel.lookupMonitorValue2('TempFreezer_C', this.data?.freezerTemp, `${defaultValue}`)}`);
   }
 
   public get fridgeTemperature() {
-    // eslint-disable-next-line max-len
-    const defaultValue = this.deviceModel.lookupMonitorValue( 'TempRefrigerator', this.data?.fridgeTemp, '0');
+
+    const defaultValue = this.deviceModel.lookupMonitorValue2('TempRefrigerator', this.data?.fridgeTemp, '0');
     if (this.tempUnit === 'FAHRENHEIT') {
-      return fToC(parseInt(this.deviceModel.lookupMonitorValue( 'TempRefrigerator_F', this.data?.fridgeTemp, defaultValue)));
+      return fToC(parseInt(`${this.deviceModel.lookupMonitorValue2('TempRefrigerator_F', this.data?.fridgeTemp, `${defaultValue}`)}`));
     }
 
-    return parseInt(this.deviceModel.lookupMonitorValue('TempRefrigerator_C', this.data?.fridgeTemp, defaultValue));
+    return parseInt(`${this.deviceModel.lookupMonitorValue2('TempRefrigerator_C', this.data?.fridgeTemp, `${defaultValue}`)}`);
   }
 
   public get isExpressFridgeOn() {

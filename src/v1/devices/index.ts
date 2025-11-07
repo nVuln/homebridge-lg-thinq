@@ -1,7 +1,7 @@
-import Washer from './Washer';
-import AC from './AC';
-import Refrigerator from './Refrigerator';
-import AirPurifier from './AirPurifier';
-import RangeHood from './RangeHood';
+import Washer from './Washer.js';
+import AC from './AC.js';
+import Refrigerator from './Refrigerator.js';
+import AirPurifier from './AirPurifier.js';
+import RangeHood from './RangeHood.js';
 
-export {Washer, AC, Refrigerator, AirPurifier, RangeHood};
+export { Washer, AC, Refrigerator, AirPurifier, RangeHood };

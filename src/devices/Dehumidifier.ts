@@ -1,21 +1,22 @@
-import {baseDevice} from '../baseDevice';
-import {LGThinQHomebridgePlatform} from '../platform';
-import {CharacteristicValue, PlatformAccessory} from 'homebridge';
-import {Device} from '../lib/Device';
+import { AccessoryContext, BaseDevice } from '../baseDevice.js';
+import { LGThinQHomebridgePlatform } from '../platform.js';
+import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
+import { Device } from '../lib/Device.js';
 
 enum RotateSpeed {
   LOW = 2,
   HIGH = 6,
 }
 
-export default class Dehumidifier extends baseDevice {
+export default class Dehumidifier extends BaseDevice {
   protected serviceDehumidifier;
   protected serviceHumiditySensor;
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
-    public readonly accessory: PlatformAccessory,
+    public readonly accessory: PlatformAccessory<AccessoryContext>,
+    logger: Logger,
   ) {
-    super(platform, accessory);
+    super(platform, accessory, logger);
 
     const {
       Service: {
@@ -150,7 +151,7 @@ export default class Dehumidifier extends baseDevice {
 }
 
 export class DehumidifierStatus {
-  constructor(protected data) {}
+  constructor(protected data: any) {}
 
   public get isPowerOn() {
     return this.data['airState.operation'] as boolean;

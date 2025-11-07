@@ -1,18 +1,19 @@
-import {baseDevice} from '../baseDevice';
-import {LGThinQHomebridgePlatform} from '../platform';
-import {CharacteristicValue, PlatformAccessory} from 'homebridge';
-import {Device} from '../lib/Device';
-import {ValueType} from '../lib/DeviceModel';
+import { AccessoryContext, BaseDevice } from '../baseDevice.js';
+import { LGThinQHomebridgePlatform } from '../platform.js';
+import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
+import { Device } from '../lib/Device.js';
+import { ValueType } from '../lib/DeviceModel.js';
 
-export default class RangeHood extends baseDevice {
+export default class RangeHood extends BaseDevice {
   protected serviceHood;
   protected serviceLight;
 
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
-    public readonly accessory: PlatformAccessory,
+    public readonly accessory: PlatformAccessory<AccessoryContext>,
+    logger: Logger,
   ) {
-    super(platform, accessory);
+    super(platform, accessory, logger);
 
     const device: Device = this.accessory.context.device;
 
@@ -102,17 +103,17 @@ export default class RangeHood extends baseDevice {
     super.updateAccessoryCharacteristic(device);
 
     const hoodState = device.snapshot.hoodState;
-    const isVentOn = hoodState['ventSet'] === device.deviceModel.lookupMonitorName('VentSet', '@CP_ENABLE_W');
-    const isLampOn = hoodState['lampSet'] === device.deviceModel.lookupMonitorName('LampSet', '@CP_ENABLE_W');
+    const isVentOn = hoodState.ventSet === device.deviceModel.lookupMonitorName('VentSet', '@CP_ENABLE_W');
+    const isLampOn = hoodState.lampSet === device.deviceModel.lookupMonitorName('LampSet', '@CP_ENABLE_W');
 
     const {
       Characteristic,
     } = this.platform;
 
     this.serviceHood.updateCharacteristic(Characteristic.On, isVentOn);
-    this.serviceHood.updateCharacteristic(Characteristic.RotationSpeed, hoodState['ventLevel']);
+    this.serviceHood.updateCharacteristic(Characteristic.RotationSpeed, hoodState.ventLevel);
 
     this.serviceLight.updateCharacteristic(Characteristic.On, isLampOn);
-    this.serviceLight.updateCharacteristic(Characteristic.Brightness, hoodState['lampLevel']);
+    this.serviceLight.updateCharacteristic(Characteristic.Brightness, hoodState.lampLevel);
   }
 }

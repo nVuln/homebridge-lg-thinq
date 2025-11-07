@@ -1,4 +1,4 @@
-import WasherDryer, {WasherDryerStatus} from './WasherDryer';
+import WasherDryer, { WasherDryerStatus } from './WasherDryer.js';
 
 /**
  * new kind of wash tower
@@ -9,7 +9,7 @@ export default class WasherDryer2 extends WasherDryer {
     return new WasherDryerStatus(this.accessory.context.device.snapshot?.washer, this.accessory.context.device.deviceModel);
   }
 
-  public update(snapshot) {
+  public update(snapshot: any) {
     // override washer to washerDryer
     snapshot.washerDryer = snapshot.washer;
 

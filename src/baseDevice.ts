@@ -1,18 +1,22 @@
-import {LGThinQHomebridgePlatform} from './platform';
-import {PlatformAccessory} from 'homebridge';
-import {Device} from './lib/Device';
-import {EventEmitter} from 'events';
-import {mergeDeep} from './helper';
+import { LGThinQHomebridgePlatform } from './platform.js';
+import { Logger, PlatformAccessory } from 'homebridge';
+import { Device } from './lib/Device.js';
+import { EventEmitter } from 'events';
 
-export class baseDevice extends EventEmitter {
+export type AccessoryContext = {
+  device: Device;
+}
+
+export class BaseDevice extends EventEmitter {
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
-    public readonly accessory: PlatformAccessory,
+    public readonly accessory: PlatformAccessory<AccessoryContext>,
+    protected readonly logger: Logger,
   ) {
     super();
 
     const device: Device = accessory.context.device;
-    const {AccessoryInformation} = this.platform.Service;
+    const { AccessoryInformation } = this.platform.Service;
     const serviceAccessoryInformation = accessory.getService(AccessoryInformation) || accessory.addService(AccessoryInformation);
 
     // set accessory information
@@ -26,18 +30,17 @@ export class baseDevice extends EventEmitter {
     this.accessory.context.device = device;
   }
 
-  public update(snapshot) {
-    const device: Device = this.accessory.context.device;
-    this.platform.log.debug('['+device.name+'] Received snapshot: ', JSON.stringify(snapshot));
-    device.data.snapshot = mergeDeep({}, device.snapshot, snapshot);
-    this.updateAccessoryCharacteristic(device);
+  public update(snapshot: any) {
+    this.platform.log.debug('[' + this.accessory.context.device.name + '] Received snapshot: ', JSON.stringify(snapshot));
+    this.accessory.context.device.data.snapshot = { ...this.accessory.context.device.snapshot, ...snapshot };
+    this.updateAccessoryCharacteristic(this.accessory.context.device);
   }
 
-  public get config() {
-    return this.platform.config.devices.find(enabled => enabled.id === this.accessory.context.device.id) || {};
+  public get config(): Record<string, any> {
+    return this.platform.config.devices.find((enabled: Record<string, any>) => enabled.id === this.accessory.context.device.id) || {};
   }
 
-  public static model() {
+  public static model(): string {
     return '';
   }
 }

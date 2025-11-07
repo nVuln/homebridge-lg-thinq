@@ -1,11 +1,11 @@
-import AirState from './AirState';
-import {DeviceModel} from '../../lib/DeviceModel';
+import AirState from './AirState.js';
+import { DeviceModel } from '../../lib/DeviceModel.js';
 
-export default function AirPurifierState(deviceModel: DeviceModel, decodedMonitor) {
+export default function AirPurifierState(deviceModel: DeviceModel, decodedMonitor: any) {
   const airState = AirState(deviceModel, decodedMonitor);
 
-  airState['airState.operation'] = !!parseInt(decodedMonitor['Operation']);
-  airState['airState.miscFuncState.airFast'] = !!parseInt(decodedMonitor['AirFast']);
+  airState['airState.operation'] = !!parseInt(decodedMonitor.Operation);
+  airState['airState.miscFuncState.airFast'] = !!parseInt(decodedMonitor.AirFast);
 
   return airState;
 }

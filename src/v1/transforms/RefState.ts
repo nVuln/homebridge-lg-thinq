@@ -1,19 +1,19 @@
-import {DeviceModel} from '../../lib/DeviceModel';
-import {lookupEnumIndex, loopupEnum} from '../helper';
+import { DeviceModel } from '../../lib/DeviceModel.js';
+import { lookupEnumIndex, loopupEnum } from '../helper.js';
 
 export enum DoorOpenState {
   OPEN = 'OPEN',
   CLOSE = 'CLOSE',
 }
 
-export default function RefState(deviceModel: DeviceModel, decodedMonitor) {
-  const snapshot = {
+export default function RefState(deviceModel: DeviceModel, decodedMonitor: any) {
+  const snapshot: Record<string, any> = {
     refState: {
-      fridgeTemp: decodedMonitor['TempRefrigerator'] || deviceModel.default('TempRefrigerator') || '0',
-      freezerTemp: decodedMonitor['TempFreezer'] || deviceModel.default('TempFreezer') || '0',
-      // eslint-disable-next-line max-len
+      fridgeTemp: decodedMonitor.TempRefrigerator || deviceModel.default('TempRefrigerator') || '0',
+      freezerTemp: decodedMonitor.TempFreezer || deviceModel.default('TempFreezer') || '0',
+
       atLeastOneDoorOpen: lookupEnumIndex(DoorOpenState, loopupEnum(deviceModel, decodedMonitor, 'DoorOpenState') || deviceModel.default('DoorOpenState')),
-      tempUnit: parseInt(decodedMonitor['TempUnit'] || deviceModel.default('TempUnit')) ? 'CELSIUS' : 'FAHRENHEIT',
+      tempUnit: parseInt(decodedMonitor.TempUnit || deviceModel.default('TempUnit')) ? 'CELSIUS' : 'FAHRENHEIT',
     },
   };
 
@@ -21,15 +21,15 @@ export default function RefState(deviceModel: DeviceModel, decodedMonitor) {
   snapshot.refState.freezerTemp = parseInt(snapshot.refState.freezerTemp);
 
   if ('IcePlus' in decodedMonitor) {
-    snapshot.refState['expressMode'] = decodedMonitor['IcePlus'] || deviceModel.default('IcePlus') || '0';
+    snapshot.refState.expressMode = decodedMonitor.IcePlus || deviceModel.default('IcePlus') || '0';
   }
 
   if ('ExpressFridge' in decodedMonitor) {
-    snapshot.refState['expressFridge'] = decodedMonitor['ExpressFridge'] || deviceModel.default('ExpressFridge') || '0';
+    snapshot.refState.expressFridge = decodedMonitor.ExpressFridge || deviceModel.default('ExpressFridge') || '0';
   }
 
   if ('EcoFriendly' in decodedMonitor) {
-    snapshot.refState['ecoFriendly'] = decodedMonitor['EcoFriendly'] || deviceModel.default('EcoFriendly') || '0';
+    snapshot.refState.ecoFriendly = decodedMonitor.EcoFriendly || deviceModel.default('EcoFriendly') || '0';
   }
 
   return snapshot;

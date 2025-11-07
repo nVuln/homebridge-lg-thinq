@@ -2,6 +2,7 @@
 dist
 
 # ------------- Defaults ------------- #
+.DS_Store
 
 # Logs
 logs
@@ -119,4 +120,7 @@ dist
 .yarn/build-state.yml
 .pnp.*
 
+# Webstorm
 .idea
+
+/test/hbConfig

@@ -4,5 +4,10 @@
     "source.fixAll.eslint": "explicit"
   },
   "editor.rulers": [ 140 ],
-  "eslint.enable": true
+  "eslint.enable": true,
+  "jest.runMode": {
+    "type": "watch",
+    "coverage": true
+  },
+  "typescript.tsdk": "node_modules/typescript/lib"
 }
