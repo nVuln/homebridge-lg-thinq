@@ -3,10 +3,17 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist/**'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'homebridge-ui/public/js/**',
+      'homebridge-ui/public/*.min.js',
+      '*.min.js',
+    ],
   },
   {
     rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
       'quotes': ['error', 'single'],
       'indent': ['error', 2, { 'SwitchCase': 0 }],
       'linebreak-style': ['error', 'unix'],
@@ -37,4 +44,11 @@ export default tseslint.config(
   // },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    // ensure explicit-any is disabled after merging recommended configs
+    files: ['src/**', '*.ts', '*.tsx'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 );

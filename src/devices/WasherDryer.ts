@@ -57,7 +57,9 @@ export default class WasherDryer extends BaseDevice {
 
     // only thinq2 support door lock status
     this.serviceDoorLock = accessory.getService(LockMechanism);
-    if (this.config.washer_door_lock && device.platform === PlatformType.ThinQ2 && 'doorLock' in device.snapshot?.washerDryer) {
+    // avoid using `in` against an optionally-chained value — ensure objects exist first
+    if (this.config.washer_door_lock && device.platform === PlatformType.ThinQ2
+      && device.snapshot && device.snapshot.washerDryer && ('doorLock' in device.snapshot.washerDryer)) {
       if (!this.serviceDoorLock) {
         this.serviceDoorLock = accessory.addService(LockMechanism, device.name + ' - Door');
         this.serviceDoorLock.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -130,6 +132,7 @@ export default class WasherDryer extends BaseDevice {
   }
 
   async setActive(value: CharacteristicValue) {
+    void value;
     // do nothing, revert back
     this.updateAccessoryCharacteristic(this.accessory.context.device);
   }

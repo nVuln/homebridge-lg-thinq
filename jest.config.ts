@@ -3,7 +3,9 @@ import { createDefaultEsmPreset } from 'ts-jest';
 
 const presetConfig = createDefaultEsmPreset({
   tsconfig: './tsconfig.json',
-  //...options
+  diagnostics: {
+    ignoreCodes: [151002],
+  },
 });
 
 export default {

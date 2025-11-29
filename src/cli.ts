@@ -5,7 +5,9 @@ import { API } from './lib/API.js';
 import { Auth } from './lib/Auth.js';
 import { URL } from 'url';
 import * as readline from 'readline';
-import { Logger } from 'homebridge/dist/logger';
+import type { Logger } from 'homebridge';
+
+const makeLogger = (): Logger => (console as unknown as Logger);
 
 const input = (question: string) => new Promise<string>((resolve) => {
   const rl = readline.createInterface(process.stdin, process.stdout);
@@ -33,7 +35,7 @@ program
   .action(async (username, password) => {
 
     console.info('Start login: username =', username, ', password =', password, ', country =', options.country, ', language =', options.language);
-    const logger = new Logger();
+    const logger = makeLogger();
     try {
       const api = new API(options.country, options.language, logger);
       const gateway = await api.gateway();
@@ -54,7 +56,7 @@ program
   .command('auth')
   .description('Obtain refresh_token from account logged by Google Account, Apple ID')
   .action(async () => {
-    const logger = new Logger();
+    const logger = makeLogger();
     const api = new API(options.country, options.language, logger);
     const gateway = await api.gateway();
     const auth = new Auth(gateway, logger);

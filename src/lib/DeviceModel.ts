@@ -1,5 +1,3 @@
-import { PrimitiveTypes } from 'homebridge';
-
 export enum ValueType {
   Bit = 'Bit',
   Enum = 'Enum',
@@ -148,7 +146,6 @@ export class DeviceModel {
        */
       if (protocol.constructor.name === 'Object' && protocol[name] !== undefined) {
         data = this.data.Value[this.data.Monitoring?.protocol[name]];
-      }
       /**
        * sample: "protocol": [{
        * 				"_comment": "Hood Operation State(1byte)",
@@ -197,7 +194,7 @@ export class DeviceModel {
        * 			}
        *    ]
        */
-      else if (protocol.constructor.name === 'Array' && protocol.find((p: any) => p.superSet === name) !== undefined) {
+      } else if (protocol.constructor.name === 'Array' && protocol.find((p: any) => p.superSet === name) !== undefined) {
         data = this.data.Value[protocol.find((p: any) => p.superSet === name).value];
       }
     }

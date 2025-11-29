@@ -3,7 +3,7 @@ import { API } from './API.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { Device, DeviceData } from './Device.js';
 import { DeviceType, PlatformType } from './constants.js';
-import { v4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import * as Path from 'path';
 import forge from 'node-forge';
 import { DeviceModel } from './DeviceModel.js';
@@ -88,7 +88,7 @@ export class ThinQ {
   }
 
   protected async registerWorkId(device: any) {
-    return this.workIds[device.id] = await this.api.sendMonitorCommand(device.id, 'Start', v4()).then(data => {
+    return this.workIds[device.id] = await this.api.sendMonitorCommand(device.id, 'Start', randomUUID()).then(data => {
       if (data !== undefined && 'workId' in data) {
         return data.workId;
       }

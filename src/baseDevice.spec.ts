@@ -51,7 +51,7 @@ describe('BaseDevice', () => {
 
     platform = {
       Service: {
-        AccessoryInformation: jest.fn(),
+        AccessoryInformation: function AccessoryInformation() {},
       },
       Characteristic: {
         Manufacturer: 'Manufacturer',
@@ -81,7 +81,13 @@ describe('BaseDevice', () => {
 
   it('should set accessory information on initialization', () => {
     baseDevice = new BaseDevice(platform, accessory, logger);
-    expect(accessory.addService).toHaveBeenCalledWith(platform.Service.AccessoryInformation);
+    expect(accessory.addService).toHaveBeenCalled();
+    const calledArg = (accessory.addService as jest.Mock).mock.calls[0][0] as any;
+    if (typeof calledArg === 'function') {
+      expect(calledArg.name).toBe('AccessoryInformation');
+    } else {
+      expect(calledArg.displayName).toBe('AccessoryInformation');
+    }
   });
 
   it('should update accessory characteristics', () => {

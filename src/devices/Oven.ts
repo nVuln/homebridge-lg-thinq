@@ -17,6 +17,7 @@ enum OvenState {
   CLEANING_DONE = '@OV_STATE_CLEAN_COMPLETE_W',
 }
 
+/*
 enum OvenMode {
   NONE = '@NONE',
   BAKE = '@OV_TERM_BAKE_W',
@@ -39,6 +40,7 @@ enum OvenMode {
   PIZZA = '@OV_TERM_PIZZA_W',
   AIR_SOUSVIDE = '@OV_TERM_AIR_SOUSVIDE_W',
 }
+*/
 
 export default class Oven extends BaseDevice {
 
@@ -314,7 +316,7 @@ export default class Oven extends BaseDevice {
     this.ovenTimerService.getCharacteristic(Characteristic.Active)
       .on('get', (callback) => {
         let currentValue = 0;
-        if (this.remainTime() != 0) {
+        if (this.remainTime() !== 0) {
           currentValue = 1;
         }
         callback(null, currentValue);
@@ -368,13 +370,13 @@ export default class Oven extends BaseDevice {
     this.ovenAlarmService.getCharacteristic(Characteristic.Active)
       .on('get', (callback) => {
         let currentValue = 0;
-        if (this.ovenTimerTime() != 0) {
+        if (this.ovenTimerTime() !== 0) {
           currentValue = 1;
         }
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value == 0) {
+        if (value === 0) {
           this.timerAlarmSec = 0;
           this.sendTimerCommand(0);
           this.ovenAlarmService.updateCharacteristic(Characteristic.Active, 0);
@@ -447,7 +449,7 @@ export default class Oven extends BaseDevice {
       })
       .on('set', (value, callback) => {
         if (value === true) {
-          this.ovenCommandList.ovenMode == 'CONVECTION_BAKE';
+          this.ovenCommandList.ovenMode = 'CONVECTION_BAKE';
         }
         this.updateOvenModeSwitch();
         callback(null);
@@ -464,7 +466,7 @@ export default class Oven extends BaseDevice {
       })
       .on('set', (value, callback) => {
         if (value === true) {
-          this.ovenCommandList.ovenMode == 'CONVECTION_ROST';
+          this.ovenCommandList.ovenMode = 'CONVECTION_ROST';
         }
         this.updateOvenModeSwitch();
         callback(null);
@@ -481,7 +483,7 @@ export default class Oven extends BaseDevice {
       })
       .on('set', (value, callback) => {
         if (value === true) {
-          this.ovenCommandList.ovenMode == 'FROZEN_MEAL';
+          this.ovenCommandList.ovenMode = 'FROZEN_MEAL';
         }
         this.updateOvenModeSwitch();
         callback(null);
@@ -497,7 +499,7 @@ export default class Oven extends BaseDevice {
       })
       .on('set', (value, callback) => {
         if (value === true) {
-          this.ovenCommandList.ovenMode == 'AIR_FRY';
+          this.ovenCommandList.ovenMode = 'AIR_FRY';
         }
         this.updateOvenModeSwitch();
         callback(null);
@@ -513,7 +515,7 @@ export default class Oven extends BaseDevice {
       })
       .on('set', (value, callback) => {
         if (value === true) {
-          this.ovenCommandList.ovenMode == 'AIR_SOUSVIDE';
+          this.ovenCommandList.ovenMode = 'AIR_SOUSVIDE';
         }
         this.updateOvenModeSwitch();
         callback(null);
@@ -530,7 +532,7 @@ export default class Oven extends BaseDevice {
       })
       .on('set', (value, callback) => {
         if (value === true) {
-          this.ovenCommandList.ovenMode == 'WARM';
+          this.ovenCommandList.ovenMode = 'WARM';
         }
         this.updateOvenModeSwitch();
         callback(null);
@@ -618,32 +620,56 @@ export default class Oven extends BaseDevice {
     }
 
     ////////Door sensor
-    this.ovenDoorOpened = this.accessory.getService('Oven Door') || this.accessory.addService(this.platform.Service.ContactSensor, 'Oven Door', 'NicoCataGaTa-OvenTCBCS');
+    this.ovenDoorOpened = this.accessory.getService('Oven Door') ||
+      this.accessory.addService(
+        this.platform.Service.ContactSensor,
+        'Oven Door',
+        'NicoCataGaTa-OvenTCBCS',
+      );
     this.ovenDoorOpened.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.ovenDoorOpened.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Oven Door');
     this.ovenDoorOpened.setCharacteristic(this.platform.Characteristic.StatusActive, this.onStatus());
-    this.ovenDoorOpened.setCharacteristic(this.platform.Characteristic.ContactSensorState, this.Status.data?.upperDoorOpen.includes('DIS') ? 0 : 1);
+    this.ovenDoorOpened.setCharacteristic(
+      this.platform.Characteristic.ContactSensorState,
+      this.Status.data?.upperDoorOpen.includes('DIS') ? 0 : 1,
+    );
 
     ///Range Cooking
-    this.rangeOn = this.accessory.getService('Range is Cooking') || this.accessory.addService(this.platform.Service.MotionSensor, 'Range is Cooking', 'NicoCataGaTa-OvenTCBCSMotion');
+    this.rangeOn = this.accessory.getService('Range is Cooking') ||
+      this.accessory.addService(
+        this.platform.Service.MotionSensor,
+        'Range is Cooking',
+        'NicoCataGaTa-OvenTCBCSMotion',
+      );
     this.rangeOn.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.rangeOn.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Range is Cooking');
     this.rangeOn.setCharacteristic(this.platform.Characteristic.StatusActive, this.onStatus());
     this.rangeOn.setCharacteristic(this.platform.Characteristic.MotionDetected, this.onStatus());
 
     ////Remote Enabled
-    this.remoteEnabled = this.accessory.getService('Remote Control Enabled') || this.accessory.addService(this.platform.Service.ContactSensor, 'Remote Control Enabled', 'NicoCataGaTa-OvenTCRCS');
+    this.remoteEnabled = this.accessory.getService('Remote Control Enabled') ||
+      this.accessory.addService(
+        this.platform.Service.ContactSensor,
+        'Remote Control Enabled',
+        'NicoCataGaTa-OvenTCRCS',
+      );
     this.remoteEnabled.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.remoteEnabled.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Remote Control Enabled');
     this.remoteEnabled.setCharacteristic(this.platform.Characteristic.StatusActive, this.onStatus());
-    this.remoteEnabled.setCharacteristic(this.platform.Characteristic.ContactSensorState, this.Status.data?.upperRemoteStart.includes('DIS') ? 0 : 1);
+    this.remoteEnabled.setCharacteristic(
+      this.platform.Characteristic.ContactSensorState,
+      this.Status.data?.upperRemoteStart.includes('DIS') ? 0 : 1,
+    );
     /////////Burners On
 
     this.burnersOnNumber = this.accessory.getService('Number of Burners in Use') ||
       this.accessory.addService(this.platform.Service.LightSensor, 'Number of Burners in Use', 'NicoCataGaTa-OvenTCB');
     this.burnersOnNumber.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.burnersOnNumber.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Number of Burners in Use');
-    this.burnersOnNumber.setCharacteristic(this.platform.Characteristic.CurrentAmbientLightLevel, this.Status.data?.burnerOnCounter < 1 ? 0.0001 : this.Status.data?.burnerOnCounter);
+    this.burnersOnNumber.setCharacteristic(
+      this.platform.Characteristic.CurrentAmbientLightLevel,
+      this.Status.data?.burnerOnCounter < 1 ? 0.0001 : this.Status.data?.burnerOnCounter,
+    );
     this.burnersOnNumber.setCharacteristic(this.platform.Characteristic.StatusActive, this.Status.data?.burnerOnCounter > 0 ? true : false);
 
 
@@ -662,7 +688,7 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value == 0) {
+        if (value === 0) {
           this.stopOven();
         } else {
           this.pauseUpdate = true;
@@ -824,10 +850,14 @@ export default class Oven extends BaseDevice {
         if (this.ovenCommandList.ovenSetDuration === 0) {
           this.ovenCommandList.ovenSetDuration = 1800;
         }
-        if (this.ovenCommandList.ovenMode == 'NONE') {
+        if (this.ovenCommandList.ovenMode === 'NONE') {
           this.ovenCommandList.ovenMode = 'BAKE';
         }
-        if (this.ovenCommandList.ovenMode.includes('CONVECTION_BAKE') || this.ovenCommandList.ovenMode.includes('CONVECTION_ROST') || this.ovenCommandList.ovenMode.includes('FROZEN_MEAL') || this.ovenCommandList.ovenMode.includes('AIR_FRY')) {
+        if (this.ovenCommandList.ovenMode.includes('CONVECTION_BAKE') ||
+          this.ovenCommandList.ovenMode.includes('CONVECTION_ROST') ||
+          this.ovenCommandList.ovenMode.includes('FROZEN_MEAL') ||
+          this.ovenCommandList.ovenMode.includes('AIR_FRY')
+        ) {
           if (this.ovenCommandList.tempUnits.includes('FAH')) {
             if (this.ovenCommandList.ovenSetTemperature < 300) {
               this.ovenCommandList.ovenSetTemperature = 300;
@@ -902,7 +932,6 @@ export default class Oven extends BaseDevice {
           }
         }
         this.platform.log.debug('Sending the Folowing Commands: ' + JSON.stringify(this.ovenCommandList));
-        let _a;
         const ctrlKey = 'SetCookStart';
         const device = this.accessory.context.device;
         this.platform.ThinQ?.deviceControl(device.id, {
@@ -1163,12 +1192,12 @@ export default class Oven extends BaseDevice {
   ovenTemperature() {
     /////Current Temp
     let temperature = 'Oven Temperature Information';
-    if (this.Status.data?.upperCurrentTemperatureValue != 0) {
+    if (this.Status.data?.upperCurrentTemperatureValue !== 0) {
       temperature = 'Current Temp is ' + this.Status.data?.upperCurrentTemperatureValue + '°';
     }
 
     ////Set temperature
-    if (this.Status.data?.upperTargetTemperatureValue != 0) {
+    if (this.Status.data?.upperTargetTemperatureValue !== 0) {
       temperature += ' With Set Temp ' + this.Status.data?.upperTargetTemperatureValue + '°';
     }
     return this.nameLengthCheck(temperature);
@@ -1176,13 +1205,13 @@ export default class Oven extends BaseDevice {
 
   ovenCurrentTemperature() {
     /////Current Temp
-    if (this.Status.data?.upperCurrentTemperatureValue != 0) {
+    if (this.Status.data?.upperCurrentTemperatureValue !== 0) {
       if (this.Status.data?.upperCurrentTemperatureUnit.includes('FAH')) {
         return this.tempFtoC(this.Status.data?.upperCurrentTemperatureValue);
       } else {
         return 0.5 * Math.round(2 * this.Status.data?.upperCurrentTemperatureValue);
       }
-    } else if (this.Status.data?.upperCurrentTemperatureValue == 0 && this.Status.data?.upperTargetTemperatureValue != 0) {
+    } else if (this.Status.data?.upperCurrentTemperatureValue === 0 && this.Status.data?.upperTargetTemperatureValue !== 0) {
       if (this.Status.data?.upperCurrentTemperatureUnit.includes('FAH')) {
         return this.tempFtoC(this.Status.data?.upperTargetTemperatureValue);
       } else {
@@ -1225,7 +1254,7 @@ export default class Oven extends BaseDevice {
   }
 
   OvenSubCookMenu(name: string) {
-    if (this.Status.data?.upperSubCookMenu != 'NONE' && typeof this.Status.data?.upperSubCookMenu !== 'undefined') {
+    if (this.Status.data?.upperSubCookMenu !== 'NONE' && typeof this.Status.data?.upperSubCookMenu !== 'undefined') {
       let subCook = this.Status.data?.upperSubCookMenu;
       subCook = subCook.toLocaleLowerCase();
       const subCookCap =
@@ -1288,7 +1317,7 @@ export default class Oven extends BaseDevice {
     if (this.oventTargetTime() > 3600) {
       hourMinutes = 'Hours';
     }
-    if (this.oventTargetTime() == 3600) {
+    if (this.oventTargetTime() === 3600) {
       hourMinutes = 'Hour';
 
     }
@@ -1307,7 +1336,7 @@ export default class Oven extends BaseDevice {
     if (this.ovenTimerTime() > 3600) {
       hourMinutes = 'Hours';
     }
-    if (this.ovenTimerTime() == 3600) {
+    if (this.ovenTimerTime() === 3600) {
       hourMinutes = 'Hour';
 
     }
@@ -1399,7 +1428,7 @@ export default class Oven extends BaseDevice {
   ///////////Temperature Control
   probeCurrentState() {
     /////Current Temp
-    if (this.Status.data?.upperCurrentPorveTemperatureF != 0 && typeof this.Status.data?.upperCurrentProveTemperatureF !== 'undefined') {
+    if (this.Status.data?.upperCurrentProveTemperatureF !== 0 && typeof this.Status.data?.upperCurrentProveTemperatureF !== 'undefined') {
       return 1;
     } else {
       return 0;
@@ -1408,7 +1437,7 @@ export default class Oven extends BaseDevice {
 
   probeTargetState() {
     ////Set temperature
-    if (this.Status.data?.upperTargetProveTemperatureF != 0) {
+    if (this.Status.data?.upperTargetProveTemperatureF !== 0) {
       return 1;
     } else {
       return 0;
@@ -1416,7 +1445,7 @@ export default class Oven extends BaseDevice {
   }
 
   currentHeatingState() {
-    if (this.Status.data?.upperCurrentTemperatureValue != 0) {
+    if (this.Status.data?.upperCurrentTemperatureValue !== 0) {
       return 1;
     } else {
       return 0;
@@ -1424,8 +1453,10 @@ export default class Oven extends BaseDevice {
   }
 
   targetHeatingState() {
-    // if (this.Status.data?.upperState.includes('INITIAL') || this.Status.data?.upperState.includes('DONE') || this.Status.data?.upperState.includes('COOLING')) {
-    if (this.Status.data?.upperTargetTemperatureValue == 0) {
+    // if (this.Status.data?.upperState.includes('INITIAL') ||
+    // this.Status.data?.upperState.includes('DONE') ||
+    // this.Status.data?.upperState.includes('COOLING')) {
+    if (this.Status.data?.upperTargetTemperatureValue === 0) {
 
       return 0;
 
@@ -1605,13 +1636,27 @@ export default class Oven extends BaseDevice {
   }
 
   updateOvenModeSwitchNoPause() {
-    this.bakeSwitch.updateCharacteristic(this.platform.Characteristic.On, this.ovenCommandList.ovenMode == 'BAKE' ? true : false);
-    this.convectionBakeSwitch.updateCharacteristic(this.platform.Characteristic.On, this.ovenCommandList.ovenMode == 'CONVECTION_BAKE' ? true : false);
-    this.convectionRoastSwitch.updateCharacteristic(this.platform.Characteristic.On, this.ovenCommandList.ovenMode == 'CONVECTION_ROST' ? true : false);
-    this.frozenMealSwitch.updateCharacteristic(this.platform.Characteristic.On, this.ovenCommandList.ovenMode == 'FROZEN_MEAL' ? true : false);
-    this.airFrySwitch.updateCharacteristic(this.platform.Characteristic.On, this.ovenCommandList.ovenMode == 'AIR_FRY' ? true : false);
-    this.airSousvideSwitch.updateCharacteristic(this.platform.Characteristic.On, this.ovenCommandList.ovenMode == 'AIR_SOUSVIDE' ? true : false);
-    this.warmModeSwitch.updateCharacteristic(this.platform.Characteristic.On, this.ovenCommandList.ovenMode == 'WARM' ? true : false);
+    this.bakeSwitch.updateCharacteristic(
+      this.platform.Characteristic.On,
+      this.ovenCommandList.ovenMode === 'BAKE' ? true : false);
+    this.convectionBakeSwitch.updateCharacteristic(
+      this.platform.Characteristic.On,
+      this.ovenCommandList.ovenMode === 'CONVECTION_BAKE' ? true : false);
+    this.convectionRoastSwitch.updateCharacteristic(
+      this.platform.Characteristic.On,
+      this.ovenCommandList.ovenMode === 'CONVECTION_ROST' ? true : false);
+    this.frozenMealSwitch.updateCharacteristic(
+      this.platform.Characteristic.On,
+      this.ovenCommandList.ovenMode === 'FROZEN_MEAL' ? true : false);
+    this.airFrySwitch.updateCharacteristic(
+      this.platform.Characteristic.On,
+      this.ovenCommandList.ovenMode === 'AIR_FRY' ? true : false);
+    this.airSousvideSwitch.updateCharacteristic(
+      this.platform.Characteristic.On,
+      this.ovenCommandList.ovenMode === 'AIR_SOUSVIDE' ? true : false);
+    this.warmModeSwitch.updateCharacteristic(
+      this.platform.Characteristic.On,
+      this.ovenCommandList.ovenMode === 'WARM' ? true : false);
   }
 
   getOperationTime(timeInSeconds: number) {
@@ -1627,7 +1672,7 @@ export default class Oven extends BaseDevice {
     if (timeInSeconds > 3600) {
       hourMinutes = 'Hours';
     }
-    if (timeInSeconds == 3600) {
+    if (timeInSeconds === 3600) {
       hourMinutes = 'Hour';
 
     }
@@ -1635,7 +1680,7 @@ export default class Oven extends BaseDevice {
   }
 
   ovenServiceActive() {
-    if (!this.Status.data?.upperState.includes('INITIAL') || this.Status.data?.burnerOnCounter != 0) {
+    if (!this.Status.data?.upperState.includes('INITIAL') || this.Status.data?.burnerOnCounter !== 0) {
       return 1;
     } else {
       return 0;
@@ -1649,7 +1694,7 @@ export default class Oven extends BaseDevice {
 
     if (!this.pauseUpdate) {
 
-      if (this.ovenService.getCharacteristic(this.platform.Characteristic.Active).value != this.ovenServiceActive()) {
+      if (this.ovenService.getCharacteristic(this.platform.Characteristic.Active).value !== this.ovenServiceActive()) {
         this.ovenService.updateCharacteristic(this.platform.Characteristic.Active, this.ovenServiceActive());
       }
       if (this.ovenOnStatus()) {
@@ -1661,13 +1706,13 @@ export default class Oven extends BaseDevice {
           probeTemperature: 0,
           ovenKeepWarm: 'DISABLE',
         };
-        if (this.bakeSwitch.getCharacteristic(this.platform.Characteristic.On).value == true ||
-          this.convectionBakeSwitch.getCharacteristic(this.platform.Characteristic.On).value == true ||
-          this.convectionRoastSwitch.getCharacteristic(this.platform.Characteristic.On).value == true ||
-          this.frozenMealSwitch.getCharacteristic(this.platform.Characteristic.On).value == true ||
-          this.airFrySwitch.getCharacteristic(this.platform.Characteristic.On).value == true ||
-          this.airSousvideSwitch.getCharacteristic(this.platform.Characteristic.On).value == true ||
-          this.warmModeSwitch.getCharacteristic(this.platform.Characteristic.On).value == true) {
+        if (this.bakeSwitch.getCharacteristic(this.platform.Characteristic.On).value === true ||
+          this.convectionBakeSwitch.getCharacteristic(this.platform.Characteristic.On).value === true ||
+          this.convectionRoastSwitch.getCharacteristic(this.platform.Characteristic.On).value === true ||
+          this.frozenMealSwitch.getCharacteristic(this.platform.Characteristic.On).value === true ||
+          this.airFrySwitch.getCharacteristic(this.platform.Characteristic.On).value === true ||
+          this.airSousvideSwitch.getCharacteristic(this.platform.Characteristic.On).value === true ||
+          this.warmModeSwitch.getCharacteristic(this.platform.Characteristic.On).value === true) {
           this.updateOvenModeSwitch();
         }
       } else {
@@ -1695,7 +1740,7 @@ export default class Oven extends BaseDevice {
       }
 
       if (this.oventTargetTime() !== 0) {
-        if (this.oventTargetTime() != this.firstDuration) {
+        if (this.oventTargetTime() !== this.firstDuration) {
           this.firstDuration = this.oventTargetTime();
           this.courseTimeString = this.ovenCookingDuration();
           this.courseTimeEndString = this.ovenCookingEndTime();
@@ -1707,7 +1752,7 @@ export default class Oven extends BaseDevice {
         this.courseTimeEndString = 'Oven End Time Not Set';
       }
       if (this.ovenTimerTime() !== 0) {
-        if (this.ovenTimerTime() != this.firstDuration) {
+        if (this.ovenTimerTime() !== this.firstDuration) {
           this.firstTimer = this.ovenTimerTime();
           this.courseTimerString = this.ovenCookingTimer();
         }
@@ -1788,9 +1833,14 @@ export default class Oven extends BaseDevice {
       updateVisibility(this.burner5, this.showBurner5);
 
       /////////Temperature Monitor
-      if (this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits).value !== this.Status.data?.upperCurrentTemperatureUnit.includes('FAH') ? 1 : 0) {
-        this.ovenTempControl.updateCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits, this.Status.data?.upperCurrentTemperatureUnit.includes('FAH') ? 1 : 0);
-        this.probeTempControl.updateCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits, this.Status.data?.upperCurrentTemperatureUnit.includes('FAH') ? 1 : 0);
+      if (this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits).value !==
+        this.Status.data?.upperCurrentTemperatureUnit.includes('FAH') ? 1 : 0) {
+        this.ovenTempControl.updateCharacteristic(
+          this.platform.Characteristic.TemperatureDisplayUnits,
+          this.Status.data?.upperCurrentTemperatureUnit.includes('FAH') ? 1 : 0);
+        this.probeTempControl.updateCharacteristic(
+          this.platform.Characteristic.TemperatureDisplayUnits,
+          this.Status.data?.upperCurrentTemperatureUnit.includes('FAH') ? 1 : 0);
       }
       if (this.ovenTempControl.getCharacteristic(this.platform.Characteristic.CurrentTemperature).value !== this.ovenCurrentTemperature()) {
         this.ovenTempControl.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.ovenCurrentTemperature());
@@ -1831,7 +1881,7 @@ export default class Oven extends BaseDevice {
       this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.Active, this.remainTime() > 0 ? 1 : 0);
       if (this.oventTargetTime() === 0) {
         this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.InUse, Characteristic.InUse.NOT_IN_USE);
-      } else if (this.ovenOnStatus() && this.oventTargetTime() != 0) {
+      } else if (this.ovenOnStatus() && this.oventTargetTime() !== 0) {
         this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.InUse, Characteristic.InUse.IN_USE);
       }
 
@@ -1854,7 +1904,7 @@ export default class Oven extends BaseDevice {
       this.ovenDoorOpened.updateCharacteristic(this.platform.Characteristic.StatusActive, this.onStatus());
       this.ovenDoorOpened.updateCharacteristic(this.platform.Characteristic.ContactSensorState, this.Status.data?.upperDoorOpen.includes('DIS') ? 0 : 1);
       ///Range Status
-      if (this.rangeOn.getCharacteristic(this.platform.Characteristic.StatusActive).value != this.onStatus()) {
+      if (this.rangeOn.getCharacteristic(this.platform.Characteristic.StatusActive).value !== this.onStatus()) {
         this.rangeOn.updateCharacteristic(this.platform.Characteristic.StatusActive, this.onStatus());
         this.rangeOn.updateCharacteristic(this.platform.Characteristic.MotionDetected, this.onStatus());
       }
@@ -1862,7 +1912,9 @@ export default class Oven extends BaseDevice {
       this.remoteEnabled.updateCharacteristic(this.platform.Characteristic.StatusActive, this.onStatus());
       this.remoteEnabled.updateCharacteristic(this.platform.Characteristic.ContactSensorState, this.Status.data?.upperRemoteStart.includes('DIS') ? 0 : 1);
       /////Burners on
-      this.burnersOnNumber.updateCharacteristic(this.platform.Characteristic.CurrentAmbientLightLevel, this.Status.data?.burnerOnCounter < 1 ? 0.0001 : this.Status.data?.burnerOnCounter);
+      this.burnersOnNumber.updateCharacteristic(
+        this.platform.Characteristic.CurrentAmbientLightLevel,
+        this.Status.data?.burnerOnCounter < 1 ? 0.0001 : this.Status.data?.burnerOnCounter);
       this.burnersOnNumber.updateCharacteristic(this.platform.Characteristic.StatusActive, this.Status.data?.burnerOnCounter > 0 ? true : false);
       //////Alarm Timer
       this.ovenAlarmService.updateCharacteristic(Characteristic.Active, this.ovenTimerTime() > 0 ? 1 : 0);
