@@ -1,6 +1,9 @@
 import { DeviceModel, RangeValue, ModelData } from './DeviceModel.js';
 import { describe, test, beforeEach, expect } from '@jest/globals';
-import mockModelDataJson from '../../sample/airconditioner-model.json';
+import Fs from 'fs';
+import Path from 'path';
+
+const mockModelDataJson = JSON.parse(Fs.readFileSync(Path.resolve(process.cwd(), 'sample/airconditioner-model.json'), 'utf8'));
 
 describe('DeviceModel', () => {
   let deviceModel: DeviceModel;

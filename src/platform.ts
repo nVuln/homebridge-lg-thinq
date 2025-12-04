@@ -32,9 +32,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
   private readonly enable_thinq1: boolean = false;
 
   // This is only required when using Custom Services and Characteristics not support by HomeKit
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public readonly CustomServices: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public readonly CustomCharacteristics: any;
 
   constructor(

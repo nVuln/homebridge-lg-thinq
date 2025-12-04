@@ -56,6 +56,7 @@ export default class Styler extends BaseDevice {
   }
 
   async setActive(value: CharacteristicValue) {
+    void value;
     if (this.Status.isRemoteStartOn) {
       // turn on styler
     }

@@ -1,4 +1,7 @@
 import NodePersist from 'node-persist';
+import Fs from 'fs/promises';
+import Path from 'path';
+import Crypto from 'crypto';
 
 /**
  * A utility class for managing persistent storage using `node-persist`.
@@ -17,7 +20,8 @@ export default class Persist {
   /**
    * The `node-persist` instance used for managing storage.
    */
-  protected persist;
+  protected persist: any | null = null;
+  protected dir: string;
 
   /**
    * Creates a new `Persist` instance.
@@ -25,9 +29,66 @@ export default class Persist {
    * @param dir - The directory where the persistent storage files will be stored.
    */
   constructor(dir: string) {
-    this.persist = NodePersist.create({
-      dir,
-    });
+    this.dir = Path.resolve(dir || '.');
+  }
+
+  /**
+   * Generates a SHA-256 hash of the given input string.
+   *
+   * @param input - The input string to hash.
+   * @returns The SHA-256 hash of the input string.
+   */
+  protected sha256(input: string) {
+    return Crypto.createHash('sha256').update(input).digest('hex');
+  }
+
+  /**
+   * Detect and migrate legacy plain JSON files in the storage directory.
+   * Legacy files are assumed to be named by the original key (not sha256(key))
+   * and contain raw JSON for the value. Migrated files are written as
+   * JSON datum { key, value, ttl } into filename sha256(key).
+   */
+  protected async migrateLegacyFiles() {
+    try {
+      await Fs.mkdir(this.dir, { recursive: true });
+      const backupDir = Path.resolve(this.dir, '..', '_backups');
+      await Fs.mkdir(backupDir, { recursive: true });
+      const files = await Fs.readdir(this.dir).catch(() => [] as string[]);
+      for (const f of files) {
+        if (!f || f.startsWith('.')) {
+          continue;
+        }
+        const p = Path.join(this.dir, f);
+        const stat = await Fs.stat(p).catch(() => null);
+        if (!stat || !stat.isFile()) {
+          continue;
+        }
+        if (/^[a-f0-9]{64}$/.test(f)) {
+          continue;
+        }
+        try {
+          const raw = await Fs.readFile(p, { encoding: 'utf8' });
+          const parsed = JSON.parse(raw);
+          const key = parsed && typeof parsed === 'object' && parsed.key ? parsed.key : f;
+          const datum = { key, value: parsed && parsed.key ? parsed.value ?? parsed : parsed, ttl: undefined };
+          const target = Path.join(this.dir, this.sha256(key));
+          await Fs.writeFile(target, JSON.stringify(datum), { encoding: 'utf8' }).catch(() => {});
+          const dest = Path.join(backupDir, `${f}.migrated.${Date.now()}`);
+          await Fs.rename(p, dest).catch(async () => {
+            await Fs.copyFile(p, dest).catch(() => {});
+            await Fs.unlink(p).catch(() => {});
+          });
+        } catch (e) {
+          const dest = Path.join(backupDir, `${f}.corrupt.${Date.now()}`);
+          await Fs.rename(p, dest).catch(async () => {
+            await Fs.copyFile(p, dest).catch(() => {});
+            await Fs.unlink(p).catch(() => {});
+          });
+        }
+      }
+    } catch (err) {
+      // ignore migration errors
+    }
   }
 
   /**
@@ -36,7 +97,23 @@ export default class Persist {
    * @returns A promise that resolves when the storage is initialized.
    */
   async init() {
-    return await this.persist.init();
+    await this.migrateLegacyFiles();
+    this.persist = this.persist || NodePersist.create({ dir: this.dir });
+    const backupDir = Path.resolve(this.dir, '..', '_backups');
+    try {
+      const res = await this.persist.init();
+      await Fs.rm(backupDir, { recursive: true, force: true }).catch(() => {});
+      return res;
+    } catch (err) {
+      try {
+        await this.migrateLegacyFiles();
+      } catch {
+        // ignore migration errors
+      }
+      const res2 = await this.persist.init();
+      await Fs.rm(backupDir, { recursive: true, force: true }).catch(() => {});
+      return res2;
+    }
   }
 
   /**
@@ -46,7 +123,23 @@ export default class Persist {
    * @returns A promise that resolves with the value of the item, or `null` if the item does not exist.
    */
   async getItem(key: string) {
-    return await this.persist.getItem(key);
+    if (!this.persist) {
+      await this.init();
+    }
+    try {
+      return await this.persist.getItem(key);
+    } catch (err) {
+      try {
+        const p = Path.join(this.dir, key);
+        const raw = await Fs.readFile(p, { encoding: 'utf8' });
+        const parsed = JSON.parse(raw);
+        await this.persist.setItem(key, parsed).catch(() => {});
+        await Fs.rename(p, p + '.migrated.' + Date.now()).catch(() => {});
+        return parsed;
+      } catch (e) {
+        return null;
+      }
+    }
   }
 
   /**
@@ -57,6 +150,9 @@ export default class Persist {
    * @returns A promise that resolves when the item is stored.
    */
   async setItem(key: string, value: any) {
+    if (!this.persist) {
+      await this.init();
+    }
     return await this.persist.setItem(key, value);
   }
 
@@ -73,7 +169,6 @@ export default class Persist {
       value = await callable();
       await this.setItem(key, value);
     }
-
     return value;
   }
 
@@ -91,7 +186,6 @@ export default class Persist {
       value = await callable();
       await this.setWithExpiry(key, value, ttl);
     }
-
     return value;
   }
 
@@ -104,15 +198,11 @@ export default class Persist {
    * @returns A promise that resolves when the item is stored.
    */
   async setWithExpiry(key: string, value: any, ttl: number) {
-
-    // `item` is an object which contains the original value
-    // as well as the time when it's supposed to expire
     const item = {
       value: value,
       expiry: Date.now() + ttl,
     };
-
-    await this.persist.setItem(key, JSON.stringify(item));
+    await this.setItem(key, JSON.stringify(item));
   }
 
   /**
@@ -122,23 +212,37 @@ export default class Persist {
    * @returns A promise that resolves with the value of the item, or `null` if the item does not exist or is expired.
    */
   async getWithExpiry(key: string) {
-    const itemStr = await this.persist.getItem(key);
-
-    // if the item doesn't exist, return null
+    const itemStr = await this.getItem(key);
     if (!itemStr) {
       return null;
     }
-
-    const item = JSON.parse(itemStr);
-
-    // compare the expiry time of the item with the current time
-    if (Date.now() > item.expiry) {
-      // If the item is expired, delete the item from storage
-      // and return null
-      await this.persist.removeItem(key);
+    try {
+      const item = JSON.parse(itemStr);
+      if (Date.now() > item.expiry) {
+        await this.removeItem(key);
+        return null;
+      }
+      return item.value;
+    } catch (e) {
       return null;
     }
+  }
 
-    return item.value;
+  /**
+   * Removes an item from storage by its key.
+   *
+   * @param key - The key of the item to remove.
+   * @returns A promise that resolves when the item is removed.
+   */
+  async removeItem(key: string) {
+    if (!this.persist) {
+      await this.init();
+    }
+    try {
+      return await this.persist.removeItem(key);
+    } catch (err) {
+      const p = Path.join(this.dir, key);
+      await Fs.unlink(p).catch(() => {});
+    }
   }
 }

@@ -1,17 +1,27 @@
 /* eslint-disable dot-notation */
 import Persist from './Persist.js';
-import { describe, test, beforeEach, expect, jest } from '@jest/globals';
+import Fs from 'fs/promises';
+import Path from 'path';
+import { describe, test, beforeEach, afterEach, expect, jest } from '@jest/globals';
 
 describe('Persist', () => {
   let persist: Persist;
   const mockDir = './mock-storage';
 
   beforeEach(async () => {
+    jest.spyOn(Persist.prototype as any, 'migrateLegacyFiles').mockResolvedValue(undefined);
     persist = new Persist(mockDir);
     await persist.init();
     jest.spyOn(persist['persist'], 'getItem').mockResolvedValue(null);
     jest.spyOn(persist['persist'], 'setItem').mockResolvedValue({ file: '', content: {} });
     jest.spyOn(persist['persist'], 'removeItem').mockResolvedValue({ file: '', removed: true, existed: true });
+  });
+
+  afterEach(async () => {
+    jest.restoreAllMocks();
+    await Fs.rm(mockDir, { recursive: true, force: true }).catch(() => {});
+    const backupDir = Path.resolve(mockDir, '..', '_backups');
+    await Fs.rm(backupDir, { recursive: true, force: true }).catch(() => {});
   });
 
   test('should initialize storage', async () => {

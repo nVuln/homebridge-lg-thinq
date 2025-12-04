@@ -3,8 +3,9 @@ import { API } from './API.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { Device, DeviceData } from './Device.js';
 import { DeviceType, PlatformType } from './constants.js';
-import { v4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import * as Path from 'path';
+import * as FS from 'fs';
 import forge from 'node-forge';
 import { DeviceModel } from './DeviceModel.js';
 import Helper from '../v1/helper.js';
@@ -88,7 +89,7 @@ export class ThinQ {
   }
 
   protected async registerWorkId(device: any) {
-    return this.workIds[device.id] = await this.api.sendMonitorCommand(device.id, 'Start', v4()).then(data => {
+    return this.workIds[device.id] = await this.api.sendMonitorCommand(device.id, 'Start', randomUUID()).then(data => {
       if (data !== undefined && 'workId' in data) {
         return data.workId;
       }
@@ -264,10 +265,32 @@ export class ThinQ {
       // submit csr
       const certificate = await submitCSR();
 
+      const mqttDir = Path.join(this.platform.api.user.storagePath(), PLUGIN_NAME, 'persist', 'mqtt');
+      await FS.promises.mkdir(mqttDir, { recursive: true });
+
+      const caPath = Path.join(mqttDir, 'ca.pem');
+      const keyPath = Path.join(mqttDir, 'key.pem');
+      const certPath = Path.join(mqttDir, 'cert.pem');
+
+      const writeIfChanged = async (p: string, content: string) => {
+        try {
+          const existing = await FS.promises.readFile(p, 'utf8').catch(() => null);
+          if (existing !== content) {
+            await FS.promises.writeFile(p, content, 'utf8');
+          }
+        } catch (err) {
+          await FS.promises.writeFile(p, content, 'utf8');
+        }
+      };
+
+      await writeIfChanged(caPath, rootCA);
+      await writeIfChanged(keyPath, keys.privateKey);
+      await writeIfChanged(certPath, certificate.certificatePem);
+
       const connectData = {
-        caCert: Buffer.from(rootCA, 'utf-8'),
-        privateKey: Buffer.from(keys.privateKey, 'utf-8'),
-        clientCert: Buffer.from(certificate.certificatePem, 'utf-8'),
+        caPath,
+        keyPath,
+        certPath,
         clientId: this.api.client_id,
         host: urls.hostname,
       };
