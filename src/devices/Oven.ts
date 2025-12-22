@@ -184,7 +184,7 @@ export default class Oven extends BaseDevice {
           callback();
           return;
         }
-        if (vNum > 9 || vNum < 1) {
+        if (vNum > 14 || vNum < 1) {
           this.inputID = 1;
         } else {
           this.inputID = vNum;

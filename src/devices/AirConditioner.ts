@@ -904,15 +904,8 @@ export default class AirConditioner extends BaseDevice {
 
   async setActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
-    let isOnNumeric: number;
-    if (typeof value === 'boolean') {
-      isOnNumeric = value ? 1 : 0;
-    } else if (typeof value === 'number') {
-      isOnNumeric = value ? 1 : 0;
-    } else {
-      this.logger.error('Invalid value for active state (expected boolean or number):', value);
-      return;
-    }
+    const isOn = normalizeBoolean(value);
+    const isOnNumeric = isOn ? 1 : 0;
     this.logger.debug('Set power on = ', isOnNumeric, ' current status = ', this.Status.isPowerOn);
     if ((this.Status.isPowerOn && isOnNumeric === 1) || (!this.Status.isPowerOn && isOnNumeric === 0)) {
       this.logger.debug('Power state already matches incoming value; skipping deviceControl.');
