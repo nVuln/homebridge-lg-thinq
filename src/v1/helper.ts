@@ -75,10 +75,23 @@ export default class Helper {
       const sampleData = device.deviceModel.data.ControlWifi?.action?.SetControl?.data || '[]';
       const decodedMonitor = device.snapshot.raw || {};
       decodedMonitor[key] = value;
-      // build data array of byte
-      const byteArray = new Uint8Array(JSON.parse(Object.keys(decodedMonitor).reduce((prev, key) => {
-        return prev.replace(new RegExp('{{'+key+'}}', 'g'), parseInt(decodedMonitor[key] || '0'));
-      }, sampleData)));
+      // build data array of byte (coerce booleans and non-numeric values safely)
+      let replaced = sampleData;
+      for (const p of Object.keys(decodedMonitor)) {
+        const raw = decodedMonitor[p];
+        let rep: string;
+        if (raw === null || raw === undefined) {
+          rep = '0';
+        } else if (typeof raw === 'boolean') {
+          rep = raw ? '1' : '0';
+        } else {
+          rep = String(raw);
+        }
+        const num = Number(rep);
+        const numVal = Number.isNaN(num) ? 0 : num;
+        replaced = replaced.replace(new RegExp('{{' + p + '}}', 'g'), String(numVal));
+      }
+      const byteArray = new Uint8Array(JSON.parse(replaced));
       Object.assign(data, {
         value: 'ControlData',
         data: Buffer.from(String.fromCharCode(...byteArray)).toString('base64'),
@@ -105,4 +118,29 @@ export function loopupEnum(deviceModel: DeviceModel, decodedMonitor: any, key: a
   }
 
   return deviceModel.enumName(key, decodedMonitor[key]);
+}
+
+export function normalizeBoolean(value: any): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  if (typeof value === 'string') {
+    const v = value.toLowerCase();
+    return v === '1' || v === 'true' || v === 'on';
+  }
+  return !!value;
+}
+
+export function normalizeNumber(value: any): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === 'number') {
+    return value;
+  }
+  const n = Number(value);
+  return Number.isNaN(n) ? null : n;
 }

@@ -3,7 +3,7 @@ import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { EnumValue, RangeValue, ValueType } from '../lib/DeviceModel.js';
-import { cToF, fToC } from '../helper.js';
+import { cToF, fToC, normalizeBoolean, normalizeNumber } from '../helper.js';
 
 export enum ACModelType {
   AWHP = 'AWHP',
@@ -385,10 +385,7 @@ export default class AirConditioner extends BaseDevice {
    */
   async setEnergySaveActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
-    if (typeof value !== 'boolean') {
-      this.logger.error('Invalid value for energy save mode:', value);
-      return;
-    }
+    const enabled = normalizeBoolean(value);
     const status = this.Status;
     if (!(status.isPowerOn && status.opMode === 0)) {
       this.logger.debug(`Energy save mode is not supported in the current state. Power: ${status.isPowerOn}, Mode: ${status.opMode}`);
@@ -397,9 +394,9 @@ export default class AirConditioner extends BaseDevice {
     try {
       await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.powerSave.basic',
-        dataValue: value ? 1 : 0,
+        dataValue: enabled ? 1 : 0,
       });
-      this.accessory.context.device.data.snapshot['airState.powerSave.basic'] = value ? 1 : 0;
+      this.accessory.context.device.data.snapshot['airState.powerSave.basic'] = enabled ? 1 : 0;
       this.updateAccessoryenergySaveModeModelsCharacteristic();
     } catch (error) {
       this.logger.error('Error setting energy save mode:', error);
@@ -414,10 +411,7 @@ export default class AirConditioner extends BaseDevice {
   async setAirCleanActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
     const status = this.Status;
-    if (typeof value !== 'boolean') {
-      this.logger.error('Invalid value for air clean mode:', value);
-      return;
-    }
+    const enabled = normalizeBoolean(value);
     if (!(status.isPowerOn && status.opMode === 0)) {
       this.logger.debug(`Air clean mode is not supported in the current state. Power: ${status.isPowerOn}, Mode: ${status.opMode}`);
       return;
@@ -425,9 +419,9 @@ export default class AirConditioner extends BaseDevice {
     try {
       await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.wMode.airClean',
-        dataValue: value ? 1 : 0,
+        dataValue: enabled ? 1 : 0,
       });
-      this.accessory.context.device.data.snapshot['airState.wMode.airClean'] = value ? 1 : 0;
+      this.accessory.context.device.data.snapshot['airState.wMode.airClean'] = enabled ? 1 : 0;
       this.updateAccessoryairCleanModelsCharacteristic();
     } catch (error) {
       this.logger.error('Error setting air clean mode:', error);
@@ -441,10 +435,7 @@ export default class AirConditioner extends BaseDevice {
    */
   async setQuietModeActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
-    if (typeof value !== 'boolean') {
-      this.logger.error('Invalid value for quiet mode:', value);
-      return;
-    }
+    const enabled = normalizeBoolean(value);
     const status = this.Status;
     if (!(status.isPowerOn && status.opMode === 0)) {
       this.logger.debug(`Quiet mode is not supported in the current state. Power: ${status.isPowerOn}, Mode: ${status.opMode}`);
@@ -453,9 +444,9 @@ export default class AirConditioner extends BaseDevice {
     try {
       await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.miscFuncState.silentAWHP',
-        dataValue: value ? 1 : 0,
+        dataValue: enabled ? 1 : 0,
       });
-      this.accessory.context.device.data.snapshot['airState.miscFuncState.silentAWHP'] = value ? 1 : 0;
+      this.accessory.context.device.data.snapshot['airState.miscFuncState.silentAWHP'] = enabled ? 1 : 0;
       this.updateAccessoryquietModeModelsCharacteristic();
     } catch (error) {
       this.logger.error('Error setting quiet mode:', error);
@@ -477,10 +468,7 @@ export default class AirConditioner extends BaseDevice {
    */
   async setJetModeActive(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
-    if (typeof value !== 'boolean') {
-      this.logger.error('Invalid value for jet mode:', value);
-      return;
-    }
+    const enabled = normalizeBoolean(value);
     const status = this.Status;
     if (!(status.isPowerOn && status.opMode === 0)) {
       this.logger.debug(`Jet mode is not supported in the current state. Power: ${status.isPowerOn}, Mode: ${status.opMode}`);
@@ -489,9 +477,9 @@ export default class AirConditioner extends BaseDevice {
     try {
       await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.wMode.jet',
-        dataValue: value ? 1 : 0,
+        dataValue: enabled ? 1 : 0,
       });
-      this.accessory.context.device.data.snapshot['airState.wMode.jet'] = value ? 1 : 0;
+      this.accessory.context.device.data.snapshot['airState.wMode.jet'] = enabled ? 1 : 0;
       this.updateAccessoryJetModeCharacteristic();
     } catch (error) {
       this.logger.error('Error setting jet mode:', error);
@@ -526,7 +514,9 @@ export default class AirConditioner extends BaseDevice {
     const device: Device = this.accessory.context.device;
     const { TargetFanState } = this.platform.Characteristic;
     try {
-      const windStrength = (value === TargetFanState.AUTO) ? FAN_SPEED_AUTO : FanSpeed.HIGH;
+      const vNum = normalizeNumber(value);
+      const isAuto = (vNum !== null) ? (vNum === TargetFanState.AUTO) : normalizeBoolean(value);
+      const windStrength = isAuto ? FAN_SPEED_AUTO : FanSpeed.HIGH;
       await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.windStrength',
         dataValue: windStrength,
@@ -967,13 +957,13 @@ export default class AirConditioner extends BaseDevice {
       return;
     }
     const device: Device = this.accessory.context.device;
-
-    if (typeof value !== 'number') {
+    const vNum = normalizeNumber(value);
+    if (vNum === null) {
       this.logger.error('Invalid temperature value: ', value);
       return;
     }
     // Calculate LG temperature with the status helper
-    const temperatureLG = status.convertTemperatureCelsiusFromHomekitToLG(value);
+    const temperatureLG = status.convertTemperatureCelsiusFromHomekitToLG(vNum);
     if (typeof temperatureLG !== 'number' || isNaN(temperatureLG)) {
       this.logger.error('Converted temperature is not a valid number:', temperatureLG);
       return;
@@ -1018,8 +1008,11 @@ export default class AirConditioner extends BaseDevice {
     if (!this.Status.isPowerOn) {
       return;
     }
-
-    const speedValue = Math.max(1, Math.round(value as number));
+    const vNum = normalizeNumber(value);
+    if (vNum === null) {
+      return;
+    }
+    const speedValue = Math.max(1, Math.round(vNum));
 
     this.logger.debug('Set fan speed = ', speedValue);
     const device: Device = this.accessory.context.device;

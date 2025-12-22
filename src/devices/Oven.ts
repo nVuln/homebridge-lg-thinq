@@ -6,6 +6,7 @@ import { LGThinQHomebridgePlatform } from '../platform.js';
 import { Logger, Perms, PlatformAccessory, Service } from 'homebridge';
 import { DeviceModel } from '../lib/DeviceModel.js';
 import { Device } from '../lib/Device.js';
+import { normalizeBoolean, normalizeNumber } from '../helper.js';
 
 enum OvenState {
   INITIAL = '@OV_STATE_INITIAL_W',
@@ -165,7 +166,8 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === 0) {
+        const enabled = normalizeBoolean(value);
+        if (!enabled) {
           this.stopOven();
         } else {
           this.sendOvenCommand();
@@ -174,18 +176,18 @@ export default class Oven extends BaseDevice {
       });
     this.ovenService
       .setCharacteristic(this.platform.Characteristic.ActiveIdentifier, this.inputID);
-    this.ovenService
-      .getCharacteristic(this.platform.Characteristic.ActiveIdentifier)
+    this.ovenService.getCharacteristic(this.platform.Characteristic.ActiveIdentifier)
       .on('set', (inputIdentifier, callback) => {
-        if (typeof inputIdentifier !== 'number') {
+        const vNum = normalizeNumber(inputIdentifier);
+        if (vNum === null) {
           this.platform.log.error('ActiveIdentifier is not a number');
           callback();
           return;
         }
-        if (inputIdentifier > 14 || inputIdentifier < 1) {
+        if (vNum > 9 || vNum < 1) {
           this.inputID = 1;
         } else {
-          this.inputID = inputIdentifier;
+          this.inputID = vNum;
         }
         callback();
       })
@@ -322,7 +324,8 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === 0) {
+        const enabled = normalizeBoolean(value);
+        if (!enabled) {
           this.stopOven();
           this.ovenTimerService.updateCharacteristic(Characteristic.Active, 0);
           this.ovenTimerService.updateCharacteristic(Characteristic.RemainingDuration, 0);
@@ -351,14 +354,15 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (typeof value !== 'number') {
+        const vNum = normalizeNumber(value);
+        if (vNum === null) {
           this.platform.log.error('SetDuration is not a number');
           callback();
           return;
         }
         this.pauseUpdate = true;
-        this.platform.log.debug('Cooking Duration set to to: ' + this.secondsToTime(value));
-        this.ovenCommandList.ovenSetDuration = value;
+        this.platform.log.debug('Cooking Duration set to to: ' + this.secondsToTime(vNum));
+        this.ovenCommandList.ovenSetDuration = vNum;
         callback(null);
       });
     this.ovenAlarmService = this.accessory.getService('Oven Timer') ||
@@ -376,7 +380,8 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === 0) {
+        const enabled = normalizeBoolean(value);
+        if (!enabled) {
           this.timerAlarmSec = 0;
           this.sendTimerCommand(0);
           this.ovenAlarmService.updateCharacteristic(Characteristic.Active, 0);
@@ -408,15 +413,16 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (typeof value !== 'number') {
+        let vNum = normalizeNumber(value);
+        if (vNum === null) {
           this.platform.log.error('SetDuration is not a number');
           callback();
           return;
         }
-        if (value >= (86400 / 2)) {
-          value = (86400 / 2) - 1;
+        if (vNum >= (86400 / 2)) {
+          vNum = (86400 / 2) - 1;
         }
-        this.timerAlarmSec = value;
+        this.timerAlarmSec = vNum;
         callback(null);
       });
     ////////////Buttons
@@ -448,7 +454,8 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.ovenCommandList.ovenMode = 'CONVECTION_BAKE';
         }
         this.updateOvenModeSwitch();
@@ -465,7 +472,8 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.ovenCommandList.ovenMode = 'CONVECTION_ROST';
         }
         this.updateOvenModeSwitch();
@@ -482,7 +490,8 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.ovenCommandList.ovenMode = 'FROZEN_MEAL';
         }
         this.updateOvenModeSwitch();
@@ -498,7 +507,8 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.ovenCommandList.ovenMode = 'AIR_FRY';
         }
         this.updateOvenModeSwitch();
@@ -514,7 +524,8 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.ovenCommandList.ovenMode = 'AIR_SOUSVIDE';
         }
         this.updateOvenModeSwitch();
@@ -531,7 +542,8 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.ovenCommandList.ovenMode = 'WARM';
         }
         this.updateOvenModeSwitch();
@@ -547,7 +559,8 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.stopOven();
         }
         setTimeout(() => {
@@ -570,13 +583,9 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (typeof value !== 'boolean') {
-          this.platform.log.error('Monitor Only is not a boolean');
-          callback();
-          return;
-        }
-        this.homekitMonitorOnly = value;
-        this.monitorOnly = value;
+        const b = normalizeBoolean(value);
+        this.homekitMonitorOnly = b;
+        this.monitorOnly = b;
         callback(null);
       });
 
@@ -590,7 +599,8 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.sendOvenCommand();
           setTimeout(() => {
             this.startOvenSwitch.updateCharacteristic(this.platform.Characteristic.On, false);
@@ -610,7 +620,8 @@ export default class Oven extends BaseDevice {
           callback(null, currentValue);
         })
         .on('set', (value, callback) => {
-          if (value === true) {
+          const enabled = normalizeBoolean(value);
+          if (enabled) {
             this.ovenCommandList.ovenKeepWarm = 'ENABLE';
           } else {
             this.ovenCommandList.ovenKeepWarm = 'DISABLE';
@@ -688,7 +699,8 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === 0) {
+        const enabled = normalizeBoolean(value);
+        if (!enabled) {
           this.stopOven();
         } else {
           this.pauseUpdate = true;
@@ -722,15 +734,16 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (typeof value !== 'number') {
+        const vNum = normalizeNumber(value);
+        if (vNum === null) {
           this.platform.log.error('TargetTemperature is not a number');
           callback();
           return;
         }
         if (this.Status.data?.upperCurrentTemperatureUnit.includes('FAH')) {
-          this.ovenCommandList.ovenSetTemperature = this.tempCtoF(value);
+          this.ovenCommandList.ovenSetTemperature = this.tempCtoF(vNum);
         } else {
-          this.ovenCommandList.ovenSetTemperature = Math.round(value);
+          this.ovenCommandList.ovenSetTemperature = Math.round(vNum);
         }
         callback(null);
       });
@@ -778,15 +791,16 @@ export default class Oven extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (typeof value !== 'number') {
-          this.platform.log.error('TargetTemperature is not a number');
+        const v = normalizeNumber(value);
+        if (v === null) {
+          this.platform.log.error('TargetTemperature is not a valid number');
           callback(null);
           return;
         }
         if (this.Status.data?.upperCurrentTemperatureUnit.includes('FAH')) {
-          this.ovenCommandList.probeTemperature = this.tempCtoF(value);
+          this.ovenCommandList.probeTemperature = this.tempCtoF(v);
         } else {
-          this.ovenCommandList.probeTemperature = Math.round(value);
+          this.ovenCommandList.probeTemperature = Math.round(v);
         }
         callback(null);
       });
