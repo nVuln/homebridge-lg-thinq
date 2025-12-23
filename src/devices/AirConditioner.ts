@@ -3,7 +3,7 @@ import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { EnumValue, RangeValue, ValueType } from '../lib/DeviceModel.js';
-import { cToF, fToC, normalizeBoolean, normalizeNumber } from '../helper.js';
+import { cToF, fToC, normalizeBoolean, normalizeNumber, safeParseInt } from '../helper.js';
 
 export enum ACModelType {
   AWHP = 'AWHP',
@@ -1009,7 +1009,7 @@ export default class AirConditioner extends BaseDevice {
 
     this.logger.debug('Set fan speed = ', speedValue);
     const device: Device = this.accessory.context.device;
-    const windStrength = parseInt(Object.keys(FanSpeed)[speedValue - 1]) || FanSpeed.HIGH;
+    const windStrength = safeParseInt(Object.keys(FanSpeed)[speedValue - 1], FanSpeed.HIGH);
     try {
       await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.windStrength',
@@ -1089,7 +1089,7 @@ export default class AirConditioner extends BaseDevice {
     }
 
     for (let i = 0; i < this.config.ac_buttons.length; i++) {
-      this.setupButtonOpmode(device, this.config.ac_buttons[i].name, parseInt(this.config.ac_buttons[i].op_mode));
+      this.setupButtonOpmode(device, this.config.ac_buttons[i].name, safeParseInt(this.config.ac_buttons[i].op_mode));
     }
   }
 
@@ -1218,10 +1218,7 @@ export class ACStatus {
   }
 
   public get currentRelativeHumidity() {
-    const humidity = parseInt(this.data['airState.humidity.current']);
-    if (isNaN(humidity)) {
-      return 0;
-    }
+    const humidity = safeParseInt(this.data['airState.humidity.current']);
     if (humidity > 100) {
       return humidity / 10;
     }
@@ -1245,9 +1242,9 @@ export class ACStatus {
 
     return {
       isOn: this.isPowerOn || this.data['airState.quality.sensorMon'],
-      overall: parseInt(this.data['airState.quality.overall']),
-      PM2: parseInt(this.data['airState.quality.PM2'] || '0'),
-      PM10: parseInt(this.data['airState.quality.PM10'] || '0'),
+      overall: safeParseInt(this.data['airState.quality.overall']),
+      PM2: safeParseInt(this.data['airState.quality.PM2']),
+      PM10: safeParseInt(this.data['airState.quality.PM10']),
     };
   }
 
