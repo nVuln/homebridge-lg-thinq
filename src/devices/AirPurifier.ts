@@ -2,6 +2,7 @@ import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { AccessoryContext, BaseDevice } from '../baseDevice.js';
+import { safeParseInt } from '../helper.js';
 
 export enum RotateSpeed {
   LOW = 2,
@@ -173,7 +174,7 @@ export default class AirPurifier extends BaseDevice {
     this.platform.log.debug('Set Rotation Speed ->', value);
     const device: Device = this.accessory.context.device;
     const values = Object.keys(RotateSpeed);
-    const windStrength = parseInt(values[Math.round((value as number)) - 1]) || RotateSpeed.EXTRA;
+    const windStrength = safeParseInt(values[Math.round((value as number)) - 1], RotateSpeed.EXTRA);
     this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.windStrength',
       dataValue: windStrength,
@@ -292,14 +293,14 @@ export class AirPurifierStatus {
   public get airQuality() {
     return {
       isOn: this.isPowerOn || !!this.data['airState.quality.sensorMon'],
-      overall: parseInt(this.data['airState.quality.overall']),
-      PM2: parseInt(this.data['airState.quality.PM2'] || '0'),
-      PM10: parseInt(this.data['airState.quality.PM10'] || '0'),
+      overall: safeParseInt(this.data['airState.quality.overall']),
+      PM2: safeParseInt(this.data['airState.quality.PM2']),
+      PM10: safeParseInt(this.data['airState.quality.PM10']),
     };
   }
 
   public get rotationSpeed() {
-    const index = Object.keys(RotateSpeed).indexOf(parseInt(this.data['airState.windStrength']).toString());
+    const index = Object.keys(RotateSpeed).indexOf(safeParseInt(this.data['airState.windStrength']).toString());
     return index !== -1 ? index + 1 : Object.keys(RotateSpeed).length / 2;
   }
 
