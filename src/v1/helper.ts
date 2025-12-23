@@ -75,10 +75,23 @@ export default class Helper {
       const sampleData = device.deviceModel.data.ControlWifi?.action?.SetControl?.data || '[]';
       const decodedMonitor = device.snapshot.raw || {};
       decodedMonitor[key] = value;
-      // build data array of byte
-      const byteArray = new Uint8Array(JSON.parse(Object.keys(decodedMonitor).reduce((prev, key) => {
-        return prev.replace(new RegExp('{{'+key+'}}', 'g'), parseInt(decodedMonitor[key] || '0'));
-      }, sampleData)));
+      // build data array of byte (coerce booleans and non-numeric values safely)
+      let replaced = sampleData;
+      for (const p of Object.keys(decodedMonitor)) {
+        const raw = decodedMonitor[p];
+        let rep: string;
+        if (raw === null || raw === undefined) {
+          rep = '0';
+        } else if (typeof raw === 'boolean') {
+          rep = raw ? '1' : '0';
+        } else {
+          rep = String(raw);
+        }
+        const num = Number(rep);
+        const numVal = Number.isNaN(num) ? 0 : num;
+        replaced = replaced.replace(new RegExp('{{' + p + '}}', 'g'), String(numVal));
+      }
+      const byteArray = new Uint8Array(JSON.parse(replaced));
       Object.assign(data, {
         value: 'ControlData',
         data: Buffer.from(String.fromCharCode(...byteArray)).toString('base64'),
@@ -106,3 +119,5 @@ export function loopupEnum(deviceModel: DeviceModel, decodedMonitor: any, key: a
 
   return deviceModel.enumName(key, decodedMonitor[key]);
 }
+
+export { normalizeBoolean, normalizeNumber } from '../utils/normalize.js';

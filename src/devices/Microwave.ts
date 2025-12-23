@@ -6,6 +6,7 @@ import { Device } from '../lib/Device.js';
 import { DeviceModel } from '../lib/DeviceModel.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { Logger, PlatformAccessory, Service } from 'homebridge';
+import { normalizeBoolean, normalizeNumber } from '../helper.js';
 
 export default class Microwave extends BaseDevice {
   protected inputNameStatus = 'Microwave Status';
@@ -130,7 +131,8 @@ export default class Microwave extends BaseDevice {
     this.serviceLight.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Light');
     this.serviceLight.getCharacteristic(Characteristic.On)
       .on('set', (value, callback) => {
-        if (value === false) {
+        const enabled = normalizeBoolean(value);
+        if (!enabled) {
           this.lampLevel = 0;
           this.sendLightVentCommand();
         } else {
@@ -195,11 +197,11 @@ export default class Microwave extends BaseDevice {
     this.microwavePower.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Power');
     this.microwavePower.getCharacteristic(this.platform.Characteristic.On)
       .on('set', (value, callback) => {
-        if (value === false) {
+        const enabled = normalizeBoolean(value);
+        if (!enabled) {
           this.mwPower = 0;
         } else {
           this.mwPower = 100;
-
         }
         callback(null);
       })
@@ -240,7 +242,8 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === 0) {
+        const enabled = normalizeBoolean(value);
+        if (!enabled) {
           if (this.Status.data?.LWOState.includes('INITIAL')) {
             this.stopOven();
             this.timeOut = 1500;
@@ -269,15 +272,16 @@ export default class Microwave extends BaseDevice {
     this.ovenService
       .getCharacteristic(this.platform.Characteristic.ActiveIdentifier)
       .on('set', (inputIdentifier, callback) => {
-        if (typeof inputIdentifier !== 'number') {
+        const vNum = normalizeNumber(inputIdentifier);
+        if (vNum === null) {
           this.platform.log.error('ActiveIdentifier is not a number');
           callback();
           return;
         }
-        if (inputIdentifier > 9 || inputIdentifier < 1) {
+        if (vNum > 9 || vNum < 1) {
           this.inputID = 1;
         } else {
-          this.inputID = inputIdentifier as number;
+          this.inputID = vNum;
         }
         callback();
       })
@@ -632,7 +636,8 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === 0) {
+        const enabled = normalizeBoolean(value);
+        if (!enabled) {
           this.stopOven();
           this.ovenTimerService.updateCharacteristic(Characteristic.Active, 0);
           this.ovenTimerService.updateCharacteristic(Characteristic.RemainingDuration, 0);
@@ -661,14 +666,15 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (typeof value !== 'number') {
+        const vNum = normalizeNumber(value);
+        if (vNum === null) {
           this.platform.log.error('SetDuration is not a number');
           callback();
           return;
         }
         this.pauseUpdate = true;
-        this.platform.log.debug('Cooking Duration set to to: ' + this.secondsToTime(value));
-        this.ovenCommandList.ovenSetDuration = value as number;
+        this.platform.log.debug('Cooking Duration set to to: ' + this.secondsToTime(vNum));
+        this.ovenCommandList.ovenSetDuration = vNum;
         callback(null);
       });
     this.ovenAlarmService = this.accessory.getService('Microwave Timer') ||
@@ -686,7 +692,8 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === 0) {
+        const enabled = normalizeBoolean(value);
+        if (!enabled) {
           this.timerAlarmSec = 0;
           this.sendTimerCommand(0);
           this.ovenAlarmService.updateCharacteristic(Characteristic.Active, 0);
@@ -719,15 +726,16 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (typeof value !== 'number') {
+        let vNum = normalizeNumber(value);
+        if (vNum === null) {
           this.platform.log.error('SetDuration is not a number');
           callback();
           return;
         }
-        if (value >= 6000) {
-          value = 6000 - 1;
+        if (vNum >= 6000) {
+          vNum = 6000 - 1;
         }
-        this.timerAlarmSec = value as number;
+        this.timerAlarmSec = vNum;
         callback(null);
       });
 
@@ -810,7 +818,8 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.ovenCommandList.ovenMode = 'CONV_BAKE';
         }
         this.updateOvenModeSwitch();
@@ -827,7 +836,8 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.ovenCommandList.ovenMode = 'COMBI_ROAST';
         }
         this.updateOvenModeSwitch();
@@ -844,7 +854,8 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.ovenCommandList.ovenMode = 'TIME_DEFROST';
         }
         this.updateOvenModeSwitch();
@@ -860,7 +871,8 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.ovenCommandList.ovenMode = 'INVERTER_DEFROST';
         }
         this.updateOvenModeSwitch();
@@ -877,7 +889,8 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.ovenCommandList.ovenMode = 'AIRFRY';
         }
         this.updateOvenModeSwitch();
@@ -893,7 +906,8 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.ovenCommandList.ovenMode = 'PROOF';
         }
         this.updateOvenModeSwitch();
@@ -910,9 +924,9 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.ovenCommandList.ovenMode = 'WARM';
-          // this.timeModeCommand();
         }
         this.updateOvenModeSwitch();
         callback(null);
@@ -927,7 +941,8 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.stopOven();
         }
         setTimeout(() => {
@@ -946,7 +961,8 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === true) {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
           this.sendOvenCommand();
           setTimeout(() => {
             this.startOvenSwitch.updateCharacteristic(this.platform.Characteristic.On, false);
@@ -969,7 +985,8 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (value === 0) {
+        const enabled = normalizeBoolean(value);
+        if (!enabled) {
           this.stopOven();
         } else {
           this.pauseUpdate = true;
@@ -1002,15 +1019,16 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        if (typeof value !== 'number') {
+        const vNum = normalizeNumber(value);
+        if (vNum === null) {
           this.platform.log.error('TargetTemperature is not a number');
           callback();
           return;
         }
         if (this.Status.data?.LWOTargetTemperatureUnit.includes('FAH')) {
-          this.ovenCommandList.ovenSetTemperature = Math.round(this.tempCtoF(value) / 5) * 5;
+          this.ovenCommandList.ovenSetTemperature = Math.round(this.tempCtoF(vNum) / 5) * 5;
         } else {
-          this.ovenCommandList.ovenSetTemperature = Math.round((value as number) / 5) * 5;
+          this.ovenCommandList.ovenSetTemperature = Math.round(vNum / 5) * 5;
         }
         callback(null);
       });

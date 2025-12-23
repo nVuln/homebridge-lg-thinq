@@ -3,11 +3,11 @@ import { API } from './API.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { Device, DeviceData } from './Device.js';
 import { DeviceType, PlatformType } from './constants.js';
+import { DeviceModel, ValueType } from './DeviceModel.js';
 import { randomUUID } from 'crypto';
 import * as Path from 'path';
 import * as FS from 'fs';
 import forge from 'node-forge';
-import { DeviceModel } from './DeviceModel.js';
 import Helper from '../v1/helper.js';
 import { MonitorError, NotConnectedError } from '../errors/index.js';
 import { PLUGIN_NAME } from '../settings.js';
@@ -174,6 +174,83 @@ export class ThinQ {
     device: string | Device, values: Record<string, any>,
     command: 'Set' | 'Operation' = 'Set', ctrlKey = 'basicCtrl', ctrlPath = 'control-sync') {
     const id = device instanceof Device ? device.id : device;
+    const model: DeviceModel | undefined = this.deviceModel[id];
+
+    const coerceValue = (k: string, v: any) => {
+      if (!model) {
+        return v;
+      }
+      try {
+        const vm = model.value(k);
+        if (!vm) {
+          return v;
+        }
+        switch (vm.type) {
+        case ValueType.Bit: {
+          if (typeof v === 'boolean') {
+            return v ? 1 : 0;
+          }
+          if (typeof v === 'string') {
+            const n = Number(v);
+            return Number.isNaN(n) ? (v === '1' ? 1 : 0) : n;
+          }
+          return v;
+        }
+        case ValueType.Range: {
+          if (v === null || v === undefined) {
+            return v;
+          }
+          if (typeof v === 'number') {
+            return v;
+          }
+          const nv = Number(v);
+          return Number.isNaN(nv) ? v : nv;
+        }
+        case ValueType.Enum: {
+          if (typeof v === 'string') {
+            const enumKey = model.enumValue(k, v);
+            return enumKey !== null ? enumKey : v;
+          }
+          return v;
+        }
+        default: {
+          return v;
+        }
+        }
+      } catch (e) {
+        return v;
+      }
+    };
+
+    if (values && typeof values === 'object') {
+      if ('dataKey' in values && values.dataKey && 'dataValue' in values) {
+        try {
+          values.dataValue = coerceValue(values.dataKey, values.dataValue);
+        } catch (e) {
+          // ignore
+        }
+      }
+      if ('dataSetList' in values && values.dataSetList && typeof values.dataSetList === 'object') {
+        for (const k of Object.keys(values.dataSetList)) {
+          values.dataSetList[k] = coerceValue(k, values.dataSetList[k]);
+        }
+      }
+    }
+
+    const normalizeBooleans = (obj: any) => {
+      if (obj && typeof obj === 'object') {
+        for (const k of Object.keys(obj)) {
+          const v = obj[k];
+          if (typeof v === 'boolean') {
+            obj[k] = v ? 1 : 0;
+          } else if (v && typeof v === 'object') {
+            normalizeBooleans(v);
+          }
+        }
+      }
+    };
+    normalizeBooleans(values);
+
     const response = await this.api.sendCommandToDevice(id, values, command, ctrlKey, ctrlPath);
     if (response.resultCode === '0000') {
       this.logger.debug('ThinQ Device Received the Command');

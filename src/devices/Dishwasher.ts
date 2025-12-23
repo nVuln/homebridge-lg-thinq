@@ -2,6 +2,7 @@ import { AccessoryContext, BaseDevice } from '../baseDevice.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
+import { normalizeNumber } from '../helper.js';
 import { WasherDryerStatus } from './WasherDryer.js';
 
 export default class Dishwasher extends BaseDevice {
@@ -88,15 +89,16 @@ export default class Dishwasher extends BaseDevice {
     this.tvService
       .getCharacteristic(this.platform.Characteristic.ActiveIdentifier)
       .on('set', (inputIdentifier, callback) => {
-        if (typeof inputIdentifier !== 'number') {
+        const vNum = normalizeNumber(inputIdentifier);
+        if (vNum === null) {
           this.platform.log.error('Dishwasher ActiveIdentifier is not a number');
           callback();
           return;
         }
-        if (inputIdentifier > 7 || inputIdentifier < 1) {
+        if (vNum > 7 || vNum < 1) {
           this.inputID = 1;
         } else {
-          this.inputID = inputIdentifier;
+          this.inputID = vNum;
         }
         callback();
       })

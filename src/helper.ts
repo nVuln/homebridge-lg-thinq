@@ -70,3 +70,4 @@ export function fToC(fahrenheit: number) {
 export function cToF(celsius: number) {
   return Math.round(celsius * 9 / 5 + 32);
 }
+export { normalizeBoolean, normalizeNumber } from './utils/normalize.js';
