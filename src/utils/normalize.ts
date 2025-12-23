@@ -23,7 +23,25 @@ export function normalizeNumber(value: any): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
+/**
+ * Safely parse an integer value, returning a fallback if the value is NaN.
+ */
+export function safeParseInt(value: any, fallback = 0): number {
+  const parsed = parseInt(value);
+  return isNaN(parsed) ? fallback : parsed;
+}
+
+/**
+ * Safely parse a float value, returning a fallback if the value is NaN.
+ */
+export function safeParseFloat(value: any, fallback = 0): number {
+  const parsed = parseFloat(value);
+  return isNaN(parsed) ? fallback : parsed;
+}
+
 export default {
   normalizeBoolean,
   normalizeNumber,
+  safeParseInt,
+  safeParseFloat,
 };
