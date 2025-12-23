@@ -4,6 +4,7 @@ import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebri
 import { Device } from '../lib/Device.js';
 import { EnumValue, RangeValue, ValueType } from '../lib/DeviceModel.js';
 import { cToF, fToC, normalizeBoolean, normalizeNumber, safeParseInt } from '../helper.js';
+import { AC_MODEL_FEATURES } from '../lib/constants.js';
 
 export enum ACModelType {
   AWHP = 'AWHP',
@@ -63,9 +64,12 @@ export default class AirConditioner extends BaseDevice {
   protected serviceQuietMode: Service | undefined;
   protected serviceEnergySaveMode: Service | undefined;
   protected serviceAirClean: Service | undefined;
-  protected jetModeModels = ['RAC_056905'];
-  protected quietModeModels = ['WINF_056905'];
-  protected energySaveModeModels = ['WINF_056905', 'RAC_056905'];
+  /** @deprecated Use AC_MODEL_FEATURES from lib/constants.js instead */
+  protected jetModeModels = AC_MODEL_FEATURES.jetMode;
+  /** @deprecated Use AC_MODEL_FEATURES from lib/constants.js instead */
+  protected quietModeModels = AC_MODEL_FEATURES.quietMode;
+  /** @deprecated Use AC_MODEL_FEATURES from lib/constants.js instead */
+  protected energySaveModeModels = AC_MODEL_FEATURES.energySaveMode;
   protected airCleanModels = ['RAC_056905'];
   protected currentTargetState = 2; // default target: COOL
 

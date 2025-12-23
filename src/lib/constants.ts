@@ -51,3 +51,28 @@ export enum DeviceType {
   HOMEROBOT = 9000,
   AERO_TOWER = 410,
 }
+
+/**
+ * Device state constants
+ */
+
+// States that indicate the washer/dryer is not actively running
+export const WASHER_NOT_RUNNING_STATUS = [
+  'COOLDOWN', 'POWEROFF', 'POWERFAIL', 'INITIAL', 'PAUSE', 'AUDIBLE_DIAGNOSIS',
+  'FIRMWARE', 'COURSE_DOWNLOAD', 'ERROR', 'END',
+];
+
+// States that indicate the styler is not actively running
+export const STYLER_NOT_RUNNING_STATUS = [
+  'POWEROFF', 'INITIAL', 'PAUSE', 'COMPLETE', 'ERROR', 'DIAGNOSIS',
+  'RESERVED', 'SLEEP', 'FOTA',
+];
+
+/**
+ * Model-specific feature lists for AirConditioner
+ */
+export const AC_MODEL_FEATURES = {
+  jetMode: ['RAC_056905'],
+  quietMode: ['WINF_056905'],
+  energySaveMode: ['WINF_056905', 'RAC_056905'],
+};

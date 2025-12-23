@@ -3,9 +3,10 @@ import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { DeviceModel } from '../lib/DeviceModel.js';
+import { STYLER_NOT_RUNNING_STATUS } from '../lib/constants.js';
 
-export const NOT_RUNNING_STATUS = ['POWEROFF', 'INITIAL', 'PAUSE', 'COMPLETE', 'ERROR', 'DIAGNOSIS', 'RESERVED',
-  'SLEEP', 'FOTA'];
+/** @deprecated Use STYLER_NOT_RUNNING_STATUS from lib/constants.js instead */
+export const NOT_RUNNING_STATUS = STYLER_NOT_RUNNING_STATUS;
 
 export default class Styler extends BaseDevice {
   protected serviceStyter;

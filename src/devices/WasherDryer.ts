@@ -2,12 +2,12 @@ import { AccessoryContext, BaseDevice } from '../baseDevice.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
-import { PlatformType } from '../lib/constants.js';
+import { PlatformType, WASHER_NOT_RUNNING_STATUS } from '../lib/constants.js';
 import { DeviceModel } from '../lib/DeviceModel.js';
 import { safeParseInt } from '../helper.js';
 
-export const NOT_RUNNING_STATUS = ['COOLDOWN', 'POWEROFF', 'POWERFAIL', 'INITIAL', 'PAUSE', 'AUDIBLE_DIAGNOSIS', 'FIRMWARE',
-  'COURSE_DOWNLOAD', 'ERROR', 'END'];
+/** @deprecated Use WASHER_NOT_RUNNING_STATUS from lib/constants.js instead */
+export const NOT_RUNNING_STATUS = WASHER_NOT_RUNNING_STATUS;
 
 export default class WasherDryer extends BaseDevice {
   public isRunning = false;
