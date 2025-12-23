@@ -3,7 +3,7 @@ import { CharacteristicValue } from 'homebridge';
 import { ACOperation } from '../transforms/AirState.js';
 import { Device } from '../../lib/Device.js';
 import { RangeValue } from '../../lib/DeviceModel.js';
-import { normalizeBoolean, normalizeNumber } from '../helper.js';
+import { normalizeBoolean, normalizeNumber, safeParseInt } from '../helper.js';
 
 export default class AC extends AirConditioner {
 
@@ -98,7 +98,7 @@ export default class AC extends AirConditioner {
 
     const speedValue = Math.max(1, Math.round(vNum));
     const device: Device = this.accessory.context.device;
-    const windStrength = parseInt(Object.keys(FanSpeed)[speedValue - 1]) || FanSpeed.HIGH;
+    const windStrength = safeParseInt(Object.keys(FanSpeed)[speedValue - 1], FanSpeed.HIGH);
 
     await this.platform.ThinQ?.thinq1DeviceControl(device, 'WindStrength', windStrength);
   }

@@ -120,4 +120,4 @@ export function loopupEnum(deviceModel: DeviceModel, decodedMonitor: any, key: a
   return deviceModel.enumName(key, decodedMonitor[key]);
 }
 
-export { normalizeBoolean, normalizeNumber } from '../utils/normalize.js';
+export { normalizeBoolean, normalizeNumber, safeParseInt, safeParseFloat } from '../utils/normalize.js';
