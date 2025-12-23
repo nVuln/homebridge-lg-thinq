@@ -127,13 +127,14 @@ export default class AirPurifier extends BaseDevice {
 
     const device: Device = this.accessory.context.device;
     const isOn = value as boolean ? 1 : 0;
-    this.platform.ThinQ?.deviceControl(device.id, {
+    const result = await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.miscFuncState.airFast',
       dataValue: isOn as number,
-    }).then(() => {
+    });
+    if (result) {
       device.data.snapshot['airState.miscFuncState.airFast'] = isOn as number;
       this.updateAccessoryCharacteristic(device);
-    });
+    }
   }
 
   async setActive(value: CharacteristicValue) {
@@ -144,13 +145,14 @@ export default class AirPurifier extends BaseDevice {
     }
 
     this.platform.log.debug('Set Active State ->', value);
-    this.platform.ThinQ?.deviceControl(device.id, {
+    const result = await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.operation',
       dataValue: isOn as number,
-    }).then(() => {
+    });
+    if (result) {
       device.data.snapshot['airState.operation'] = isOn as number;
       this.updateAccessoryCharacteristic(device);
-    });
+    }
   }
 
   async setTargetAirPurifierState(value: CharacteristicValue) {
@@ -160,7 +162,7 @@ export default class AirPurifier extends BaseDevice {
     }
 
     this.platform.log.debug('Set Target State ->', value);
-    this.platform.ThinQ?.deviceControl(device.id, {
+    await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.opMode',
       dataValue: value as boolean ? 16 : 14,
     });
@@ -175,13 +177,14 @@ export default class AirPurifier extends BaseDevice {
     const device: Device = this.accessory.context.device;
     const values = Object.keys(RotateSpeed);
     const windStrength = safeParseInt(values[Math.round((value as number)) - 1], RotateSpeed.EXTRA);
-    this.platform.ThinQ?.deviceControl(device.id, {
+    const result = await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.windStrength',
       dataValue: windStrength,
-    }).then(() => {
+    });
+    if (result) {
       device.data.snapshot['airState.windStrength'] = windStrength;
       this.updateAccessoryCharacteristic(device);
-    });
+    }
   }
 
   async setSwingMode(value: CharacteristicValue) {
@@ -191,13 +194,14 @@ export default class AirPurifier extends BaseDevice {
 
     const device: Device = this.accessory.context.device;
     const isSwing = value as boolean ? 1 : 0;
-    this.platform.ThinQ?.deviceControl(device.id, {
+    const result = await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.circulate.rotate',
       dataValue: isSwing,
-    }).then(() => {
+    });
+    if (result) {
       device.data.snapshot['airState.circulate.rotate'] = isSwing;
       this.updateAccessoryCharacteristic(device);
-    });
+    }
   }
 
   async setLight(value: CharacteristicValue) {
@@ -218,13 +222,14 @@ export default class AirPurifier extends BaseDevice {
       return;
     }
 
-    this.platform.ThinQ?.deviceControl(device.id, {
+    const result = await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey,
       dataValue: isLightOn,
-    }).then(() => {
+    });
+    if (result) {
       device.data.snapshot[dataKey] = isLightOn;
       this.updateAccessoryCharacteristic(device);
-    });
+    }
   }
 
   public updateAccessoryCharacteristic(device: Device) {
