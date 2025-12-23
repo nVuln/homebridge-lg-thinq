@@ -3,7 +3,7 @@ import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebri
 import { Device } from '../lib/Device.js';
 import { AccessoryContext, BaseDevice } from '../baseDevice.js';
 import { DeviceModel } from '../lib/DeviceModel.js';
-import { cToF, fToC } from '../helper.js';
+import { cToF, fToC, safeParseInt } from '../helper.js';
 
 export default class Refrigerator extends BaseDevice {
   protected serviceFreezer: Service | undefined;
@@ -286,10 +286,10 @@ export default class Refrigerator extends BaseDevice {
     const values = Object.values(valueMapping)
       .map(value => {
         if (value && typeof value === 'object' && 'label' in value) {
-          return parseInt(value.label as string);
+          return safeParseInt(value.label as string, NaN);
         }
 
-        return parseInt(value as string);
+        return safeParseInt(value as string, NaN);
       })
       .filter(value => {
         return !isNaN(value);
@@ -325,7 +325,7 @@ export default class Refrigerator extends BaseDevice {
       dataValue: null,
       dataSetList: {
         refState: {
-          [key]: parseInt(temp),
+          [key]: safeParseInt(temp),
           tempUnit: this.Status.tempUnit,
         },
       },
@@ -340,18 +340,18 @@ export class RefrigeratorStatus {
 
   public get freezerTemperature() {
     if (this.tempUnit === 'FAHRENHEIT') {
-      return fToC(parseInt(`${this.deviceModel.lookupMonitorValue2('freezerTemp_F', this.data?.freezerTemp, '0')}`));
+      return fToC(safeParseInt(this.deviceModel.lookupMonitorValue2('freezerTemp_F', this.data?.freezerTemp, '0')));
     }
 
-    return parseInt(`${this.deviceModel.lookupMonitorValue2('freezerTemp_C', this.data?.freezerTemp, '0')}`);
+    return safeParseInt(this.deviceModel.lookupMonitorValue2('freezerTemp_C', this.data?.freezerTemp, '0'));
   }
 
   public get fridgeTemperature() {
     if (this.tempUnit === 'FAHRENHEIT') {
-      return fToC(parseInt(`${this.deviceModel.lookupMonitorValue2('fridgeTemp_F', this.data?.fridgeTemp, '0')}`));
+      return fToC(safeParseInt(this.deviceModel.lookupMonitorValue2('fridgeTemp_F', this.data?.fridgeTemp, '0')));
     }
 
-    return parseInt(`${this.deviceModel.lookupMonitorValue2('fridgeTemp_C', this.data?.fridgeTemp, '0')}`);
+    return safeParseInt(this.deviceModel.lookupMonitorValue2('fridgeTemp_C', this.data?.fridgeTemp, '0'));
   }
 
   public get isDoorClosed() {
