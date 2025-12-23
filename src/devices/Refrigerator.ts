@@ -320,17 +320,21 @@ export default class Refrigerator extends BaseDevice {
 
   async setTemperature(key: string, temp: string) {
     const device: Device = this.accessory.context.device;
-    await this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: null,
-      dataValue: null,
-      dataSetList: {
-        refState: {
-          [key]: safeParseInt(temp),
-          tempUnit: this.Status.tempUnit,
+    try {
+      await this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: null,
+        dataValue: null,
+        dataSetList: {
+          refState: {
+            [key]: safeParseInt(temp),
+            tempUnit: this.Status.tempUnit,
+          },
         },
-      },
-      dataGetList: null,
-    });
+        dataGetList: null,
+      });
+    } catch (error) {
+      this.logger.error(`[${device.name}] Error setting temperature:`, error);
+    }
   }
 }
 

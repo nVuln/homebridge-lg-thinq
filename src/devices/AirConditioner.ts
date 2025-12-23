@@ -1067,10 +1067,16 @@ export default class AirConditioner extends BaseDevice {
   }
 
   async setOpMode(deviceId: string, opMode: number): Promise<boolean> {
-    return await this.platform.ThinQ?.deviceControl(deviceId, {
-      dataKey: 'airState.opMode',
-      dataValue: opMode,
-    });
+    try {
+      const result = await this.platform.ThinQ?.deviceControl(deviceId, {
+        dataKey: 'airState.opMode',
+        dataValue: opMode,
+      });
+      return !!result;
+    } catch (error) {
+      this.logger.error('Error setting operation mode:', error);
+      return false;
+    }
   }
 
   protected isJetModeEnabled(model: string) {

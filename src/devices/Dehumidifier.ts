@@ -114,12 +114,18 @@ export default class Dehumidifier extends BaseDevice {
     const device: Device = this.accessory.context.device;
     const values = Object.keys(RotateSpeed);
     const windStrength = safeParseInt(values[Math.round((value as number)) - 1], RotateSpeed.HIGH);
-    this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: 'airState.windStrength',
-      dataValue: windStrength,
-    });
-    device.data.snapshot['airState.windStrength'] = windStrength;
-    this.updateAccessoryCharacteristic(device);
+    try {
+      const result = await this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: 'airState.windStrength',
+        dataValue: windStrength,
+      });
+      if (result) {
+        device.data.snapshot['airState.windStrength'] = windStrength;
+        this.updateAccessoryCharacteristic(device);
+      }
+    } catch (error) {
+      this.platform.log.error('Error setting dehumidifier speed:', error);
+    }
   }
 
   public updateAccessoryCharacteristic(device: Device) {
