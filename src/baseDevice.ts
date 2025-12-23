@@ -1,7 +1,9 @@
 import { LGThinQHomebridgePlatform } from './platform.js';
-import { HAPStatus, Logger, PlatformAccessory } from 'homebridge';
+import { HAPStatus, Logger, PlatformAccessory, Service, WithUUID } from 'homebridge';
 import { Device } from './lib/Device.js';
 import { EventEmitter } from 'events';
+
+type ServiceConstructor = WithUUID<typeof Service>;
 
 export interface DeviceControlPayload {
   dataKey: string | null;
@@ -66,6 +68,56 @@ export class BaseDevice extends EventEmitter {
       this.logger.error(`[${device.name}] Device control failed:`, error);
       throw new this.platform.api.hap.HapStatusError(HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     }
+  }
+
+  /**
+   * Get or create a service with the given type and name.
+   * Automatically adds ConfiguredName characteristic.
+   */
+  protected getOrCreateService(
+    serviceType: ServiceConstructor,
+    name: string,
+    subType?: string,
+  ): Service {
+    let service: Service | undefined;
+
+    if (subType) {
+      service = this.accessory.getService(subType) || this.accessory.addService(serviceType, name, subType);
+    } else {
+      service = this.accessory.getService(serviceType) || this.accessory.addService(serviceType, name);
+    }
+
+    // Add ConfiguredName for better HomeKit display
+    service.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
+    service.updateCharacteristic(this.platform.Characteristic.ConfiguredName, name);
+
+    return service;
+  }
+
+  /**
+   * Conditionally create or remove a service based on a boolean flag.
+   * Returns the service if enabled, undefined if disabled.
+   */
+  protected ensureService(
+    serviceType: ServiceConstructor,
+    name: string,
+    enabled: boolean,
+    subType?: string,
+  ): Service | undefined {
+    const existingService = subType
+      ? this.accessory.getService(subType)
+      : this.accessory.getService(serviceType);
+
+    if (enabled) {
+      if (!existingService) {
+        return this.getOrCreateService(serviceType, name, subType);
+      }
+      return existingService;
+    } else if (existingService) {
+      this.accessory.removeService(existingService);
+    }
+
+    return undefined;
   }
 
   public static model(): string {
