@@ -4,6 +4,7 @@ import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebri
 import { Device } from '../lib/Device.js';
 import { PlatformType } from '../lib/constants.js';
 import { DeviceModel } from '../lib/DeviceModel.js';
+import { safeParseInt } from '../helper.js';
 
 export const NOT_RUNNING_STATUS = ['COOLDOWN', 'POWEROFF', 'POWERFAIL', 'INITIAL', 'PAUSE', 'AUDIBLE_DIAGNOSIS', 'FIRMWARE',
   'COURSE_DOWNLOAD', 'ERROR', 'END'];
@@ -252,6 +253,6 @@ export class WasherDryerStatus {
   }
 
   public get TCLCount() {
-    return Math.min(parseInt(this.data?.TCLCount || 0), 30);
+    return Math.min(safeParseInt(this.data?.TCLCount), 30);
   }
 }
