@@ -1,5 +1,5 @@
 import { DeviceModel } from '../../lib/DeviceModel.js';
-import { lookupEnumIndex, loopupEnum } from '../helper.js';
+import { lookupEnumIndex, loopupEnum, safeParseInt } from '../helper.js';
 
 export enum WasherState {
   POWEROFF = '@WM_STATE_POWER_OFF_W',
@@ -45,12 +45,12 @@ export default function WasherDryer(deviceModel: DeviceModel, decodedMonitor: an
       initialBit: (decodedMonitor.InitialBit || false) as boolean ? 'INITIAL_BIT_ON' : 'INITIAL_BIT_OFF',
       childLock: lookupEnumIndex(ChildLock, loopupEnum(deviceModel, decodedMonitor, 'ChildLock')) || 'CHILDLOCK_OFF',
       TCLCount: (decodedMonitor.TCLCount || 0) as number,
-      reserveTimeHour: parseInt(decodedMonitor.Reserve_Time_H || 0),
-      reserveTimeMinute: parseInt(decodedMonitor.Reserve_Time_M || 0),
-      remainTimeHour: parseInt(decodedMonitor.Remain_Time_H || 0),
-      remainTimeMinute: parseInt(decodedMonitor.Remain_Time_M || 0),
-      initialTimeHour: parseInt(decodedMonitor.Initial_Time_H || 0),
-      initialTimeMinute: parseInt(decodedMonitor.Initial_Time_M || 0),
+      reserveTimeHour: safeParseInt(decodedMonitor.Reserve_Time_H),
+      reserveTimeMinute: safeParseInt(decodedMonitor.Reserve_Time_M),
+      remainTimeHour: safeParseInt(decodedMonitor.Remain_Time_H),
+      remainTimeMinute: safeParseInt(decodedMonitor.Remain_Time_M),
+      initialTimeHour: safeParseInt(decodedMonitor.Initial_Time_H),
+      initialTimeMinute: safeParseInt(decodedMonitor.Initial_Time_M),
       soilWash: lookupEnumIndex(SoilWash, loopupEnum(deviceModel, decodedMonitor, 'Soil')) || 'NO_SOILWASH',
     },
   };

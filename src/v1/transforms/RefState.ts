@@ -1,5 +1,5 @@
 import { DeviceModel } from '../../lib/DeviceModel.js';
-import { lookupEnumIndex, loopupEnum } from '../helper.js';
+import { lookupEnumIndex, loopupEnum, safeParseInt } from '../helper.js';
 
 export enum DoorOpenState {
   OPEN = 'OPEN',
@@ -13,12 +13,12 @@ export default function RefState(deviceModel: DeviceModel, decodedMonitor: any) 
       freezerTemp: decodedMonitor.TempFreezer || deviceModel.default('TempFreezer') || '0',
 
       atLeastOneDoorOpen: lookupEnumIndex(DoorOpenState, loopupEnum(deviceModel, decodedMonitor, 'DoorOpenState') || deviceModel.default('DoorOpenState')),
-      tempUnit: parseInt(decodedMonitor.TempUnit || deviceModel.default('TempUnit')) ? 'CELSIUS' : 'FAHRENHEIT',
+      tempUnit: safeParseInt(decodedMonitor.TempUnit || deviceModel.default('TempUnit')) ? 'CELSIUS' : 'FAHRENHEIT',
     },
   };
 
-  snapshot.refState.fridgeTemp = parseInt(snapshot.refState.fridgeTemp);
-  snapshot.refState.freezerTemp = parseInt(snapshot.refState.freezerTemp);
+  snapshot.refState.fridgeTemp = safeParseInt(snapshot.refState.fridgeTemp);
+  snapshot.refState.freezerTemp = safeParseInt(snapshot.refState.freezerTemp);
 
   if ('IcePlus' in decodedMonitor) {
     snapshot.refState.expressMode = decodedMonitor.IcePlus || deviceModel.default('IcePlus') || '0';

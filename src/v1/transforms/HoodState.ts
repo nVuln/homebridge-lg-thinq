@@ -1,20 +1,21 @@
 import { DeviceModel } from '../../lib/DeviceModel.js';
+import { safeParseInt } from '../helper.js';
 
 export default function HoodState(deviceModel: DeviceModel, decodedMonitor: any) {
   return {
     hoodState: {
       'ventMode': deviceModel.enumName('VentMode', decodedMonitor.VentMode),
       'error': deviceModel.enumName('Error', decodedMonitor.VentMode),
-      'ventLevel': parseInt(decodedMonitor.VentLevel || 0),
+      'ventLevel': safeParseInt(decodedMonitor.VentLevel),
       'lampSet': decodedMonitor.LampSet,
-      'remainTimeMinute': parseInt(decodedMonitor.TimerMin || 0),
+      'remainTimeMinute': safeParseInt(decodedMonitor.TimerMin),
       'ventSet': decodedMonitor.VentSet,
-      'hoodFotaEnable': parseInt(decodedMonitor.FOTAEnable || 0) ? 'ENABLE' : 'DISABLE',
-      'remainTimeSecond': parseInt(decodedMonitor.TimerSec || 0),
-      'childLock': parseInt(decodedMonitor.ChildLock || 0) ? 'ENABLE' : 'DISABLE',
-      'standyMode': parseInt(decodedMonitor.StandyMode || 0) ? 'ENABLE' : 'DISABLE',
-      'lampLevel': parseInt(decodedMonitor.LampLevel || 0),
-      'hoodState': parseInt(decodedMonitor.HoodState || 0) ? 'USING' : 'INIT',
+      'hoodFotaEnable': safeParseInt(decodedMonitor.FOTAEnable) ? 'ENABLE' : 'DISABLE',
+      'remainTimeSecond': safeParseInt(decodedMonitor.TimerSec),
+      'childLock': safeParseInt(decodedMonitor.ChildLock) ? 'ENABLE' : 'DISABLE',
+      'standyMode': safeParseInt(decodedMonitor.StandyMode) ? 'ENABLE' : 'DISABLE',
+      'lampLevel': safeParseInt(decodedMonitor.LampLevel),
+      'hoodState': safeParseInt(decodedMonitor.HoodState) ? 'USING' : 'INIT',
     },
   };
 }

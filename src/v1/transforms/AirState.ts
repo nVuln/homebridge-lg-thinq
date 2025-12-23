@@ -1,5 +1,5 @@
 import { DeviceModel, RangeValue } from '../../lib/DeviceModel.js';
-import { loopupEnum } from '../helper.js';
+import { loopupEnum, safeParseInt, safeParseFloat } from '../helper.js';
 
 export enum ACOperation {
   OFF = '@AC_MAIN_OPERATION_OFF_W',
@@ -11,15 +11,15 @@ export enum ACOperation {
 
 export default function AirState(deviceModel: DeviceModel, decodedMonitor: any) {
   const airState: Record<string, any> = {
-    'airState.opMode': parseInt(decodedMonitor.OpMode || '0') as number,
+    'airState.opMode': safeParseInt(decodedMonitor.OpMode),
     'airState.operation': loopupEnum(deviceModel, decodedMonitor, 'Operation') !== ACOperation.OFF,
-    'airState.tempState.current': parseFloat(decodedMonitor.TempCur || '0') as number,
-    'airState.tempState.target': parseFloat(decodedMonitor.TempCfg || '0') as number,
-    'airState.windStrength': parseInt(decodedMonitor.WindStrength || '0') as number,
-    'airState.wDir.vStep': parseInt(decodedMonitor.WDirVStep || '0') as number,
-    'airState.wDir.hStep': parseInt(decodedMonitor.WDirHStep || '0') as number,
-    'airState.circulate.rotate': parseInt(decodedMonitor.CirculateDir),
-    'airState.lightingState.signal': parseInt(decodedMonitor.SignalLighting),
+    'airState.tempState.current': safeParseFloat(decodedMonitor.TempCur),
+    'airState.tempState.target': safeParseFloat(decodedMonitor.TempCfg),
+    'airState.windStrength': safeParseInt(decodedMonitor.WindStrength),
+    'airState.wDir.vStep': safeParseInt(decodedMonitor.WDirVStep),
+    'airState.wDir.hStep': safeParseInt(decodedMonitor.WDirHStep),
+    'airState.circulate.rotate': safeParseInt(decodedMonitor.CirculateDir),
+    'airState.lightingState.signal': safeParseInt(decodedMonitor.SignalLighting),
     'airState.quality.overall': 0,
     'airState.quality.sensorMon': 0,
     'airState.quality.PM1': 0,
@@ -37,31 +37,31 @@ export default function AirState(deviceModel: DeviceModel, decodedMonitor: any) 
   }
 
   if (decodedMonitor.TotalAirPolution) {
-    airState['airState.quality.overall'] = parseInt(decodedMonitor.TotalAirPolution);
+    airState['airState.quality.overall'] = safeParseInt(decodedMonitor.TotalAirPolution);
   }
 
   if (decodedMonitor.SensorMon) {
-    airState['airState.quality.sensorMon'] = parseInt(decodedMonitor.SensorMon);
+    airState['airState.quality.sensorMon'] = safeParseInt(decodedMonitor.SensorMon);
   }
 
   if (decodedMonitor.SensorPM1) {
-    airState['airState.quality.PM1'] = parseInt(decodedMonitor.SensorPM1);
+    airState['airState.quality.PM1'] = safeParseInt(decodedMonitor.SensorPM1);
   }
 
   if (decodedMonitor.SensorPM2) {
-    airState['airState.quality.PM2'] = parseInt(decodedMonitor.SensorPM2);
+    airState['airState.quality.PM2'] = safeParseInt(decodedMonitor.SensorPM2);
   }
 
   if (decodedMonitor.SensorPM10) {
-    airState['airState.quality.PM10'] = parseInt(decodedMonitor.SensorPM10);
+    airState['airState.quality.PM10'] = safeParseInt(decodedMonitor.SensorPM10);
   }
 
   if (decodedMonitor.Jet) {
-    airState['airState.wMode.jet'] = parseInt(decodedMonitor.Jet);
+    airState['airState.wMode.jet'] = safeParseInt(decodedMonitor.Jet);
   }
 
   if (decodedMonitor.SensorHumidity) {
-    airState['airState.humidity.current'] = parseInt(decodedMonitor.SensorHumidity);
+    airState['airState.humidity.current'] = safeParseInt(decodedMonitor.SensorHumidity);
   }
 
   return airState;
