@@ -1219,6 +1219,9 @@ export class ACStatus {
 
   public get currentRelativeHumidity() {
     const humidity = parseInt(this.data['airState.humidity.current']);
+    if (isNaN(humidity)) {
+      return 0;
+    }
     if (humidity > 100) {
       return humidity / 10;
     }
