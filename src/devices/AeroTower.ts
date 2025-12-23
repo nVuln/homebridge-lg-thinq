@@ -56,38 +56,41 @@ export default class AeroTower extends AirPurifier {
 
     const device: Device = this.accessory.context.device;
     const isLightOn = value as boolean ? 1 : 0;
-    this.platform.ThinQ?.deviceControl(device.id, {
+    const result = await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.lightingState.displayControl',
       dataValue: isLightOn,
-    }).then(() => {
+    });
+    if (result) {
       device.data.snapshot['airState.lightingState.displayControl'] = isLightOn;
       this.updateAccessoryCharacteristic(device);
-    });
+    }
   }
 
-  protected setUVMode(value: CharacteristicValue) {
+  protected async setUVMode(value: CharacteristicValue) {
     const uvModeValue = value ? 1 : 0;
-    this.platform.ThinQ?.deviceControl(this.accessory.context.device, {
+    const result = await this.platform.ThinQ?.deviceControl(this.accessory.context.device, {
       dataKey: 'airState.miscFuncState.Uvnano',
       dataValue: uvModeValue,
-    }).then(() => {
+    });
+    if (result) {
       this.accessory.context.device.data.snapshot['airState.miscFuncState.Uvnano'] = uvModeValue;
       this.updateAccessoryCharacteristic(this.accessory.context.device);
-    });
+    }
   }
 
-  protected setLightBrightness(value: CharacteristicValue) {
+  protected async setLightBrightness(value: CharacteristicValue) {
     const brightnessValue = (value as number) - 1;
     const values = [LightBrightness.LEVEL_1, LightBrightness.LEVEL_2, LightBrightness.LEVEL_3];
 
     if (typeof values[brightnessValue] !== 'undefined') {
-      this.platform.ThinQ?.deviceControl(this.accessory.context.device, {
+      const result = await this.platform.ThinQ?.deviceControl(this.accessory.context.device, {
         dataKey: 'airState.lightingState.displayControl',
         dataValue: values[brightnessValue],
-      }).then(() => {
+      });
+      if (result) {
         this.accessory.context.device.data.snapshot['airState.lightingState.displayControl'] = values[brightnessValue];
         this.updateAccessoryCharacteristic(this.accessory.context.device);
-      });
+      }
     }
   }
 
