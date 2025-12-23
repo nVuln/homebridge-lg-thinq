@@ -1,7 +1,14 @@
 import { LGThinQHomebridgePlatform } from './platform.js';
-import { Logger, PlatformAccessory } from 'homebridge';
+import { HAPStatus, Logger, PlatformAccessory } from 'homebridge';
 import { Device } from './lib/Device.js';
 import { EventEmitter } from 'events';
+
+export interface DeviceControlPayload {
+  dataKey: string | null;
+  dataValue: unknown;
+  dataSetList?: Record<string, unknown> | null;
+  dataGetList?: Record<string, unknown> | null;
+}
 
 export type AccessoryContext = {
   device: Device;
@@ -38,6 +45,27 @@ export class BaseDevice extends EventEmitter {
 
   public get config(): Record<string, any> {
     return this.platform.config.devices.find((enabled: Record<string, any>) => enabled.id === this.accessory.context.device.id) || {};
+  }
+
+  /**
+   * Helper method to safely control a device with error handling.
+   * Wraps ThinQ deviceControl with try/catch and returns success/failure.
+   */
+  protected async controlDevice(
+    payload: DeviceControlPayload,
+    onSuccess?: () => void,
+  ): Promise<boolean> {
+    const device = this.accessory.context.device;
+    try {
+      const result = await this.platform.ThinQ?.deviceControl(device.id, payload);
+      if (result && onSuccess) {
+        onSuccess();
+      }
+      return !!result;
+    } catch (error) {
+      this.logger.error(`[${device.name}] Device control failed:`, error);
+      throw new this.platform.api.hap.HapStatusError(HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+    }
   }
 
   public static model(): string {
