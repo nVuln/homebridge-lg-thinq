@@ -6,7 +6,7 @@ import { Device } from '../lib/Device.js';
 import { DeviceModel } from '../lib/DeviceModel.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { Logger, PlatformAccessory, Service } from 'homebridge';
-import { normalizeBoolean, normalizeNumber } from '../helper.js';
+import { normalizeBoolean, normalizeNumber, safeParseInt } from '../helper.js';
 
 export default class Microwave extends BaseDevice {
   protected inputNameStatus = 'Microwave Status';
@@ -207,7 +207,7 @@ export default class Microwave extends BaseDevice {
       })
       .on('get', (callback) => {
         let currentValue = false;
-        if (parseInt(this.Status.data?.LWOMGTPowerLevel) * 10 > 0) {
+        if (safeParseInt(this.Status.data?.LWOMGTPowerLevel) * 10 > 0) {
           currentValue = true;
         }
         callback(null, currentValue);
@@ -215,7 +215,7 @@ export default class Microwave extends BaseDevice {
 
     this.microwavePower.getCharacteristic(this.platform.Characteristic.Brightness)
       .on('get', (callback) => {
-        const currentValue = parseInt(this.Status.data?.LWOMGTPowerLevel) * 10;
+        const currentValue = safeParseInt(this.Status.data?.LWOMGTPowerLevel) * 10;
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
@@ -2059,12 +2059,12 @@ export default class Microwave extends BaseDevice {
       if (this.ovenTempControl.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity).value !== this.localHumidity) {
         this.ovenTempControl.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.localHumidity);
       }
-      if (this.microwavePower.getCharacteristic(this.platform.Characteristic.On).value !== parseInt(this.Status.data?.LWOMGTPowerLevel) > 0 ? true : false) {
-        this.microwavePower.updateCharacteristic(this.platform.Characteristic.On, parseInt(this.Status.data?.LWOMGTPowerLevel) > 0 ? true : false);
+      if (this.microwavePower.getCharacteristic(this.platform.Characteristic.On).value !== safeParseInt(this.Status.data?.LWOMGTPowerLevel) > 0 ? true : false) {
+        this.microwavePower.updateCharacteristic(this.platform.Characteristic.On, safeParseInt(this.Status.data?.LWOMGTPowerLevel) > 0 ? true : false);
       }
 
-      if (this.microwavePower.getCharacteristic(this.platform.Characteristic.Brightness).value !== parseInt(this.Status.data?.LWOMGTPowerLevel)) {
-        this.microwavePower.updateCharacteristic(this.platform.Characteristic.Brightness, parseInt(this.Status.data?.LWOMGTPowerLevel));
+      if (this.microwavePower.getCharacteristic(this.platform.Characteristic.Brightness).value !== safeParseInt(this.Status.data?.LWOMGTPowerLevel)) {
+        this.microwavePower.updateCharacteristic(this.platform.Characteristic.Brightness, safeParseInt(this.Status.data?.LWOMGTPowerLevel));
       }
 
       if (this.serviceLight.getCharacteristic(this.platform.Characteristic.On).value !== this.Status.data?.mwoLampLevel > 0 ? true : false) {
