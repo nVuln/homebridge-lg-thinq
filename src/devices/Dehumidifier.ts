@@ -2,7 +2,7 @@ import { AccessoryContext, BaseDevice } from '../baseDevice.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
 import { Device } from '../lib/Device.js';
-import { safeParseInt } from '../helper.js';
+import { safeParseInt, normalizeNumber } from '../helper.js';
 
 enum RotateSpeed {
   LOW = 2,
@@ -95,13 +95,18 @@ export default class Dehumidifier extends BaseDevice {
       return;
     }
 
+    const vNum = normalizeNumber(value);
+    if (vNum === null) {
+      return;
+    }
+
     const device: Device = this.accessory.context.device;
     const result = await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.humidity.desired',
-      dataValue: value as number,
+      dataValue: vNum,
     });
     if (result) {
-      device.data.snapshot['airState.humidity.desired'] = value;
+      device.data.snapshot['airState.humidity.desired'] = vNum;
       this.updateAccessoryCharacteristic(device);
     }
   }
@@ -111,9 +116,14 @@ export default class Dehumidifier extends BaseDevice {
       return;
     }
 
+    const vNum = normalizeNumber(value);
+    if (vNum === null) {
+      return;
+    }
+
     const device: Device = this.accessory.context.device;
     const values = Object.keys(RotateSpeed);
-    const windStrength = safeParseInt(values[Math.round((value as number)) - 1], RotateSpeed.HIGH);
+    const windStrength = safeParseInt(values[Math.round(vNum) - 1], RotateSpeed.HIGH);
     try {
       const result = await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.windStrength',

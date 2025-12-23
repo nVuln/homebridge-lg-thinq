@@ -3,6 +3,7 @@ import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { AccessoryContext } from '../baseDevice.js';
+import { normalizeNumber } from '../helper.js';
 
 export enum LightBrightness {
   OFF = 0,
@@ -79,7 +80,11 @@ export default class AeroTower extends AirPurifier {
   }
 
   protected async setLightBrightness(value: CharacteristicValue) {
-    const brightnessValue = (value as number) - 1;
+    const vNum = normalizeNumber(value);
+    if (vNum === null) {
+      return;
+    }
+    const brightnessValue = vNum - 1;
     const values = [LightBrightness.LEVEL_1, LightBrightness.LEVEL_2, LightBrightness.LEVEL_3];
 
     if (typeof values[brightnessValue] !== 'undefined') {

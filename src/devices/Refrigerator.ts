@@ -3,7 +3,7 @@ import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebri
 import { Device } from '../lib/Device.js';
 import { AccessoryContext, BaseDevice } from '../baseDevice.js';
 import { DeviceModel } from '../lib/DeviceModel.js';
-import { cToF, fToC, safeParseInt } from '../helper.js';
+import { cToF, fToC, normalizeNumber, safeParseInt } from '../helper.js';
 
 export default class Refrigerator extends BaseDevice {
   protected serviceFreezer: Service | undefined;
@@ -298,13 +298,18 @@ export default class Refrigerator extends BaseDevice {
     service.getCharacteristic(Characteristic.TargetTemperature)
       .updateValue(Math.min(...values))
       .onSet(async (value: CharacteristicValue) => { // value in celsius
+        const vNum = normalizeNumber(value);
+        if (vNum === null) {
+          throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.INVALID_VALUE_IN_REQUEST);
+        }
+
         let indexValue;
         if (this.Status.tempUnit === 'FAHRENHEIT') {
-          indexValue = device.deviceModel.lookupMonitorName(key + '_F', cToF(value as number).toString())
-            || device.deviceModel.lookupMonitorName(key, cToF(value as number).toString());
+          indexValue = device.deviceModel.lookupMonitorName(key + '_F', cToF(vNum).toString())
+            || device.deviceModel.lookupMonitorName(key, cToF(vNum).toString());
         } else {
-          indexValue = device.deviceModel.lookupMonitorName(key + '_C', value.toString())
-            || device.deviceModel.lookupMonitorName(key, value.toString());
+          indexValue = device.deviceModel.lookupMonitorName(key + '_C', vNum.toString())
+            || device.deviceModel.lookupMonitorName(key, vNum.toString());
         }
 
         if (!indexValue) {

@@ -102,7 +102,12 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        this.ventSpeed = value as number;
+        const vNum = normalizeNumber(value);
+        if (vNum === null) {
+          callback(null);
+          return;
+        }
+        this.ventSpeed = vNum;
         if (this.ventSpeed !== this.Status.data?.mwoVentSpeedLevel) {
           this.sendLightVentCommand();
         }
@@ -114,7 +119,12 @@ export default class Microwave extends BaseDevice {
         callback(null, this.ventSpeed);
       })
       .on('set', (value, callback) => {
-        this.ventSpeed = value as number;
+        const vNum = normalizeNumber(value);
+        if (vNum === null) {
+          callback(null);
+          return;
+        }
+        this.ventSpeed = vNum;
         this.sendLightVentCommand();
         callback(null);
       });
@@ -154,7 +164,12 @@ export default class Microwave extends BaseDevice {
         callback(null, this.lampLevel);
       })
       .on('set', (value, callback) => {
-        this.lampLevel = value as number;
+        const vNum = normalizeNumber(value);
+        if (vNum === null) {
+          callback(null);
+          return;
+        }
+        this.lampLevel = vNum;
         if (this.lampLevel !== this.Status.data?.mwoLampLevel) {
           this.sendLightVentCommand();
         }
@@ -219,7 +234,10 @@ export default class Microwave extends BaseDevice {
         callback(null, currentValue);
       })
       .on('set', (value, callback) => {
-        this.mwPower = value as number;
+        const vNum = normalizeNumber(value);
+        if (vNum !== null) {
+          this.mwPower = vNum;
+        }
         callback(null);
       });
     this.microwavePower.getCharacteristic(this.platform.Characteristic.Brightness)

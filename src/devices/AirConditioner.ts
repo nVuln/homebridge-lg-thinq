@@ -871,7 +871,11 @@ export default class AirConditioner extends BaseDevice {
    */
   async setTargetState(value: CharacteristicValue) {
     this.logger.debug('Set target AC mode = ', value);
-    this.currentTargetState = value as number;
+    const vNum = normalizeNumber(value);
+    if (vNum === null) {
+      return;
+    }
+    this.currentTargetState = vNum;
     const {
       Characteristic: {
         TargetHeaterCoolerState,
