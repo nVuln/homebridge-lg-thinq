@@ -9,6 +9,11 @@ enum RotateSpeed {
   HIGH = 6,
 }
 
+/**
+ * Dehumidifier operation modes that indicate active dehumidification
+ */
+const DEHUMIDIFYING_MODES = [17, 18, 19, 21];
+
 export default class Dehumidifier extends BaseDevice {
   protected serviceDehumidifier;
   protected serviceHumiditySensor;
@@ -185,7 +190,7 @@ export class DehumidifierStatus {
   }
 
   public get isDehumidifying() {
-    return [17, 18, 19, 21].includes(this.opMode) && this.humidityCurrent >= this.humidityTarget;
+    return DEHUMIDIFYING_MODES.includes(this.opMode) && this.humidityCurrent >= this.humidityTarget;
   }
 
   public get humidityCurrent() {

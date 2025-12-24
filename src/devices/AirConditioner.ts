@@ -21,7 +21,7 @@ export enum FanSpeed {
   HIGH = 6
 }
 
-enum OpMode {
+export enum OpMode {
   AUTO = 6,
   COOL = 0,
   HEAT = 4,
@@ -389,7 +389,7 @@ export default class AirConditioner extends BaseDevice {
     const device: Device = this.accessory.context.device;
     const enabled = normalizeBoolean(value);
     const status = this.Status;
-    if (!(status.isPowerOn && status.opMode === 0)) {
+    if (!(status.isPowerOn && status.opMode === OpMode.COOL)) {
       this.logger.debug(`Energy save mode is not supported in the current state. Power: ${status.isPowerOn}, Mode: ${status.opMode}`);
       return;
     }
@@ -414,7 +414,7 @@ export default class AirConditioner extends BaseDevice {
     const device: Device = this.accessory.context.device;
     const status = this.Status;
     const enabled = normalizeBoolean(value);
-    if (!(status.isPowerOn && status.opMode === 0)) {
+    if (!(status.isPowerOn && status.opMode === OpMode.COOL)) {
       this.logger.debug(`Air clean mode is not supported in the current state. Power: ${status.isPowerOn}, Mode: ${status.opMode}`);
       return;
     }
@@ -439,7 +439,7 @@ export default class AirConditioner extends BaseDevice {
     const device: Device = this.accessory.context.device;
     const enabled = normalizeBoolean(value);
     const status = this.Status;
-    if (!(status.isPowerOn && status.opMode === 0)) {
+    if (!(status.isPowerOn && status.opMode === OpMode.COOL)) {
       this.logger.debug(`Quiet mode is not supported in the current state. Power: ${status.isPowerOn}, Mode: ${status.opMode}`);
       return;
     }
@@ -472,7 +472,7 @@ export default class AirConditioner extends BaseDevice {
     const device: Device = this.accessory.context.device;
     const enabled = normalizeBoolean(value);
     const status = this.Status;
-    if (!(status.isPowerOn && status.opMode === 0)) {
+    if (!(status.isPowerOn && status.opMode === OpMode.COOL)) {
       this.logger.debug(`Jet mode is not supported in the current state. Power: ${status.isPowerOn}, Mode: ${status.opMode}`);
       return;
     }

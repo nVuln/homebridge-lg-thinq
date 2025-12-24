@@ -1,4 +1,4 @@
-import { default as AirConditioner, FanSpeed } from '../../devices/AirConditioner.js';
+import { default as AirConditioner, FanSpeed, OpMode } from '../../devices/AirConditioner.js';
 import { CharacteristicValue } from 'homebridge';
 import { ACOperation } from '../transforms/AirState.js';
 import { Device } from '../../lib/Device.js';
@@ -54,7 +54,7 @@ export default class AC extends AirConditioner {
     const device: Device = this.accessory.context.device;
     const vNum = normalizeNumber(value);
     const jetModeValue = (vNum !== null) ? vNum : (normalizeBoolean(value) ? 1 : 0);
-    if (this.Status.isPowerOn && this.Status.opMode === 0) {
+    if (this.Status.isPowerOn && this.Status.opMode === OpMode.COOL) {
       await this.platform.ThinQ?.thinq1DeviceControl(device, 'Jet', jetModeValue);
     }
   }
