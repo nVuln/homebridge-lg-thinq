@@ -34,11 +34,8 @@ export default class AeroTower extends AirPurifier {
       Characteristic,
     } = this.platform;
 
-    this.serviceTemperatureSensor = accessory.getService(TemperatureSensor)
-      || accessory.addService(TemperatureSensor, 'Temperature Sensor');
-
-    this.serviceHumiditySensor = accessory.getService(HumiditySensor)
-      || accessory.addService(HumiditySensor, 'Humidity Sensor');
+    this.serviceTemperatureSensor = this.getOrCreateService(TemperatureSensor, 'Temperature Sensor');
+    this.serviceHumiditySensor = this.getOrCreateService(HumiditySensor, 'Humidity Sensor');
 
     this.serviceLight?.getCharacteristic(Characteristic.Brightness)
       .setProps({
@@ -46,7 +43,7 @@ export default class AeroTower extends AirPurifier {
       })
       .onSet(this.setLightBrightness.bind(this));
 
-    this.serviceUVNano = accessory.getService(Switch) || accessory.addService(Switch, 'UV Purifier');
+    this.serviceUVNano = this.getOrCreateService(Switch, 'UV Purifier', 'UV Purifier');
     this.serviceUVNano.getCharacteristic(Characteristic.On).onSet(this.setUVMode.bind(this));
   }
 
