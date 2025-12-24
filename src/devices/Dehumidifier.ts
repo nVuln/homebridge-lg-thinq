@@ -37,8 +37,7 @@ export default class Dehumidifier extends BaseDevice {
 
     const device: Device = accessory.context.device;
 
-    this.serviceDehumidifier = accessory.getService(HumidifierDehumidifier) || accessory.addService(HumidifierDehumidifier);
-    this.serviceDehumidifier.setCharacteristic(Characteristic.Name, device.name);
+    this.serviceDehumidifier = this.getOrCreateService(HumidifierDehumidifier, device.name);
     this.serviceDehumidifier.getCharacteristic(Characteristic.Active)
       .onSet(this.setActive.bind(this))
       .updateValue(Characteristic.Active.INACTIVE);
@@ -73,7 +72,7 @@ export default class Dehumidifier extends BaseDevice {
         minStep: 1,
       });
 
-    this.serviceHumiditySensor = accessory.getService(HumiditySensor) || accessory.addService(HumiditySensor);
+    this.serviceHumiditySensor = this.getOrCreateService(HumiditySensor, 'Humidity Sensor');
     this.serviceHumiditySensor.addLinkedService(this.serviceDehumidifier);
   }
 
