@@ -84,13 +84,17 @@ export default class Dehumidifier extends BaseDevice {
       return; // don't send same status
     }
 
-    const result = await this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: 'airState.operation',
-      dataValue: isOn,
-    });
-    if (result) {
-      device.data.snapshot['airState.operation'] = isOn ? 1 : 0;
-      this.updateAccessoryCharacteristic(device);
+    try {
+      const result = await this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: 'airState.operation',
+        dataValue: isOn,
+      });
+      if (result) {
+        device.data.snapshot['airState.operation'] = isOn ? 1 : 0;
+        this.updateAccessoryCharacteristic(device);
+      }
+    } catch (error) {
+      this.logger.error('Error setting dehumidifier active state:', error);
     }
   }
 
@@ -105,13 +109,17 @@ export default class Dehumidifier extends BaseDevice {
     }
 
     const device: Device = this.accessory.context.device;
-    const result = await this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: 'airState.humidity.desired',
-      dataValue: vNum,
-    });
-    if (result) {
-      device.data.snapshot['airState.humidity.desired'] = vNum;
-      this.updateAccessoryCharacteristic(device);
+    try {
+      const result = await this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: 'airState.humidity.desired',
+        dataValue: vNum,
+      });
+      if (result) {
+        device.data.snapshot['airState.humidity.desired'] = vNum;
+        this.updateAccessoryCharacteristic(device);
+      }
+    } catch (error) {
+      this.logger.error('Error setting dehumidifier humidity threshold:', error);
     }
   }
 
