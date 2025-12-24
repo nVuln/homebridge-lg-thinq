@@ -19,7 +19,7 @@ export type WorkId = string;
 
 export class ThinQ {
   protected api: API;
-  protected workIds: Record<string, WorkId> = {};
+  protected workIds: Record<string, WorkId | null> = {};
   protected deviceModel: Record<string, DeviceModel> = {};
   protected persist;
   constructor(
@@ -77,9 +77,10 @@ export class ThinQ {
   }
 
   public async unregister(device: Device) {
-    if (device.platform === PlatformType.ThinQ1 && device.id in this.workIds && this.workIds[device.id] !== null) {
+    const workId = this.workIds[device.id];
+    if (device.platform === PlatformType.ThinQ1 && workId !== null && workId !== undefined) {
       try {
-        await this.api.sendMonitorCommand(device.id, 'Stop', this.workIds[device.id]);
+        await this.api.sendMonitorCommand(device.id, 'Stop', workId);
       } catch (err) {
         //this.log.error(err);
       }
@@ -89,20 +90,22 @@ export class ThinQ {
   }
 
   protected async registerWorkId(device: any) {
-    return this.workIds[device.id] = await this.api.sendMonitorCommand(device.id, 'Start', randomUUID()).then(data => {
-      if (data !== undefined && 'workId' in data) {
-        return data.workId;
-      }
+    const data = await this.api.sendMonitorCommand(device.id, 'Start', randomUUID());
+    if (data !== undefined && 'workId' in data) {
+      this.workIds[device.id] = data.workId;
+      return data.workId;
+    }
 
-      return null;
-    });
+    this.workIds[device.id] = null;
+    return null;
   }
 
   protected async loadDeviceModel(device: Device) {
     let deviceModel = await this.persist.getItem(device.id);
     if (!deviceModel) {
       this.logger.debug('[' + device.id + '] Device model cache missed.');
-      deviceModel = await this.api.httpClient.get(device.data.modelJsonUri).then(res => res.data);
+      const response = await this.api.httpClient.get(device.data.modelJsonUri);
+      deviceModel = response.data;
       await this.persist.setItem(device.id, deviceModel);
     }
 
@@ -134,7 +137,7 @@ export class ThinQ {
       }
 
       try {
-        result = await this.api.getMonitorResult(device.id, this.workIds[device.id]);
+        result = await this.api.getMonitorResult(device.id, this.workIds[device.id]!);
       } catch (err) {
         if (err instanceof MonitorError) {
           // restart monitor and try again
@@ -143,7 +146,7 @@ export class ThinQ {
 
           // retry 1 times
           try {
-            result = await this.api.getMonitorResult(device.id, this.workIds[device.id]);
+            result = await this.api.getMonitorResult(device.id, this.workIds[device.id]!);
           } catch (err) {
             // stop it
             // await this.stopMonitor(device);
@@ -281,7 +284,8 @@ export class ThinQ {
   }
 
   protected async _registerMQTTListener(callback: (data: any) => void) {
-    const route = await this.api.getRequest('https://common.lgthinq.com/route').then(data => data.result);
+    const routeData = await this.api.getRequest('https://common.lgthinq.com/route');
+    const route = routeData.result;
 
     // key-pair
     const keys = await this.persist.cacheForever('keys', async () => {
@@ -316,9 +320,10 @@ export class ThinQ {
 
     const submitCSR = async () => {
       await this.api.postRequest('service/users/client', {});
-      return await this.api.postRequest('service/users/client/certificate', {
+      const certData = await this.api.postRequest('service/users/client/certificate', {
         csr: csr.replace(/-----(BEGIN|END) CERTIFICATE REQUEST-----/g, '').replace(/(\r\n|\r|\n)/g, ''),
-      }).then(data => data.result);
+      });
+      return certData.result;
     };
 
     const urls = new URL(route.mqttServer);
