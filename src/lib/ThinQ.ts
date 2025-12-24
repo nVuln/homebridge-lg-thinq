@@ -2,7 +2,7 @@ import { Logger, PlatformConfig } from 'homebridge';
 import { API } from './API.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { Device, DeviceData } from './Device.js';
-import { DeviceType, PlatformType } from './constants.js';
+import { DeviceType, PlatformType, MQTT_RETRY_DELAY_MS, REQUEST_TIMEOUT_MS } from './constants.js';
 import { DeviceModel, ValueType } from './DeviceModel.js';
 import { randomUUID } from 'crypto';
 import * as Path from 'path';
@@ -273,7 +273,7 @@ export class ThinQ {
         tried--;
         this.logger.debug('Cannot start MQTT, retrying in 5s.');
         this.logger.debug('mqtt err:', err);
-        await delayMs(5000);
+        await delayMs(MQTT_RETRY_DELAY_MS);
       }
     }
 
@@ -395,7 +395,7 @@ export class ThinQ {
         this.logger.info('MQTT disconnected, retrying in 60 seconds!');
         setTimeout(async () => {
           await connectToMqtt();
-        }, 60000);
+        }, REQUEST_TIMEOUT_MS);
       });
     };
 

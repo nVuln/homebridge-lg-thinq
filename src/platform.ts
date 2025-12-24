@@ -4,7 +4,7 @@ import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 import { Helper } from './helper.js';
 import { ThinQ } from './lib/ThinQ.js';
 import { EventEmitter } from 'events';
-import { PlatformType } from './lib/constants.js';
+import { PlatformType, DEVICE_DISCOVERY_DELAY_MS, ONE_SECOND_MS } from './lib/constants.js';
 import { ManualProcessNeeded, NotConnectedError } from './errors/index.js';
 import { Device } from './lib/Device.js';
 import Characteristics from './characteristics/index.js';
@@ -49,7 +49,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
     this.config.devices = this.config.devices || [];
 
     // Set the refresh interval for polling device data
-    this.intervalTime = (config.refresh_interval || 5) * 1000;
+    this.intervalTime = (config.refresh_interval || 5) * ONE_SECOND_MS;
     this.ThinQ = new ThinQ(this, config, log);
 
     // Validate required configuration parameters
@@ -70,7 +70,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
               // Retry device discovery after 30 seconds if not connected
               setTimeout(() => {
                 discoverDevices();
-              }, 30000);
+              }, DEVICE_DISCOVERY_DELAY_MS);
             } else {
               this.log.error(err.message);
               this.log.debug(err);

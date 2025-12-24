@@ -83,6 +83,18 @@ export const AC_MODEL_FEATURES = {
 export const ONE_DAY_IN_SECONDS = 86400;
 export const TWELVE_HOURS_IN_SECONDS = ONE_DAY_IN_SECONDS / 2;
 export const SIX_HOURS_IN_SECONDS = ONE_DAY_IN_SECONDS / 4;
+export const ONE_HOUR_IN_SECONDS = 3600;
+
+/**
+ * Time constants in milliseconds
+ */
+export const REQUEST_TIMEOUT_MS = 60000;
+export const RETRY_DELAY_MS = 2000;
+export const MQTT_RETRY_DELAY_MS = 5000;
+export const SHORT_POLL_INTERVAL_MS = 10000;
+export const DEVICE_DISCOVERY_DELAY_MS = 30000;
+export const TEN_MINUTES_MS = 600000;
+export const ONE_SECOND_MS = 1000;
 
 /**
  * Filter maintenance thresholds

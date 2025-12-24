@@ -9,17 +9,18 @@ import {
   NotConnectedErrorCodes,
 } from '../errors/index.js';
 import axiosRetry from 'axios-retry';
+import { REQUEST_TIMEOUT_MS, RETRY_DELAY_MS } from './constants.js';
 
 const MAX_REQUESTS_COUNT = 1;
 const INTERVAL_MS = 10;
 let PENDING_REQUESTS = 0;
 
 const client = axios.create();
-client.defaults.timeout = 60000; // 60s timeout
+client.defaults.timeout = REQUEST_TIMEOUT_MS;
 axiosRetry(client, {
   retries: 2, // try 3 times
   retryDelay: (retryCount) => {
-    return retryCount * 2000;
+    return retryCount * RETRY_DELAY_MS;
   },
   retryCondition: (err) => {
     if (err.code?.indexOf('ECONN') === 0) {
