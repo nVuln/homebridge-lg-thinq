@@ -104,13 +104,17 @@ export default class AirPurifier extends BaseDevice {
 
     const device: Device = this.accessory.context.device;
     const isOn = value as boolean ? 1 : 0;
-    const result = await this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: 'airState.miscFuncState.airFast',
-      dataValue: isOn as number,
-    });
-    if (result) {
-      device.data.snapshot['airState.miscFuncState.airFast'] = isOn as number;
-      this.updateAccessoryCharacteristic(device);
+    try {
+      const result = await this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: 'airState.miscFuncState.airFast',
+        dataValue: isOn as number,
+      });
+      if (result) {
+        device.data.snapshot['airState.miscFuncState.airFast'] = isOn as number;
+        this.updateAccessoryCharacteristic(device);
+      }
+    } catch (error) {
+      this.logger.error('Error setting air fast mode:', error);
     }
   }
 
@@ -122,13 +126,17 @@ export default class AirPurifier extends BaseDevice {
     }
 
     this.platform.log.debug('Set Active State ->', value);
-    const result = await this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: 'airState.operation',
-      dataValue: isOn as number,
-    });
-    if (result) {
-      device.data.snapshot['airState.operation'] = isOn as number;
-      this.updateAccessoryCharacteristic(device);
+    try {
+      const result = await this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: 'airState.operation',
+        dataValue: isOn as number,
+      });
+      if (result) {
+        device.data.snapshot['airState.operation'] = isOn as number;
+        this.updateAccessoryCharacteristic(device);
+      }
+    } catch (error) {
+      this.logger.error('Error setting active state:', error);
     }
   }
 
@@ -139,10 +147,14 @@ export default class AirPurifier extends BaseDevice {
     }
 
     this.platform.log.debug('Set Target State ->', value);
-    await this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: 'airState.opMode',
-      dataValue: value as boolean ? 16 : 14,
-    });
+    try {
+      await this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: 'airState.opMode',
+        dataValue: value as boolean ? 16 : 14,
+      });
+    } catch (error) {
+      this.logger.error('Error setting target air purifier state:', error);
+    }
   }
 
   async setRotationSpeed(value: CharacteristicValue) {
@@ -159,13 +171,17 @@ export default class AirPurifier extends BaseDevice {
     const device: Device = this.accessory.context.device;
     const values = Object.keys(RotateSpeed);
     const windStrength = safeParseInt(values[Math.round(vNum) - 1], RotateSpeed.EXTRA);
-    const result = await this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: 'airState.windStrength',
-      dataValue: windStrength,
-    });
-    if (result) {
-      device.data.snapshot['airState.windStrength'] = windStrength;
-      this.updateAccessoryCharacteristic(device);
+    try {
+      const result = await this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: 'airState.windStrength',
+        dataValue: windStrength,
+      });
+      if (result) {
+        device.data.snapshot['airState.windStrength'] = windStrength;
+        this.updateAccessoryCharacteristic(device);
+      }
+    } catch (error) {
+      this.logger.error('Error setting rotation speed:', error);
     }
   }
 
@@ -176,13 +192,17 @@ export default class AirPurifier extends BaseDevice {
 
     const device: Device = this.accessory.context.device;
     const isSwing = value as boolean ? 1 : 0;
-    const result = await this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: 'airState.circulate.rotate',
-      dataValue: isSwing,
-    });
-    if (result) {
-      device.data.snapshot['airState.circulate.rotate'] = isSwing;
-      this.updateAccessoryCharacteristic(device);
+    try {
+      const result = await this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: 'airState.circulate.rotate',
+        dataValue: isSwing,
+      });
+      if (result) {
+        device.data.snapshot['airState.circulate.rotate'] = isSwing;
+        this.updateAccessoryCharacteristic(device);
+      }
+    } catch (error) {
+      this.logger.error('Error setting swing mode:', error);
     }
   }
 
@@ -204,13 +224,17 @@ export default class AirPurifier extends BaseDevice {
       return;
     }
 
-    const result = await this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey,
-      dataValue: isLightOn,
-    });
-    if (result) {
-      device.data.snapshot[dataKey] = isLightOn;
-      this.updateAccessoryCharacteristic(device);
+    try {
+      const result = await this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey,
+        dataValue: isLightOn,
+      });
+      if (result) {
+        device.data.snapshot[dataKey] = isLightOn;
+        this.updateAccessoryCharacteristic(device);
+      }
+    } catch (error) {
+      this.logger.error('Error setting light state:', error);
     }
   }
 
