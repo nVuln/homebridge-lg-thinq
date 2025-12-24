@@ -7,7 +7,7 @@ import { DeviceModel } from '../lib/DeviceModel.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { Logger, PlatformAccessory, Service } from 'homebridge';
 import { normalizeBoolean, normalizeNumber, safeParseInt } from '../helper.js';
-import { ONE_HOUR_IN_SECONDS, ONE_SECOND_MS, TEN_SECONDS_MS } from '../lib/constants.js';
+import { ONE_HOUR_IN_SECONDS, ONE_SECOND_MS, TEN_SECONDS_MS, TWO_MINUTES_MS } from '../lib/constants.js';
 
 export default class Microwave extends BaseDevice {
   protected inputNameStatus = 'Microwave Status';
@@ -2145,7 +2145,7 @@ export default class Microwave extends BaseDevice {
         setTimeout(() => {
           this.pauseUpdate = false;
           this.firstPause = true;
-        }, 60000 * 2);
+        }, TWO_MINUTES_MS);
         this.firstPause = false;
       }
     }

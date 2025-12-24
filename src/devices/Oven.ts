@@ -7,7 +7,7 @@ import { Logger, Perms, PlatformAccessory, Service } from 'homebridge';
 import { DeviceModel } from '../lib/DeviceModel.js';
 import { Device } from '../lib/Device.js';
 import { normalizeBoolean, normalizeNumber } from '../helper.js';
-import { TWELVE_HOURS_IN_SECONDS, ONE_HOUR_IN_SECONDS, ONE_SECOND_MS, TEN_SECONDS_MS } from '../lib/constants.js';
+import { TWELVE_HOURS_IN_SECONDS, ONE_HOUR_IN_SECONDS, ONE_SECOND_MS, TEN_SECONDS_MS, TWO_MINUTES_MS } from '../lib/constants.js';
 
 enum OvenState {
   INITIAL = '@OV_STATE_INITIAL_W',
@@ -1964,7 +1964,7 @@ export default class Oven extends BaseDevice {
         setTimeout(() => {
           this.pauseUpdate = false;
           this.firstPause = true;
-        }, 60000 * 2);
+        }, TWO_MINUTES_MS);
       }
     }
   }
