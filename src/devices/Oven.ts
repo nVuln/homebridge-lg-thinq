@@ -829,23 +829,27 @@ export default class Oven extends BaseDevice {
       this.platform.log.debug('Alarm Set to: ' + this.secondsToTime(time));
       const ctrlKey = 'SetTimer';
       const device = this.accessory.context.device;
-      this.platform.ThinQ?.deviceControl(device.id, {
-        dataKey: null,
-        dataValue: null,
-        dataSetList: {
-          ovenState: {
-            'cmdOptionContentsType': 'TIMER',
-            'cmdOptionDataLength': 'TIMER',
-            'lowerTimerHour': 128,
-            'lowerTimerMinute': 128,
-            'lowerTimerSecond': 128,
-            'upperTimerHour': Math.floor(time / 3600),
-            'upperTimerMinute': Math.floor(time % 3600 / 60),
-            'upperTimerSecond': Math.floor(time % 60),
+      try {
+        await this.platform.ThinQ?.deviceControl(device.id, {
+          dataKey: null,
+          dataValue: null,
+          dataSetList: {
+            ovenState: {
+              'cmdOptionContentsType': 'TIMER',
+              'cmdOptionDataLength': 'TIMER',
+              'lowerTimerHour': 128,
+              'lowerTimerMinute': 128,
+              'lowerTimerSecond': 128,
+              'upperTimerHour': Math.floor(time / 3600),
+              'upperTimerMinute': Math.floor(time % 3600 / 60),
+              'upperTimerSecond': Math.floor(time % 60),
+            },
           },
-        },
-        dataGetList: null,
-      }, 'Set', ctrlKey);
+          dataGetList: null,
+        }, 'Set', ctrlKey);
+      } catch (error) {
+        this.logger.error('Error sending timer command:', error);
+      }
       this.waitingForCommand = true;
       setTimeout(() => {
         this.pauseUpdate = false;
@@ -949,28 +953,32 @@ export default class Oven extends BaseDevice {
         this.platform.log.debug('Sending the Folowing Commands: ' + JSON.stringify(this.ovenCommandList));
         const ctrlKey = 'SetCookStart';
         const device = this.accessory.context.device;
-        this.platform.ThinQ?.deviceControl(device.id, {
-          dataKey: null,
-          dataValue: null,
-          dataSetList: {
-            ovenState: {
-              'cmdOptionContentsType': 'REMOTE_COOK_START',
-              'cmdOptionDataLength': 'REMOTE_COOK_START',
-              'cmdOptionSetCookAndWarm': this.ovenCommandList.ovenKeepWarm,
-              'cmdOptionSetCookName': this.ovenCommandList.ovenMode,
-              'cmdOptionSetMyRecipeCookNumber': 0,
-              'cmdOptionSetSteamLevel': '',
-              'cmdOptionSetSubCookNumber': 0,
-              'cmdOptionSetTargetTemperatureUnit': this.ovenCommandList.tempUnits,
-              'cmdOptionSetTargetTimeHour': Math.floor(this.ovenCommandList.ovenSetDuration / 3600),
-              'cmdOptionSetTargetTimeMinute': Math.floor(this.ovenCommandList.ovenSetDuration % 3600 / 60),
-              'cmdOptionSetRapidPreheat': 'OFF',
-              'setTargetProveTemperature': this.ovenCommandList.probeTemperature,
-              'setTargetTemperature': this.ovenCommandList.ovenSetTemperature,
+        try {
+          await this.platform.ThinQ?.deviceControl(device.id, {
+            dataKey: null,
+            dataValue: null,
+            dataSetList: {
+              ovenState: {
+                'cmdOptionContentsType': 'REMOTE_COOK_START',
+                'cmdOptionDataLength': 'REMOTE_COOK_START',
+                'cmdOptionSetCookAndWarm': this.ovenCommandList.ovenKeepWarm,
+                'cmdOptionSetCookName': this.ovenCommandList.ovenMode,
+                'cmdOptionSetMyRecipeCookNumber': 0,
+                'cmdOptionSetSteamLevel': '',
+                'cmdOptionSetSubCookNumber': 0,
+                'cmdOptionSetTargetTemperatureUnit': this.ovenCommandList.tempUnits,
+                'cmdOptionSetTargetTimeHour': Math.floor(this.ovenCommandList.ovenSetDuration / 3600),
+                'cmdOptionSetTargetTimeMinute': Math.floor(this.ovenCommandList.ovenSetDuration % 3600 / 60),
+                'cmdOptionSetRapidPreheat': 'OFF',
+                'setTargetProveTemperature': this.ovenCommandList.probeTemperature,
+                'setTargetTemperature': this.ovenCommandList.ovenSetTemperature,
+              },
             },
-          },
-          dataGetList: null,
-        }, 'Set', ctrlKey);
+            dataGetList: null,
+          }, 'Set', ctrlKey);
+        } catch (error) {
+          this.logger.error('Error sending oven command:', error);
+        }
 
         this.waitingForCommand = true;
         setTimeout(() => {
@@ -992,16 +1000,20 @@ export default class Oven extends BaseDevice {
         this.platform.log.debug('Stop Command Sent to Oven');
         const ctrlKey = 'SetCookStop';
         const device = this.accessory.context.device;
-        this.platform.ThinQ?.deviceControl(device.id, {
-          dataKey: null,
-          dataValue: null,
-          dataSetList: {
-            ovenState: {
-              'cmdOptionCookStop': 'UPPER',
+        try {
+          await this.platform.ThinQ?.deviceControl(device.id, {
+            dataKey: null,
+            dataValue: null,
+            dataSetList: {
+              ovenState: {
+                'cmdOptionCookStop': 'UPPER',
+              },
             },
-          },
-          dataGetList: null,
-        }, 'Set', ctrlKey);
+            dataGetList: null,
+          }, 'Set', ctrlKey);
+        } catch (error) {
+          this.logger.error('Error stopping oven:', error);
+        }
 
         setTimeout(() => {
           this.pauseUpdate = false;
