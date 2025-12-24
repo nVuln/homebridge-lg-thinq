@@ -61,8 +61,8 @@ export class Auth {
       'user_auth2': encrypted_password,
       'log_param': 'login request / user_id : ' + username + ' / third_party : null / svc_list : SVC202,SVC710 / 3rd_service : ',
     };
-    const preLogin = await requestClient.post(this.gateway.login_base_url + 'preLogin', qs.stringify(preLoginData), { headers })
-      .then(res => res.data);
+    const preLoginResponse = await requestClient.post(this.gateway.login_base_url + 'preLogin', qs.stringify(preLoginData), { headers });
+    const preLogin = preLoginResponse.data;
 
     headers['X-Signature'] = preLogin.signature;
     headers['X-Timestamp'] = preLogin.tStamp;
@@ -76,7 +76,11 @@ export class Auth {
 
     // try login with username and hashed password
     const loginUrl = this.gateway.emp_base_url + 'emp/v2.0/account/session/' + encodeURIComponent(username);
-    const account = await requestClient.post(loginUrl, qs.stringify(data), { headers }).then(res => res.data.account).catch(err => {
+    let account;
+    try {
+      const loginResponse = await requestClient.post(loginUrl, qs.stringify(data), { headers });
+      account = loginResponse.data.account;
+    } catch (err: any) {
       if (!err.response) {
         throw err;
       }
@@ -87,11 +91,12 @@ export class Auth {
       }
 
       throw new AuthenticationError(message);
-    });
+    }
 
     // dynamic get secret key for emp signature
     const empSearchKeyUrl = this.gateway.login_base_url + 'searchKey?key_name=OAUTH_SECRETKEY&sever_type=OP';
-    const secretKey = await requestClient.get(empSearchKeyUrl).then(res => res.data).then(data => data.returnData);
+    const secretKeyResponse = await requestClient.get(empSearchKeyUrl);
+    const secretKey = secretKeyResponse.data.returnData;
 
     const timestamp = DateTime.utc().toRFC2822();
     const empData = {
@@ -121,11 +126,13 @@ export class Auth {
       'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36 Edg/93.0.961.44',
     };
     // create emp session and get access token
-    const authorize = await requestClient.get(empUrl.href, {
-      headers: empHeaders,
-    }).then(res => res.data).catch(err => {
+    let authorize;
+    try {
+      const authorizeResponse = await requestClient.get(empUrl.href, { headers: empHeaders });
+      authorize = authorizeResponse.data;
+    } catch (err: any) {
       throw new AuthenticationError(err.response.data.error.message);
-    });
+    }
     if (authorize.status !== 1) {
       throw new TokenError(authorize.message || authorize);
     }
@@ -189,11 +196,12 @@ export class Auth {
   public async handleNewTerm(accessToken: string) {
     const showTermUrl = 'common/showTerms?callback_url=lgaccount.lgsmartthinq:/updateTerms'
       + '&country=VN&language=en-VN&division=ha:T20&terms_display_type=3&svc_list=SVC202';
-    const showTermHtml = await requestClient.get(this.gateway.login_base_url + showTermUrl, {
+    const showTermResponse = await requestClient.get(this.gateway.login_base_url + showTermUrl, {
       headers: {
         'X-Login-Session': accessToken,
       },
-    }).then(res => res.data);
+    });
+    const showTermHtml = showTermResponse.data;
 
     const headers = {
       ...this.defaultEmpHeaders,
@@ -203,18 +211,14 @@ export class Auth {
     };
 
     const accountTermUrl = 'emp/v2.0/account/user/terms?opt_term_cond=001&term_data=SVC202&itg_terms_use_flag=Y&dummy_terms_use_flag=Y';
-    const accountTerms = (await requestClient.get(this.gateway.emp_base_url + accountTermUrl, { headers })
-      .then(res => {
-        return res.data.account?.terms;
-      }))
-      .map((term: any) => {
-        return term.termsID;
-      });
+    const accountTermResponse = await requestClient.get(this.gateway.emp_base_url + accountTermUrl, { headers });
+    const accountTerms = (accountTermResponse.data.account?.terms || []).map((term: any) => {
+      return term.termsID;
+    });
 
     const termInfoUrl = 'emp/v2.0/info/terms?opt_term_cond=001&only_service_terms_flag=&itg_terms_use_flag=Y&term_data=SVC202';
-    const infoTerms = await requestClient.get(this.gateway.emp_base_url + termInfoUrl, { headers }).then(res => {
-      return res.data.info.terms;
-    });
+    const termInfoResponse = await requestClient.get(this.gateway.emp_base_url + termInfoUrl, { headers });
+    const infoTerms = termInfoResponse.data.info.terms;
 
     const newTermAgreeNeeded = infoTerms.filter((term: any) => {
       return accountTerms.indexOf(term.termsID) === -1;
@@ -252,21 +256,21 @@ export class Auth {
       token: accessToken,
     };
 
-    return await requestClient.post(memberLoginUrl, { lgedmRoot: memberLoginData }, {
-      headers: memberLoginHeaders,
-    })
-      .then(res => res.data)
-      .then(data => data.lgedmRoot.jsessionId)
-      .catch(err => {
-        this.logger.debug(
-          err.message.startsWith(ManualProcessNeededErrorCode)
-            ? 'Please open the native LG App and sign in to your account to see what happened,'
-            + ' maybe new agreement need your accept. Then try restarting Homebridge.'
-            : err.message,
-        );
-        this.logger.debug(err);
-        this.logger.info('Failed to login to old thinq v1 gateway. See debug logs for more details. Continuing anyways.');
+    try {
+      const memberLoginResponse = await requestClient.post(memberLoginUrl, { lgedmRoot: memberLoginData }, {
+        headers: memberLoginHeaders,
       });
+      return memberLoginResponse.data.lgedmRoot.jsessionId;
+    } catch (err: any) {
+      this.logger.debug(
+        err.message.startsWith(ManualProcessNeededErrorCode)
+          ? 'Please open the native LG App and sign in to your account to see what happened,'
+          + ' maybe new agreement need your accept. Then try restarting Homebridge.'
+          : err.message,
+      );
+      this.logger.debug(err);
+      this.logger.info('Failed to login to old thinq v1 gateway. See debug logs for more details. Continuing anyways.');
+    }
   }
 
   /**
@@ -277,7 +281,7 @@ export class Auth {
    */
   public async refreshNewToken(session: Session) {
     try {
-      const gateway = await requestClient.post('https://kic.lgthinq.com:46030/api/common/gatewayUriList', {
+      const gatewayResponse = await requestClient.post('https://kic.lgthinq.com:46030/api/common/gatewayUriList', {
         lgedmRoot: {
           countryCode: this.gateway.country_code,
           langCode: this.gateway.language_code,
@@ -288,9 +292,9 @@ export class Auth {
           'x-thinq-application-key': 'wideq',
           'x-thinq-security-key': 'nuts_securitykey',
         },
-      }).then(res => res.data.lgedmRoot);
+      });
 
-      this.lgeapi_url = gateway.oauthUri + '/';
+      this.lgeapi_url = gatewayResponse.data.lgedmRoot.oauthUri + '/';
     } catch (err) {
       // ignore this error
     }
@@ -314,9 +318,9 @@ export class Auth {
       'Accept': 'application/json',
       'Content-Type': 'application/x-www-form-urlencoded',
     };
-    const resp = await requestClient.post(tokenUrl, qs.stringify(data), { headers }).then(resp => resp.data);
+    const tokenResponse = await requestClient.post(tokenUrl, qs.stringify(data), { headers });
 
-    session.newToken(resp.access_token, parseInt(resp.expires_in));
+    session.newToken(tokenResponse.data.access_token, parseInt(tokenResponse.data.expires_in));
 
     return session;
   }
@@ -344,12 +348,12 @@ export class Auth {
       'x-lge-oauth-signature': signature,
     };
 
-    const resp = await requestClient.get(profileUrl, { headers }).then(resp => resp.data);
-    if (resp.status === 2) {
-      throw new AuthenticationError(resp.message);
+    const profileResponse = await requestClient.get(profileUrl, { headers });
+    if (profileResponse.data.status === 2) {
+      throw new AuthenticationError(profileResponse.data.message);
     }
 
-    return resp.account.userNo as string;
+    return profileResponse.data.account.userNo as string;
   }
 
   /**
