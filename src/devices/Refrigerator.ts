@@ -48,65 +48,36 @@ export default class Refrigerator extends BaseDevice {
     }
 
     // Door open state
-    this.serviceDoorOpened = accessory.getService(ContactSensor);
-    if (!this.serviceDoorOpened) {
-      this.serviceDoorOpened = accessory.addService(ContactSensor, 'Refrigerator Door Closed');
-      this.serviceDoorOpened.addOptionalCharacteristic(Characteristic.ConfiguredName);
-      this.serviceDoorOpened.updateCharacteristic(Characteristic.ConfiguredName, 'Refrigerator Door Closed');
-    }
+    this.serviceDoorOpened = this.getOrCreateService(ContactSensor, 'Refrigerator Door Closed');
 
-    this.serviceExpressMode = accessory.getService('Express Freezer');
-    if (this.config.ref_express_freezer && device.snapshot && 'expressMode' in device.snapshot.refState) {
-      if (!this.serviceExpressMode) {
-        this.serviceExpressMode = accessory.addService(Switch, 'Express Freezer', 'Express Freezer');
-        this.serviceExpressMode.addOptionalCharacteristic(Characteristic.ConfiguredName);
-        this.serviceExpressMode.updateCharacteristic(Characteristic.ConfiguredName, 'Express Freezer');
-      }
-
+    // Express Freezer mode
+    const hasExpressFreezer = this.config.ref_express_freezer
+      && device.snapshot && 'expressMode' in device.snapshot.refState;
+    this.serviceExpressMode = this.ensureService(Switch, 'Express Freezer', hasExpressFreezer, 'Express Freezer');
+    if (this.serviceExpressMode) {
       this.serviceExpressMode.getCharacteristic(Characteristic.On).onSet(this.setExpressMode.bind(this));
-    } else if (this.serviceExpressMode) {
-      accessory.removeService(this.serviceExpressMode);
-      this.serviceExpressMode = undefined;
     }
 
-    this.serviceExpressFridge = accessory.getService('Express Fridge');
-    if (this.config.ref_express_fridge && device.snapshot && 'expressFridge' in device.snapshot.refState) {
-      if (!this.serviceExpressFridge) {
-        this.serviceExpressFridge = accessory.addService(Switch, 'Express Fridge', 'Express Fridge');
-        this.serviceExpressFridge.addOptionalCharacteristic(Characteristic.ConfiguredName);
-        this.serviceExpressFridge.updateCharacteristic(Characteristic.ConfiguredName, 'Express Fridge');
-      }
-
+    // Express Fridge mode
+    const hasExpressFridge = this.config.ref_express_fridge
+      && device.snapshot && 'expressFridge' in device.snapshot.refState;
+    this.serviceExpressFridge = this.ensureService(Switch, 'Express Fridge', hasExpressFridge, 'Express Fridge');
+    if (this.serviceExpressFridge) {
       this.serviceExpressFridge.getCharacteristic(Characteristic.On).onSet(this.setExpressFridge.bind(this));
-    } else if (this.serviceExpressFridge) {
-      accessory.removeService(this.serviceExpressFridge);
-      this.serviceExpressFridge = undefined;
     }
 
-    this.serviceEcoFriendly = accessory.getService('Eco Friendly');
-    if (this.config.ref_eco_friendly && device.snapshot && 'ecoFriendly' in device.snapshot.refState) {
-      if (!this.serviceEcoFriendly) {
-        this.serviceEcoFriendly = accessory.addService(Switch, 'Eco Friendly', 'Eco Friendly');
-        this.serviceEcoFriendly.addOptionalCharacteristic(Characteristic.ConfiguredName);
-        this.serviceEcoFriendly.updateCharacteristic(Characteristic.ConfiguredName, 'Eco Friendly');
-      }
-
+    // Eco Friendly mode
+    const hasEcoFriendly = this.config.ref_eco_friendly
+      && device.snapshot && 'ecoFriendly' in device.snapshot.refState;
+    this.serviceEcoFriendly = this.ensureService(Switch, 'Eco Friendly', hasEcoFriendly, 'Eco Friendly');
+    if (this.serviceEcoFriendly) {
       this.serviceEcoFriendly.getCharacteristic(Characteristic.On).onSet(this.setEcoFriendly.bind(this));
-    } else if (this.serviceEcoFriendly) {
-      accessory.removeService(this.serviceEcoFriendly);
-      this.serviceEcoFriendly = undefined;
     }
 
-    if (this.Status.hasFeature('waterFilter')) {
-      this.serviceWaterFilter = accessory.getService('Water Filter Maintenance');
-      if (!this.serviceWaterFilter) {
-        this.serviceWaterFilter = accessory.addService(FilterMaintenance, 'Water Filter Maintenance', 'Water Filter Maintenance');
-        this.serviceWaterFilter.addOptionalCharacteristic(Characteristic.ConfiguredName);
-        this.serviceWaterFilter.updateCharacteristic(Characteristic.ConfiguredName, 'Water Filter Maintenance');
-      }
-
-      this.serviceWaterFilter.updateCharacteristic(Characteristic.Name, 'Water Filter Maintenance');
-    }
+    // Water Filter maintenance
+    this.serviceWaterFilter = this.ensureService(
+      FilterMaintenance, 'Water Filter Maintenance', this.Status.hasFeature('waterFilter'), 'Water Filter Maintenance',
+    );
   }
 
   public get config() {
