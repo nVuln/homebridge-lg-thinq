@@ -58,42 +58,47 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       return;
     }
 
-    const didFinishLaunching = () => {
-      // Discover and register devices after the platform is ready
-      this.ThinQ.isReady().then(() => {
-        this.log.info('Successfully connected to the ThinQ API.');
-        const discoverDevices = () => {
-          this.discoverDevices().then(async () => {
-            await this.startMonitor();
-          }).catch(err => {
-            if (err instanceof NotConnectedError) {
-              // Retry device discovery after 30 seconds if not connected
-              setTimeout(() => {
-                discoverDevices();
-              }, DEVICE_DISCOVERY_DELAY_MS);
-            } else {
-              this.log.error(err.message);
-              this.log.debug(err);
-            }
-          });
-        };
+    const didFinishLaunching = async () => {
+      const discoverDevices = async () => {
+        try {
+          await this.discoverDevices();
+          await this.startMonitor();
+        } catch (err) {
+          if (err instanceof NotConnectedError) {
+            // Retry device discovery after 30 seconds if not connected
+            setTimeout(() => {
+              discoverDevices();
+            }, DEVICE_DISCOVERY_DELAY_MS);
+          } else {
+            const error = err as Error;
+            this.log.error(error.message);
+            this.log.debug(error.message);
+          }
+        }
+      };
 
-        discoverDevices();
-      }).catch(err => {
-        if (err.message === 'Internal Server Error' || err.code?.indexOf('ECONN') === 0 || err instanceof NotConnectedError) {
+      try {
+        await this.ThinQ.isReady();
+        this.log.info('Successfully connected to the ThinQ API.');
+        await discoverDevices();
+      } catch (err) {
+        if ((err as Error).message === 'Internal Server Error'
+          || (err as { code?: string }).code?.indexOf('ECONN') === 0
+          || err instanceof NotConnectedError) {
           this.log.error('LG ThinQ internal server error, try again later.');
         } else {
           this.log.error('ThinQ API is not ready. Please check configuration and try again.');
         }
 
-        this.log.error(err.message);
-        this.log.debug(err);
-      });
+        const error = err as Error;
+        this.log.error(error.message);
+        this.log.debug(error.stack || error.message);
+      }
     };
 
     this.api.on('didFinishLaunching', async () => {
       log.debug('Executed didFinishLaunching callback');
-      didFinishLaunching();
+      await didFinishLaunching();
     });
   }
 
@@ -154,9 +159,7 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
       const accessoryType = Helper.make(device);
       if (accessoryType === null) {
         this.log.info('Device not supported: ' + device.platform + ': ' + device.toString());
-        this.ThinQ.unregister(device).then(() => {
-          this.log.debug(device.id, '- unregistered!');
-        });
+        this.ThinQ.unregister(device).then(() => this.log.debug(device.id, '- unregistered!'));
         continue;
       }
 
@@ -214,11 +217,10 @@ export class LGThinQHomebridgePlatform implements DynamicPlatformPlugin {
 
     if (thinq2devices.length) {
       // Start polling ThinQ2 devices at the configured interval
-      setInterval(() => {
-        this.ThinQ.devices().then((devices) => {
-          devices.filter(device => device.platform === PlatformType.ThinQ2).forEach(device => {
-            this.events.emit(device.id, device.snapshot);
-          });
+      setInterval(async () => {
+        const devices = await this.ThinQ.devices();
+        devices.filter(device => device.platform === PlatformType.ThinQ2).forEach(device => {
+          this.events.emit(device.id, device.snapshot);
         });
       }, this.intervalTime);
 
