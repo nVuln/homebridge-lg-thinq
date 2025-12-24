@@ -1,4 +1,4 @@
-﻿import { AccessoryContext, BaseDevice } from '../baseDevice.js';
+import { AccessoryContext, BaseDevice } from '../baseDevice.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';

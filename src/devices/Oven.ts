@@ -100,7 +100,7 @@ export default class Oven extends BaseDevice {
   protected ovenState;
   protected ovenMode;
   protected ovenTemp;
-  protected prove;
+  protected probeService;
   protected ovenOptions;
   protected ovenStart;
   protected ovenTimer;
@@ -221,13 +221,13 @@ export default class Oven extends BaseDevice {
       });
     this.ovenService.addLinkedService(this.ovenTemp);
 
-    this.prove = this.createInputSourceService('Probe Status', 'NicoCata-Always15', 4, this.proveStatus(), this.showProbe);
-    this.prove.getCharacteristic(this.platform.Characteristic.ConfiguredName)
+    this.probeService = this.createInputSourceService('Probe Status', 'NicoCata-Always15', 4, this.probeStatus(), this.showProbe);
+    this.probeService.getCharacteristic(this.platform.Characteristic.ConfiguredName)
       .on('get', (callback) => {
-        const currentValue = this.proveStatus();
+        const currentValue = this.probeStatus();
         callback(null, currentValue);
       });
-    this.ovenService.addLinkedService(this.prove);
+    this.ovenService.addLinkedService(this.probeService);
 
     this.ovenOptions = this.createInputSourceService('Oven Options', 'NicoCata-Always4', 5, this.oventOptions(), this.ovenOnStatus());
     this.ovenOptions.getCharacteristic(this.platform.Characteristic.ConfiguredName)
@@ -1413,7 +1413,7 @@ export default class Oven extends BaseDevice {
   }
 
   ///////////
-  proveStatus() {
+  probeStatus() {
     if (this.Status.data.upperCurrentProveTemperatureF !== 0 && typeof this.Status.data.upperCurrentProveTemperatureF !== 'undefined') {
       this.probeName = '';
       this.showProbe = true;
@@ -1787,8 +1787,8 @@ export default class Oven extends BaseDevice {
       if (this.ovenMode.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.ovenModeName()) {
         this.ovenMode.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.ovenModeName());
       }
-      if (this.prove.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.proveStatus()) {
-        this.prove.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.proveStatus());
+      if (this.probeService.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.probeStatus()) {
+        this.probeService.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.probeStatus());
       }
       if (this.ovenTemp.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.ovenTemperature()) {
         this.ovenTemp.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.ovenTemperature());
@@ -1835,7 +1835,7 @@ export default class Oven extends BaseDevice {
 
       updateVisibility(this.ovenMode, this.ovenOnStatus());
       updateVisibility(this.ovenTemp, this.ovenOnStatus());
-      updateVisibility(this.prove, this.showProbe);
+      updateVisibility(this.probeService, this.showProbe);
       updateVisibility(this.ovenOptions, this.ovenOnStatus());
       updateVisibility(this.ovenStart, this.showTime);
       updateVisibility(this.ovenTime, this.showTime);
