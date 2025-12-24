@@ -93,7 +93,7 @@ export default class AirConditioner extends BaseDevice {
         HeaterCooler,
       },
     } = this.platform;
-    this.service = this.accessory.getService(HeaterCooler) || this.accessory.addService(HeaterCooler, device.name);
+    this.service = this.getOrCreateService(HeaterCooler, device.name);
 
     this.createHeaterCoolerService();
     this.service.addOptionalCharacteristic(this.platform.customCharacteristics.TotalConsumption);
@@ -104,36 +104,24 @@ export default class AirConditioner extends BaseDevice {
       accessory.removeService(this.serviceAirQuality);
     }
 
-    this.serviceSensor = accessory.getService(TemperatureSensor);
-    if (this.config.ac_temperature_sensor as boolean) {
-      this.serviceSensor = this.serviceSensor || accessory.addService(TemperatureSensor);
+    this.serviceSensor = this.ensureService(TemperatureSensor, 'Temperature Sensor', this.config.ac_temperature_sensor as boolean);
+    if (this.serviceSensor) {
       this.serviceSensor.updateCharacteristic(platform.Characteristic.StatusActive, false);
       this.serviceSensor.addLinkedService(this.service);
-    } else if (this.serviceSensor) {
-      accessory.removeService(this.serviceSensor);
-      this.serviceSensor = undefined;
     }
 
-    this.serviceHumiditySensor = accessory.getService(HumiditySensor);
-    if (this.config.ac_humidity_sensor as boolean) {
-      this.serviceHumiditySensor = this.serviceHumiditySensor || accessory.addService(HumiditySensor);
+    this.serviceHumiditySensor = this.ensureService(HumiditySensor, 'Humidity Sensor', this.config.ac_humidity_sensor as boolean);
+    if (this.serviceHumiditySensor) {
       this.serviceHumiditySensor.updateCharacteristic(platform.Characteristic.StatusActive, false);
-      this.serviceSensor?.addLinkedService(this.service);
-    } else if (this.serviceHumiditySensor) {
-      accessory.removeService(this.serviceHumiditySensor);
-      this.serviceHumiditySensor = undefined;
+      this.serviceHumiditySensor.addLinkedService(this.service);
     }
 
-    this.serviceLight = accessory.getService(Lightbulb);
-    if (this.config.ac_led_control as boolean) {
-      this.serviceLight = this.serviceLight || accessory.addService(Lightbulb);
+    this.serviceLight = this.ensureService(Lightbulb, 'Light', this.config.ac_led_control as boolean);
+    if (this.serviceLight) {
       this.serviceLight.getCharacteristic(platform.Characteristic.On)
         .onSet(this.setLight.bind(this))
         .updateValue(false); // off as default
       this.serviceLight.addLinkedService(this.service);
-    } else if (this.serviceLight) {
-      accessory.removeService(this.serviceLight);
-      this.serviceLight = undefined;
     }
 
     if (this.config.ac_fan_control as boolean) {
@@ -143,50 +131,38 @@ export default class AirConditioner extends BaseDevice {
     }
 
     // more feature
-    if (this.config.ac_jet_control as boolean && this.isJetModeEnabled(device.model)) {
-      this.serviceJetMode = accessory.getService('Jet Mode') || accessory.addService(Switch, 'Jet Mode', 'Jet Mode');
+    const enableJetMode = this.config.ac_jet_control as boolean && this.isJetModeEnabled(device.model);
+    this.serviceJetMode = this.ensureService(Switch, 'Jet Mode', enableJetMode, 'Jet Mode');
+    if (this.serviceJetMode) {
       this.serviceJetMode.addOptionalCharacteristic(platform.Characteristic.ConfiguredName);
       this.serviceJetMode.setCharacteristic(platform.Characteristic.ConfiguredName, device.name + ' Jet Mode');
       this.serviceJetMode.getCharacteristic(platform.Characteristic.On)
         .onSet(this.setJetModeActive.bind(this));
-    } else if (this.serviceJetMode) {
-      accessory.removeService(this.serviceJetMode);
-      this.serviceJetMode = undefined;
     }
 
-    if (this.quietModeModels.includes(device.model)) {
-      this.serviceQuietMode = accessory.getService('Quiet mode') || accessory.addService(Switch, 'Quiet mode', 'Quiet mode');
+    this.serviceQuietMode = this.ensureService(Switch, 'Quiet mode', this.quietModeModels.includes(device.model), 'Quiet mode');
+    if (this.serviceQuietMode) {
       this.serviceQuietMode.updateCharacteristic(platform.Characteristic.Name, 'Quiet mode');
       this.serviceQuietMode.getCharacteristic(platform.Characteristic.On)
         .onSet(this.setQuietModeActive.bind(this));
     }
 
-    this.serviceEnergySaveMode = accessory.getService('Energy save');
-    if (this.energySaveModeModels.includes(device.model) && this.config.ac_energy_save as boolean) {
-      if (!this.serviceEnergySaveMode) {
-        this.serviceEnergySaveMode = accessory.addService(Switch, 'Energy save', 'Energy save');
-        this.serviceEnergySaveMode.addOptionalCharacteristic(platform.Characteristic.ConfiguredName);
-        this.serviceEnergySaveMode.setCharacteristic(platform.Characteristic.ConfiguredName, device.name + ' Energy save');
-      }
+    const enableEnergySave = this.energySaveModeModels.includes(device.model) && this.config.ac_energy_save as boolean;
+    this.serviceEnergySaveMode = this.ensureService(Switch, 'Energy save', enableEnergySave, 'Energy save');
+    if (this.serviceEnergySaveMode) {
+      this.serviceEnergySaveMode.addOptionalCharacteristic(platform.Characteristic.ConfiguredName);
+      this.serviceEnergySaveMode.setCharacteristic(platform.Characteristic.ConfiguredName, device.name + ' Energy save');
       this.serviceEnergySaveMode.getCharacteristic(platform.Characteristic.On)
         .onSet(this.setEnergySaveActive.bind(this));
-    } else if (this.serviceEnergySaveMode) {
-      accessory.removeService(this.serviceEnergySaveMode);
-      this.serviceEnergySaveMode = undefined;
     }
 
-    this.serviceAirClean = accessory.getService('Air Purify');
-    if (this.airCleanModels.includes(device.model) && this.config.ac_air_clean as boolean) {
-      if (!this.serviceAirClean) {
-        this.serviceAirClean = accessory.addService(Switch, 'Air Purify', 'Air Purify');
-        this.serviceAirClean.addOptionalCharacteristic(platform.Characteristic.ConfiguredName);
-        this.serviceAirClean.setCharacteristic(platform.Characteristic.ConfiguredName, device.name + ' Air Purify');
-      }
+    const enableAirClean = this.airCleanModels.includes(device.model) && this.config.ac_air_clean as boolean;
+    this.serviceAirClean = this.ensureService(Switch, 'Air Purify', enableAirClean, 'Air Purify');
+    if (this.serviceAirClean) {
+      this.serviceAirClean.addOptionalCharacteristic(platform.Characteristic.ConfiguredName);
+      this.serviceAirClean.setCharacteristic(platform.Characteristic.ConfiguredName, device.name + ' Air Purify');
       this.serviceAirClean.getCharacteristic(platform.Characteristic.On)
         .onSet(this.setAirCleanActive.bind(this));
-    } else if (this.serviceAirClean) {
-      accessory.removeService(this.serviceAirClean);
-      this.serviceAirClean = undefined;
     }
 
     this.setupButton(device);
@@ -214,7 +190,7 @@ export default class AirConditioner extends BaseDevice {
     const device: Device = this.accessory.context.device;
 
     // fan controller
-    this.serviceFanV2 = this.accessory.getService(Fanv2) || this.accessory.addService(Fanv2);
+    this.serviceFanV2 = this.getOrCreateService(Fanv2, device.name + ' Fan');
     this.serviceFanV2.addLinkedService(this.service);
 
     this.serviceFanV2.getCharacteristic(Characteristic.Active)
@@ -267,7 +243,7 @@ export default class AirConditioner extends BaseDevice {
       },
     } = this.platform;
 
-    this.serviceAirQuality = this.accessory.getService(AirQualitySensor) || this.accessory.addService(AirQualitySensor);
+    this.serviceAirQuality = this.getOrCreateService(AirQualitySensor, 'Air Quality');
   }
 
   protected createHeaterCoolerService() {
