@@ -94,6 +94,7 @@ export const MQTT_RETRY_DELAY_MS = 5000;
 export const SHORT_POLL_INTERVAL_MS = 10000;
 export const DEVICE_DISCOVERY_DELAY_MS = 30000;
 export const TEN_MINUTES_MS = 600000;
+export const TEN_SECONDS_MS = 10000;
 export const ONE_SECOND_MS = 1000;
 
 /**

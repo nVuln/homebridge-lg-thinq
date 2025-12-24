@@ -7,7 +7,7 @@ import { Logger, Perms, PlatformAccessory, Service } from 'homebridge';
 import { DeviceModel } from '../lib/DeviceModel.js';
 import { Device } from '../lib/Device.js';
 import { normalizeBoolean, normalizeNumber } from '../helper.js';
-import { TWELVE_HOURS_IN_SECONDS } from '../lib/constants.js';
+import { TWELVE_HOURS_IN_SECONDS, ONE_HOUR_IN_SECONDS, ONE_SECOND_MS, TEN_SECONDS_MS } from '../lib/constants.js';
 
 enum OvenState {
   INITIAL = '@OV_STATE_INITIAL_W',
@@ -566,7 +566,7 @@ export default class Oven extends BaseDevice {
         }
         setTimeout(() => {
           this.cancelSwitch.updateCharacteristic(this.platform.Characteristic.On, false);
-        }, 1000);
+        }, ONE_SECOND_MS);
         this.updateOvenModeSwitch();
         callback(null);
       });
@@ -605,7 +605,7 @@ export default class Oven extends BaseDevice {
           this.sendOvenCommand();
           setTimeout(() => {
             this.startOvenSwitch.updateCharacteristic(this.platform.Characteristic.On, false);
-          }, 1000);
+          }, ONE_SECOND_MS);
         }
         callback(null);
       });
@@ -818,8 +818,8 @@ export default class Oven extends BaseDevice {
   }
 
   secondsToTime(seconds: number) {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor(seconds % 3600 / 60);
+    const h = Math.floor(seconds / ONE_HOUR_IN_SECONDS);
+    const m = Math.floor(seconds % ONE_HOUR_IN_SECONDS / 60);
     const s = Math.floor(seconds % 60);
     return h + ':' + m + ':' + s + ' Hours';
   }
@@ -840,8 +840,8 @@ export default class Oven extends BaseDevice {
               'lowerTimerHour': 128,
               'lowerTimerMinute': 128,
               'lowerTimerSecond': 128,
-              'upperTimerHour': Math.floor(time / 3600),
-              'upperTimerMinute': Math.floor(time % 3600 / 60),
+              'upperTimerHour': Math.floor(time / ONE_HOUR_IN_SECONDS),
+              'upperTimerMinute': Math.floor(time % ONE_HOUR_IN_SECONDS / 60),
               'upperTimerSecond': Math.floor(time % 60),
             },
           },
@@ -854,7 +854,7 @@ export default class Oven extends BaseDevice {
       setTimeout(() => {
         this.pauseUpdate = false;
         this.firstPause = true;
-      }, 10000);
+      }, TEN_SECONDS_MS);
     }
     setTimeout(() => {
       this.waitingForCommand = false;
@@ -967,8 +967,8 @@ export default class Oven extends BaseDevice {
                 'cmdOptionSetSteamLevel': '',
                 'cmdOptionSetSubCookNumber': 0,
                 'cmdOptionSetTargetTemperatureUnit': this.ovenCommandList.tempUnits,
-                'cmdOptionSetTargetTimeHour': Math.floor(this.ovenCommandList.ovenSetDuration / 3600),
-                'cmdOptionSetTargetTimeMinute': Math.floor(this.ovenCommandList.ovenSetDuration % 3600 / 60),
+                'cmdOptionSetTargetTimeHour': Math.floor(this.ovenCommandList.ovenSetDuration / ONE_HOUR_IN_SECONDS),
+                'cmdOptionSetTargetTimeMinute': Math.floor(this.ovenCommandList.ovenSetDuration % ONE_HOUR_IN_SECONDS / 60),
                 'cmdOptionSetRapidPreheat': 'OFF',
                 'setTargetProveTemperature': this.ovenCommandList.probeTemperature,
                 'setTargetTemperature': this.ovenCommandList.ovenSetTemperature,
@@ -984,11 +984,11 @@ export default class Oven extends BaseDevice {
         setTimeout(() => {
           this.pauseUpdate = false;
           this.firstPause = true;
-        }, 10000);
+        }, TEN_SECONDS_MS);
       }
       setTimeout(() => {
         this.waitingForCommand = false;
-      }, 1000);
+      }, ONE_SECOND_MS);
 
     }
   }
@@ -1018,11 +1018,11 @@ export default class Oven extends BaseDevice {
         setTimeout(() => {
           this.pauseUpdate = false;
           this.firstPause = true;
-        }, 10000);
+        }, TEN_SECONDS_MS);
         this.waitingForCommand = true;
         setTimeout(() => {
           this.waitingForCommand = false;
-        }, 1000);
+        }, ONE_SECOND_MS);
       }
     }
   }
@@ -1068,7 +1068,7 @@ export default class Oven extends BaseDevice {
   remainTime() {
     let remainingDuration = 0;
     if (typeof this.Status.data?.upperRemainTimeHour !== 'undefined') {
-      remainingDuration += this.Status.data?.upperRemainTimeHour * 3600;
+      remainingDuration += this.Status.data?.upperRemainTimeHour * ONE_HOUR_IN_SECONDS;
     }
     if (typeof this.Status.data?.upperRemainTimeMinute !== 'undefined') {
       remainingDuration += this.Status.data?.upperRemainTimeMinute * 60;
@@ -1295,7 +1295,7 @@ export default class Oven extends BaseDevice {
   oventTargetTime() {
     let setDuration = 0;
     if (typeof this.Status.data?.upperTargetTimeHour !== 'undefined') {
-      setDuration += this.Status.data?.upperTargetTimeHour * 3600;
+      setDuration += this.Status.data?.upperTargetTimeHour * ONE_HOUR_IN_SECONDS;
     }
     if (typeof this.Status.data?.upperTargetTimeMinute !== 'undefined') {
       setDuration += this.Status.data?.upperTargetTimeMinute * 60;
@@ -1310,7 +1310,7 @@ export default class Oven extends BaseDevice {
   ovenTimerTime() {
     let remainTimer = 0;
     if (typeof this.Status.data?.upperTimerHour !== 'undefined') {
-      remainTimer += this.Status.data?.upperTimerHour * 3600;
+      remainTimer += this.Status.data?.upperTimerHour * ONE_HOUR_IN_SECONDS;
     }
     if (typeof this.Status.data?.upperTimerMinute !== 'undefined') {
       remainTimer += this.Status.data?.upperTimerMinute * 60;
@@ -1341,10 +1341,10 @@ export default class Oven extends BaseDevice {
       courseTimeString = courseTimeString.substring(1);
     }
     let hourMinutes = 'Minutes';
-    if (this.oventTargetTime() > 3600) {
+    if (this.oventTargetTime() > ONE_HOUR_IN_SECONDS) {
       hourMinutes = 'Hours';
     }
-    if (this.oventTargetTime() === 3600) {
+    if (this.oventTargetTime() === ONE_HOUR_IN_SECONDS) {
       hourMinutes = 'Hour';
 
     }
@@ -1360,10 +1360,10 @@ export default class Oven extends BaseDevice {
       courseTimerString = courseTimerString.substring(1);
     }
     let hourMinutes = 'Minutes';
-    if (this.ovenTimerTime() > 3600) {
+    if (this.ovenTimerTime() > ONE_HOUR_IN_SECONDS) {
       hourMinutes = 'Hours';
     }
-    if (this.ovenTimerTime() === 3600) {
+    if (this.ovenTimerTime() === ONE_HOUR_IN_SECONDS) {
       hourMinutes = 'Hour';
 
     }
@@ -1390,7 +1390,7 @@ export default class Oven extends BaseDevice {
   ovenCookingEndTime() {
     const courseCurrentTime = new Date();
     this.courseStartMS = courseCurrentTime.getTime();
-    const dateEnd = new Date(this.oventTargetTime() * 1000 + this.courseStartMS);
+    const dateEnd = new Date(this.oventTargetTime() * ONE_SECOND_MS + this.courseStartMS);
     const newEndDate = dateEnd.toLocaleString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -1524,7 +1524,7 @@ export default class Oven extends BaseDevice {
 
       let burnerOperationTime = 0;
       if (typeof this.Status.data?.cooktop1OperationTimeHour !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop1OperationTimeHour * 3600;
+        burnerOperationTime += this.Status.data?.cooktop1OperationTimeHour * ONE_HOUR_IN_SECONDS;
       }
       if (typeof this.Status.data?.cooktop1OperationTimeMinute !== 'undefined') {
         burnerOperationTime += this.Status.data?.cooktop1OperationTimeMinute * 60;
@@ -1553,7 +1553,7 @@ export default class Oven extends BaseDevice {
 
       let burnerOperationTime = 0;
       if (typeof this.Status.data?.cooktop2OperationTimeHour !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop2OperationTimeHour * 3600;
+        burnerOperationTime += this.Status.data?.cooktop2OperationTimeHour * ONE_HOUR_IN_SECONDS;
       }
       if (typeof this.Status.data?.cooktop1OperationTimeMinute !== 'undefined') {
         burnerOperationTime += this.Status.data?.cooktop2OperationTimeMinute * 60;
@@ -1581,7 +1581,7 @@ export default class Oven extends BaseDevice {
 
       let burnerOperationTime = 0;
       if (typeof this.Status.data?.cooktop3OperationTimeHour !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop3OperationTimeHour * 3600;
+        burnerOperationTime += this.Status.data?.cooktop3OperationTimeHour * ONE_HOUR_IN_SECONDS;
       }
       if (typeof this.Status.data?.cooktop3OperationTimeMinute !== 'undefined') {
         burnerOperationTime += this.Status.data?.cooktop3OperationTimeMinute * 60;
@@ -1608,7 +1608,7 @@ export default class Oven extends BaseDevice {
 
       let burnerOperationTime = 0;
       if (typeof this.Status.data?.cooktop4OperationTimeHour !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop4OperationTimeHour * 3600;
+        burnerOperationTime += this.Status.data?.cooktop4OperationTimeHour * ONE_HOUR_IN_SECONDS;
       }
       if (typeof this.Status.data?.cooktop4OperationTimeMinute !== 'undefined') {
         burnerOperationTime += this.Status.data?.cooktop4OperationTimeMinute * 60;
@@ -1635,7 +1635,7 @@ export default class Oven extends BaseDevice {
 
       let burnerOperationTime = 0;
       if (typeof this.Status.data?.cooktop5OperationTimeHour !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop5OperationTimeHour * 3600;
+        burnerOperationTime += this.Status.data?.cooktop5OperationTimeHour * ONE_HOUR_IN_SECONDS;
       }
       if (typeof this.Status.data?.cooktop5OperationTimeMinute !== 'undefined') {
         burnerOperationTime += this.Status.data?.cooktop5OperationTimeMinute * 60;
@@ -1696,10 +1696,10 @@ export default class Oven extends BaseDevice {
       newTimeString = newTimeString.substring(1);
     }
     let hourMinutes = 'Minutes';
-    if (timeInSeconds > 3600) {
+    if (timeInSeconds > ONE_HOUR_IN_SECONDS) {
       hourMinutes = 'Hours';
     }
-    if (timeInSeconds === 3600) {
+    if (timeInSeconds === ONE_HOUR_IN_SECONDS) {
       hourMinutes = 'Hour';
 
     }

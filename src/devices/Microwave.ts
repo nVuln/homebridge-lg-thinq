@@ -7,6 +7,7 @@ import { DeviceModel } from '../lib/DeviceModel.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { Logger, PlatformAccessory, Service } from 'homebridge';
 import { normalizeBoolean, normalizeNumber, safeParseInt } from '../helper.js';
+import { ONE_HOUR_IN_SECONDS, ONE_SECOND_MS, TEN_SECONDS_MS } from '../lib/constants.js';
 
 export default class Microwave extends BaseDevice {
   protected inputNameStatus = 'Microwave Status';
@@ -201,7 +202,7 @@ export default class Microwave extends BaseDevice {
 
           setTimeout(() => {
             this.offSwitch.updateCharacteristic(this.platform.Characteristic.On, false);
-          }, 1000);
+          }, ONE_SECOND_MS);
         }
         callback(null);
       });
@@ -965,7 +966,7 @@ export default class Microwave extends BaseDevice {
         }
         setTimeout(() => {
           this.cancelSwitch.updateCharacteristic(this.platform.Characteristic.On, false);
-        }, 1000);
+        }, ONE_SECOND_MS);
         this.updateOvenModeSwitch();
         callback(null);
       });
@@ -984,7 +985,7 @@ export default class Microwave extends BaseDevice {
           this.sendOvenCommand();
           setTimeout(() => {
             this.startOvenSwitch.updateCharacteristic(this.platform.Characteristic.On, false);
-          }, 1000);
+          }, ONE_SECOND_MS);
         }
         callback(null);
       });
@@ -1140,7 +1141,7 @@ export default class Microwave extends BaseDevice {
       setTimeout(() => {
         this.pauseUpdate = false;
         this.firstPause = true;
-      }, 10000);
+      }, TEN_SECONDS_MS);
     }
     setTimeout(() => {
       this.waitingForCommand = false;
@@ -1293,8 +1294,8 @@ export default class Microwave extends BaseDevice {
                   'cmdOptionSetReserved': 0,
                   'cmdOptionSetSubCookNumber': this.ovenCommandList.subCookNumber,
                   'cmdOptionSetTargetTemperatureUnit': this.ovenCommandList.tempUnits,
-                  'cmdOptionSetTargetTimeHour': Math.floor(this.ovenCommandList.ovenSetDuration / 3600),
-                  'cmdOptionSetTargetTimeMinute': Math.floor(this.ovenCommandList.ovenSetDuration % 3600 / 60),
+                  'cmdOptionSetTargetTimeHour': Math.floor(this.ovenCommandList.ovenSetDuration / ONE_HOUR_IN_SECONDS),
+                  'cmdOptionSetTargetTimeMinute': Math.floor(this.ovenCommandList.ovenSetDuration % ONE_HOUR_IN_SECONDS / 60),
                   'cmdOptionSetTargetTimeSecond': Math.floor(this.ovenCommandList.ovenSetDuration % 60),
                   'cmdOptionSetWeightUnit': this.ovenCommandList.weightUnits,
                   'cmdOptionStep': 0,
@@ -1343,11 +1344,11 @@ export default class Microwave extends BaseDevice {
         setTimeout(() => {
           this.pauseUpdate = false;
           this.firstPause = true;
-        }, 10000);
+        }, TEN_SECONDS_MS);
       }
       setTimeout(() => {
         this.waitingForCommand = false;
-      }, 1000);
+      }, ONE_SECOND_MS);
 
     }
   }
@@ -1377,11 +1378,11 @@ export default class Microwave extends BaseDevice {
         setTimeout(() => {
           this.pauseUpdate = false;
           this.firstPause = true;
-        }, 10000);
+        }, TEN_SECONDS_MS);
       }
       setTimeout(() => {
         this.waitingForCommand = false;
-      }, 1000);
+      }, ONE_SECOND_MS);
     }
   }
 
@@ -1423,8 +1424,8 @@ export default class Microwave extends BaseDevice {
   }
 
   secondsToTime(seconds: number) {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor(seconds % 3600 / 60);
+    const h = Math.floor(seconds / ONE_HOUR_IN_SECONDS);
+    const m = Math.floor(seconds % ONE_HOUR_IN_SECONDS / 60);
     const s = Math.floor(seconds % 60);
     return h + ':' + m + ':' + s + ' Hours';
   }
@@ -1432,7 +1433,7 @@ export default class Microwave extends BaseDevice {
   remainTime() {
     let remainingDuration = 0;
     if (typeof this.Status.data?.LWORemainTimeHour !== 'undefined') {
-      remainingDuration += this.Status.data?.LWORemainTimeHour * 3600;
+      remainingDuration += this.Status.data?.LWORemainTimeHour * ONE_HOUR_IN_SECONDS;
     }
     if (typeof this.Status.data?.LWORemainTimeMinute !== 'undefined') {
       remainingDuration += this.Status.data?.LWORemainTimeMinute * 60;
@@ -1707,7 +1708,7 @@ export default class Microwave extends BaseDevice {
   oventTargetTime() {
     let setDuration = 0;
     if (typeof this.Status.data?.LWOTargetTimeHour !== 'undefined') {
-      setDuration += this.Status.data?.LWOTargetTimeHour * 3600;
+      setDuration += this.Status.data?.LWOTargetTimeHour * ONE_HOUR_IN_SECONDS;
     }
     if (typeof this.Status.data?.LWOTargetTimeMinute !== 'undefined') {
       setDuration += this.Status.data?.LWOTargetTimeMinute * 60;
@@ -1722,7 +1723,7 @@ export default class Microwave extends BaseDevice {
   ovenTimerTime() {
     let remainTimer = 0;
     if (typeof this.Status.data?.LWOTimerHour !== 'undefined') {
-      remainTimer += this.Status.data?.LWOTimerHour * 3600;
+      remainTimer += this.Status.data?.LWOTimerHour * ONE_HOUR_IN_SECONDS;
     }
     if (typeof this.Status.data?.LWOTimerMinute !== 'undefined') {
       remainTimer += this.Status.data?.LWOTimerMinute * 60;
@@ -1753,10 +1754,10 @@ export default class Microwave extends BaseDevice {
       courseTimeString = courseTimeString.substring(1);
     }
     let hourMinutes = 'Minutes';
-    if (this.oventTargetTime() > 3600) {
+    if (this.oventTargetTime() > ONE_HOUR_IN_SECONDS) {
       hourMinutes = 'Hours';
     }
-    if (this.oventTargetTime() === 3600) {
+    if (this.oventTargetTime() === ONE_HOUR_IN_SECONDS) {
       hourMinutes = 'Hour';
 
     }
@@ -1772,10 +1773,10 @@ export default class Microwave extends BaseDevice {
       courseTimerString = courseTimerString.substring(1);
     }
     let hourMinutes = 'Minutes';
-    if (this.ovenTimerTime() > 3600) {
+    if (this.ovenTimerTime() > ONE_HOUR_IN_SECONDS) {
       hourMinutes = 'Hours';
     }
-    if (this.ovenTimerTime() === 3600) {
+    if (this.ovenTimerTime() === ONE_HOUR_IN_SECONDS) {
       hourMinutes = 'Hour';
 
     }
@@ -1802,7 +1803,7 @@ export default class Microwave extends BaseDevice {
   ovenCookingEndTime() {
     const courseCurrentTime = new Date();
     this.courseStartMS = courseCurrentTime.getTime();
-    const dateEnd = new Date(this.oventTargetTime() * 1000 + this.courseStartMS);
+    const dateEnd = new Date(this.oventTargetTime() * ONE_SECOND_MS + this.courseStartMS);
     const newEndDate = dateEnd.toLocaleString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -1873,10 +1874,10 @@ export default class Microwave extends BaseDevice {
     newTime.setSeconds(timeInSeconds);
     const newTimeString = newTime.toLocaleTimeString();
     let hourMinutes = 'Minutes';
-    if (timeInSeconds > 3600) {
+    if (timeInSeconds > ONE_HOUR_IN_SECONDS) {
       hourMinutes = 'Hours';
     }
-    if (timeInSeconds === 3600) {
+    if (timeInSeconds === ONE_HOUR_IN_SECONDS) {
       hourMinutes = 'Hour';
 
     }
