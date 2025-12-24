@@ -4,7 +4,7 @@ import { Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { normalizeNumber } from '../helper.js';
 import { WasherDryerStatus } from './WasherDryer.js';
-import { SIX_HOURS_IN_SECONDS } from '../lib/constants.js';
+import { SIX_HOURS_IN_SECONDS, TEN_MINUTES_MS, ONE_HOUR_IN_SECONDS } from '../lib/constants.js';
 
 export default class Dishwasher extends BaseDevice {
   public isRunning = false;
@@ -324,7 +324,7 @@ export default class Dishwasher extends BaseDevice {
 
         }
         this.inputName = 'Finished Cycle ' + this.finishedTime;
-        if (this.Status.data.extraDry.includes('ON') && this.dryCounter > 3 && this.Status.remainDuration === 3600) {
+        if (this.Status.data.extraDry.includes('ON') && this.dryCounter > 3 && this.Status.remainDuration === ONE_HOUR_IN_SECONDS) {
           this.inputName += ' (Waiting For Extra Dry Step)';
         }
       } else if (this.Status.data.state.includes('FAIL')) {
@@ -380,10 +380,10 @@ export default class Dishwasher extends BaseDevice {
             delayTimeString = delayTimeString.substring(1);
           }
           let hourMinutes = 'Minutes';
-          if (this.delayTime > 3600) {
+          if (this.delayTime > ONE_HOUR_IN_SECONDS) {
             hourMinutes = 'Hours';
           }
-          if (this.delayTime === 3600) {
+          if (this.delayTime === ONE_HOUR_IN_SECONDS) {
             hourMinutes = 'Hour';
 
           }
@@ -474,10 +474,10 @@ export default class Dishwasher extends BaseDevice {
       courseTimeString = courseTimeString.substring(1);
     }
     let hourMinutes = 'Minutes';
-    if (this.Status.remainDuration > 3600) {
+    if (this.Status.remainDuration > ONE_HOUR_IN_SECONDS) {
       hourMinutes = 'Hours';
     }
-    if (this.Status.remainDuration === 3600) {
+    if (this.Status.remainDuration === ONE_HOUR_IN_SECONDS) {
       hourMinutes = 'Hour';
 
     }
@@ -795,7 +795,7 @@ export default class Dishwasher extends BaseDevice {
         // turn it off after 10 minute
         setTimeout(() => {
           this.serviceEventFinished?.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_NOT_DETECTED);
-        }, 10000 * 60);
+        }, TEN_MINUTES_MS);
       }
 
       // detect if dishwasher program is start
