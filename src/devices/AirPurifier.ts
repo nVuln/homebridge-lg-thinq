@@ -41,13 +41,7 @@ export default class AirPurifier extends BaseDevice {
     const device: Device = accessory.context.device;
 
     // get the service if it exists, otherwise create a new service
-    // you can create multiple services for each accessory
-    this.serviceAirPurifier = accessory.getService(AirPurifier);
-    if (!this.serviceAirPurifier) {
-      this.serviceAirPurifier = accessory.addService(AirPurifier, 'Air Purifier', 'Air Purifier');
-      this.serviceAirPurifier.addOptionalCharacteristic(Characteristic.ConfiguredName);
-      this.serviceAirPurifier.updateCharacteristic(Characteristic.ConfiguredName, 'Air Purifier');
-    }
+    this.serviceAirPurifier = this.getOrCreateService(AirPurifier, 'Air Purifier');
 
     /**
      * Required Characteristics: Active, CurrentAirPurifierState, TargetAirPurifierState
@@ -69,45 +63,27 @@ export default class AirPurifier extends BaseDevice {
       .onSet(this.setRotationSpeed.bind(this))
       .setProps({ minValue: 0, maxValue: Object.keys(RotateSpeed).length / 2, minStep: 0.1 });
 
-    this.serviceAirQuality = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
+    this.serviceAirQuality = this.getOrCreateService(AirQualitySensor, 'Air Quality Sensor');
 
     // check if light is available
-    if ('airState.lightingState.displayControl' in device.snapshot || 'airState.lightingState.signal' in device.snapshot) {
-      this.serviceLight = accessory.getService(Lightbulb);
-      if (!this.serviceLight) {
-        this.serviceLight = accessory.addService(Lightbulb, device.name + ' - Light');
-        this.serviceLight.addOptionalCharacteristic(Characteristic.ConfiguredName);
-        this.serviceLight.updateCharacteristic(Characteristic.ConfiguredName, 'Light');
-      }
-
+    const hasLightControl = 'airState.lightingState.displayControl' in device.snapshot
+      || 'airState.lightingState.signal' in device.snapshot;
+    this.serviceLight = this.ensureService(Lightbulb, 'Light', hasLightControl, 'Light');
+    if (this.serviceLight) {
       this.serviceLight.getCharacteristic(Characteristic.On).onSet(this.setLight.bind(this));
     }
 
-    if (this.Status.filterMaxTime) {
-      this.serviceFilterMaintenance = accessory.getService(FilterMaintenance);
-      if (!this.serviceFilterMaintenance) {
-        this.serviceFilterMaintenance = accessory.addService(FilterMaintenance, 'Filter Maintenance', 'Filter Maintenance');
-        this.serviceFilterMaintenance.addOptionalCharacteristic(Characteristic.ConfiguredName);
-        this.serviceFilterMaintenance.updateCharacteristic(Characteristic.ConfiguredName, 'Filter Maintenance');
-      }
-
-      this.serviceFilterMaintenance.updateCharacteristic(Characteristic.Name, 'Filter Maintenance');
+    this.serviceFilterMaintenance = this.ensureService(
+      FilterMaintenance, 'Filter Maintenance', !!this.Status.filterMaxTime, 'Filter Maintenance',
+    );
+    if (this.serviceFilterMaintenance) {
       this.serviceAirPurifier.addLinkedService(this.serviceFilterMaintenance);
     }
 
-    this.serviceAirFastMode = accessory.getService('Air Fast');
-    if (this.config.air_fast_mode) {
-      if (!this.serviceAirFastMode) {
-        this.serviceAirFastMode = accessory.addService(Switch, 'Air Fast', 'Air Fast');
-        this.serviceAirFastMode.addOptionalCharacteristic(Characteristic.ConfiguredName);
-        this.serviceAirFastMode.updateCharacteristic(Characteristic.ConfiguredName, 'Air Fast');
-      }
-
-      this.serviceAirFastMode.updateCharacteristic(Characteristic.Name, 'Air Fast');
+    this.serviceAirFastMode = this.ensureService(Switch, 'Air Fast', this.config.air_fast_mode, 'Air Fast');
+    if (this.serviceAirFastMode) {
       this.serviceAirFastMode.getCharacteristic(Characteristic.On)
         .onSet(this.setAirFastActive.bind(this));
-    } else if (this.serviceAirFastMode) {
-      accessory.removeService(this.serviceAirFastMode);
     }
   }
 
