@@ -39,9 +39,17 @@ export function safeParseFloat(value: any, fallback = 0): number {
   return isNaN(parsed) ? fallback : parsed;
 }
 
+/**
+ * Convert hours, minutes, and optional seconds to total seconds.
+ */
+export function toSeconds(hours: number, minutes: number, seconds = 0): number {
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
 export default {
   normalizeBoolean,
   normalizeNumber,
   safeParseInt,
   safeParseFloat,
+  toSeconds,
 };

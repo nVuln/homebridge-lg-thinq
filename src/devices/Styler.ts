@@ -4,6 +4,7 @@ import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebri
 import { Device } from '../lib/Device.js';
 import { DeviceModel } from '../lib/DeviceModel.js';
 import { STYLER_NOT_RUNNING_STATUS, ONE_DAY_IN_SECONDS } from '../lib/constants.js';
+import { toSeconds } from '../helper.js';
 
 /** @deprecated Use STYLER_NOT_RUNNING_STATUS from lib/constants.js instead */
 export const NOT_RUNNING_STATUS = STYLER_NOT_RUNNING_STATUS;
@@ -27,7 +28,7 @@ export default class Styler extends BaseDevice {
       Characteristic,
     } = this.platform;
 
-    this.serviceStyler = accessory.getService(Valve) || accessory.addService(Valve, device.name);
+    this.serviceStyler = this.getOrCreateService(Valve, device.name);
     this.serviceStyler.getCharacteristic(Characteristic.Active)
       .onSet(this.setActive.bind(this))
       .updateValue(Characteristic.Active.INACTIVE);
@@ -93,7 +94,7 @@ class StylerStatus {
 
     let remainingDuration = 0;
     if (this.isRunning) {
-      remainingDuration = remainTimeHour * 3600 + remainTimeMinute * 60;
+      remainingDuration = toSeconds(remainTimeHour, remainTimeMinute);
     }
 
     return remainingDuration;

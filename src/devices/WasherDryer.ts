@@ -2,9 +2,9 @@ import { AccessoryContext, BaseDevice } from '../baseDevice.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
-import { PlatformType, WASHER_NOT_RUNNING_STATUS, ONE_DAY_IN_SECONDS } from '../lib/constants.js';
+import { PlatformType, WASHER_NOT_RUNNING_STATUS, ONE_DAY_IN_SECONDS, TEN_MINUTES_MS } from '../lib/constants.js';
 import { DeviceModel } from '../lib/DeviceModel.js';
-import { safeParseInt } from '../helper.js';
+import { safeParseInt, toSeconds } from '../helper.js';
 
 /** @deprecated Use WASHER_NOT_RUNNING_STATUS from lib/constants.js instead */
 export const NOT_RUNNING_STATUS = WASHER_NOT_RUNNING_STATUS;
@@ -161,7 +161,7 @@ export default class WasherDryer extends BaseDevice {
         // turn it off after 10 minute
         setTimeout(() => {
           this.serviceEventFinished?.updateCharacteristic(OccupancyDetected, OccupancyDetected.OCCUPANCY_NOT_DETECTED);
-        }, 10000 * 60);
+        }, TEN_MINUTES_MS);
       }
 
       // detect if washer program is start
@@ -218,7 +218,7 @@ export class WasherDryerStatus {
 
     let remainingDuration = 0;
     if (this.isRunning) {
-      remainingDuration = remainTimeHour * 3600 + remainTimeMinute * 60;
+      remainingDuration = toSeconds(remainTimeHour, remainTimeMinute);
     }
 
     return remainingDuration;
