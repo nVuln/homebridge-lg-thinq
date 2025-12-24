@@ -181,54 +181,66 @@ export default class Refrigerator extends BaseDevice {
     const device: Device = this.accessory.context.device;
     const On = device.deviceModel.lookupMonitorName('expressMode', '@CP_ON_EN_W');
     const Off = device.deviceModel.lookupMonitorName('expressMode', '@CP_OFF_EN_W');
-    this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: null,
-      dataValue: null,
-      dataSetList: {
-        refState: {
-          expressMode: value as boolean ? On : Off,
-          tempUnit: this.Status.tempUnit,
+    try {
+      await this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: null,
+        dataValue: null,
+        dataSetList: {
+          refState: {
+            expressMode: value as boolean ? On : Off,
+            tempUnit: this.Status.tempUnit,
+          },
         },
-      },
-      dataGetList: null,
-    });
-    this.platform.log.debug('Set Express Freezer ->', value);
+        dataGetList: null,
+      });
+      this.platform.log.debug('Set Express Freezer ->', value);
+    } catch (error) {
+      this.logger.error('Failed to set express mode:', error);
+    }
   }
 
   async setExpressFridge(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
     const On = device.deviceModel.lookupMonitorName('expressFridge', '@CP_ON_EN_W');
     const Off = device.deviceModel.lookupMonitorName('expressFridge', '@CP_OFF_EN_W');
-    this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: null,
-      dataValue: null,
-      dataSetList: {
-        refState: {
-          expressFridge: value as boolean ? On : Off,
-          tempUnit: this.Status.tempUnit,
+    try {
+      await this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: null,
+        dataValue: null,
+        dataSetList: {
+          refState: {
+            expressFridge: value as boolean ? On : Off,
+            tempUnit: this.Status.tempUnit,
+          },
         },
-      },
-      dataGetList: null,
-    });
-    this.platform.log.debug('Set Express Fridge ->', value);
+        dataGetList: null,
+      });
+      this.platform.log.debug('Set Express Fridge ->', value);
+    } catch (error) {
+      this.logger.error('Failed to set express fridge:', error);
+    }
   }
 
   async setEcoFriendly(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
     const On = device.deviceModel.lookupMonitorName('ecoFriendly', '@CP_ON_EN_W');
     const Off = device.deviceModel.lookupMonitorName('ecoFriendly', '@CP_OFF_EN_W');
-    this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: null,
-      dataValue: null,
-      dataSetList: {
-        refState: {
-          ecoFriendly: value as boolean ? On : Off,
-          tempUnit: this.Status.tempUnit,
+    try {
+      await this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: null,
+        dataValue: null,
+        dataSetList: {
+          refState: {
+            ecoFriendly: value as boolean ? On : Off,
+            tempUnit: this.Status.tempUnit,
+          },
         },
-      },
-      dataGetList: null,
-    });
-    this.platform.log.debug('Set Eco Friendly ->', value);
+        dataGetList: null,
+      });
+      this.platform.log.debug('Set Eco Friendly ->', value);
+    } catch (error) {
+      this.logger.error('Failed to set eco friendly:', error);
+    }
   }
 
   async tempUnit() {

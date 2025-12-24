@@ -69,34 +69,42 @@ export default class RangeHood extends BaseDevice {
 
   async setHoodRotationSpeed(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
-    this.platform.ThinQ?.deviceControl(device, {
-      dataKey: null,
-      dataValue: null,
-      dataSetList: {
-        hoodState: {
-          ventLevel: value,
+    try {
+      await this.platform.ThinQ?.deviceControl(device, {
+        dataKey: null,
+        dataValue: null,
+        dataSetList: {
+          hoodState: {
+            ventLevel: value,
+          },
         },
-      },
-      dataGetList: null,
-    });
+        dataGetList: null,
+      });
+    } catch (error) {
+      this.logger.error('Failed to set hood rotation speed:', error);
+    }
   }
 
   async setLightActive(value: CharacteristicValue) {
-    await this.setLightBrightness(value? 1 : 0);
+    await this.setLightBrightness(value ? 1 : 0);
   }
 
   async setLightBrightness(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
-    this.platform.ThinQ?.deviceControl(device, {
-      dataKey: null,
-      dataValue: null,
-      dataSetList: {
-        hoodState: {
-          lampLevel: value,
+    try {
+      await this.platform.ThinQ?.deviceControl(device, {
+        dataKey: null,
+        dataValue: null,
+        dataSetList: {
+          hoodState: {
+            lampLevel: value,
+          },
         },
-      },
-      dataGetList: null,
-    });
+        dataGetList: null,
+      });
+    } catch (error) {
+      this.logger.error('Failed to set light brightness:', error);
+    }
   }
 
   public updateAccessoryCharacteristic(device: Device) {
