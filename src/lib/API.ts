@@ -107,30 +107,33 @@ export class API {
 
     const url = this.resolveUrl(gateway.thinq2_url, uri);
 
-    return await this.httpClient.request({
-      method,
-      url,
-      data,
-      headers: requestHeaders,
-    }).then(res => res.data).catch(async err => {
+    try {
+      const res = await this.httpClient.request({
+        method,
+        url,
+        data,
+        headers: requestHeaders,
+      });
+      return res.data;
+    } catch (err) {
       // Handle token expiration and retry the request
       if (err instanceof TokenExpiredError && !retry) {
-        return await this.refreshNewToken().then(async () => {
+        try {
+          await this.refreshNewToken();
           return await this.request(method, uri, data, true);
-        }).catch((err) => {
-          this.logger.error('refresh new token error: ', err);
+        } catch (refreshErr) {
+          this.logger.error('refresh new token error: ', refreshErr);
           return {};
-        });
+        }
       } else if (err instanceof ManualProcessNeeded) {
         // Handle manual process errors (e.g., new terms agreement)
         this.logger.warn('Handling new term agreement... If you keep getting this message, ' + err.message);
-        await this.auth.handleNewTerm(this.session.accessToken)
-          .then(() => {
-            this.logger.warn('LG new term agreement is accepted.');
-          })
-          .catch(err => {
-            this.logger.error(err);
-          });
+        try {
+          await this.auth.handleNewTerm(this.session.accessToken);
+          this.logger.warn('LG new term agreement is accepted.');
+        } catch (termErr: any) {
+          this.logger.error(termErr);
+        }
 
         if (!retry) {
           // Retry the request once
@@ -149,7 +152,7 @@ export class API {
 
         return {};
       }
-    });
+    }
   }
 
   protected get monitorHeaders() {
@@ -214,7 +217,8 @@ export class API {
   }
 
   public async getSingleDevice(device_id: string) {
-    return await this.getRequest('service/devices/' + device_id).then(data => data.result);
+    const data = await this.getRequest('service/devices/' + device_id);
+    return data.result;
   }
 
   /**
@@ -242,7 +246,8 @@ export class API {
    */
   public async getListHomes() {
     if (!this._homes) {
-      this._homes = await this.getRequest('service/homes').then(data => data.result.item);
+      const data = await this.getRequest('service/homes');
+      this._homes = data.result.item;
     }
 
     return this._homes;
@@ -321,23 +326,22 @@ export class API {
       throw new Error('Invalid work_id: must be a non-empty string.');
     }
 
-    return await this.thinq1PostRequest('rti/rtiResult', { workList: [{ deviceId: device_id, workId: work_id }] })
-      .then(data => {
-        if (!('workList' in data) || !('returnCode' in data.workList)) {
-          return null;
-        }
+    const data = await this.thinq1PostRequest('rti/rtiResult', { workList: [{ deviceId: device_id, workId: work_id }] });
 
-        const workList = data.workList;
-        if (workList.returnCode !== '0000') {
-          throw new MonitorError(data);
-        }
+    if (!('workList' in data) || !('returnCode' in data.workList)) {
+      return null;
+    }
 
-        if (!('returnData' in workList)) {
-          return null;
-        }
+    const workList = data.workList;
+    if (workList.returnCode !== '0000') {
+      throw new MonitorError(data);
+    }
 
-        return Buffer.from(workList.returnData, 'base64');
-      });
+    if (!('returnData' in workList)) {
+      return null;
+    }
+
+    return Buffer.from(workList.returnData, 'base64');
   }
 
   public setRefreshToken(refreshToken: string) {
@@ -354,8 +358,8 @@ export class API {
 
   public async gateway() {
     if (!this._gateway) {
-      const gateway = await requestClient.get(constants.GATEWAY_URL, { headers: this.defaultHeaders }).then(res => res.data.result);
-      this._gateway = new Gateway(gateway);
+      const res = await requestClient.get(constants.GATEWAY_URL, { headers: this.defaultHeaders });
+      this._gateway = new Gateway(res.data.result);
     }
 
     return this._gateway;
@@ -402,8 +406,9 @@ export class API {
   }
 
   async thinq1PostRequest(endpoint: string, data: any) {
-    return await this.postRequest(this._gateway?.thinq1_url + endpoint, {
+    const response = await this.postRequest(this._gateway?.thinq1_url + endpoint, {
       lgedmRoot: data,
-    }).then(data => data.lgedmRoot);
+    });
+    return response.lgedmRoot;
   }
 }
