@@ -3,6 +3,7 @@ import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebri
 import { Device } from '../lib/Device.js';
 import { AccessoryContext, BaseDevice } from '../baseDevice.js';
 import { safeParseInt, normalizeNumber } from '../helper.js';
+import { FILTER_CHANGE_THRESHOLD_PERCENT } from '../lib/constants.js';
 
 export enum RotateSpeed {
   LOW = 2,
@@ -257,7 +258,7 @@ export default class AirPurifier extends BaseDevice {
     if (this.Status.filterMaxTime && this.serviceFilterMaintenance) {
       this.serviceFilterMaintenance.updateCharacteristic(Characteristic.FilterLifeLevel, this.Status.filterUsedTimePercent);
       this.serviceFilterMaintenance.updateCharacteristic(FilterChangeIndication,
-        this.Status.filterUsedTimePercent > 95 ? FilterChangeIndication.CHANGE_FILTER : FilterChangeIndication.FILTER_OK);
+        this.Status.filterUsedTimePercent > FILTER_CHANGE_THRESHOLD_PERCENT ? FilterChangeIndication.CHANGE_FILTER : FilterChangeIndication.FILTER_OK);
     }
 
     // airState.quality.sensorMon = 1 mean sensor always running even device not running

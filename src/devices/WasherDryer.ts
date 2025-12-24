@@ -2,7 +2,7 @@ import { AccessoryContext, BaseDevice } from '../baseDevice.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
-import { PlatformType, WASHER_NOT_RUNNING_STATUS } from '../lib/constants.js';
+import { PlatformType, WASHER_NOT_RUNNING_STATUS, ONE_DAY_IN_SECONDS } from '../lib/constants.js';
 import { DeviceModel } from '../lib/DeviceModel.js';
 import { safeParseInt } from '../helper.js';
 
@@ -53,7 +53,7 @@ export default class WasherDryer extends BaseDevice {
     this.serviceWasherDryer.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.WATER_FAUCET);
     this.serviceWasherDryer.setCharacteristic(Characteristic.InUse, Characteristic.InUse.NOT_IN_USE);
     this.serviceWasherDryer.getCharacteristic(Characteristic.RemainingDuration).setProps({
-      maxValue: 86400, // 1 day
+      maxValue: ONE_DAY_IN_SECONDS,
     });
 
     // only thinq2 support door lock status

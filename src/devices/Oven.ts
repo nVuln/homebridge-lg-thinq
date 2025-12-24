@@ -7,6 +7,7 @@ import { Logger, Perms, PlatformAccessory, Service } from 'homebridge';
 import { DeviceModel } from '../lib/DeviceModel.js';
 import { Device } from '../lib/Device.js';
 import { normalizeBoolean, normalizeNumber } from '../helper.js';
+import { TWELVE_HOURS_IN_SECONDS } from '../lib/constants.js';
 
 enum OvenState {
   INITIAL = '@OV_STATE_INITIAL_W',
@@ -338,7 +339,7 @@ export default class Oven extends BaseDevice {
     this.ovenTimerService.setCharacteristic(Characteristic.InUse, this.remainTime() > 0 ? Characteristic.InUse.IN_USE : Characteristic.InUse.NOT_IN_USE);
     this.ovenTimerService.getCharacteristic(Characteristic.RemainingDuration)
       .setProps({
-        maxValue: (86400 / 2) - 1, // 12hours
+        maxValue: TWELVE_HOURS_IN_SECONDS - 1,
       })
       .on('get', (callback) => {
         const currentValue = this.remainTime();
@@ -346,7 +347,7 @@ export default class Oven extends BaseDevice {
       });
     this.ovenTimerService.getCharacteristic(this.platform.Characteristic.SetDuration)
       .setProps({
-        maxValue: (86400 / 2) - 1, // 12hours
+        maxValue: TWELVE_HOURS_IN_SECONDS - 1,
       })
       .on('get', (callback) => {
         const currentValue = this.oventTargetTime();
@@ -398,7 +399,7 @@ export default class Oven extends BaseDevice {
     this.ovenAlarmService.setCharacteristic(Characteristic.InUse, this.ovenTimerTime() > 0 ? Characteristic.InUse.IN_USE : Characteristic.InUse.NOT_IN_USE);
     this.ovenAlarmService.getCharacteristic(Characteristic.RemainingDuration)
       .setProps({
-        maxValue: (86400 / 2), // 12hours
+        maxValue: TWELVE_HOURS_IN_SECONDS,
       })
       .on('get', (callback) => {
         const currentValue = this.ovenTimerTime();
@@ -406,7 +407,7 @@ export default class Oven extends BaseDevice {
       });
     this.ovenAlarmService.getCharacteristic(this.platform.Characteristic.SetDuration)
       .setProps({
-        maxValue: (86400 / 2), // 12hours
+        maxValue: TWELVE_HOURS_IN_SECONDS,
       })
       .on('get', (callback) => {
         const currentValue = this.timerAlarmSec;
@@ -419,8 +420,8 @@ export default class Oven extends BaseDevice {
           callback();
           return;
         }
-        if (vNum >= (86400 / 2)) {
-          vNum = (86400 / 2) - 1;
+        if (vNum >= TWELVE_HOURS_IN_SECONDS) {
+          vNum = TWELVE_HOURS_IN_SECONDS - 1;
         }
         this.timerAlarmSec = vNum;
         callback(null);

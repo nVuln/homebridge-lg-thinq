@@ -76,3 +76,15 @@ export const AC_MODEL_FEATURES = {
   quietMode: ['WINF_056905'],
   energySaveMode: ['WINF_056905', 'RAC_056905'],
 };
+
+/**
+ * Time constants in seconds
+ */
+export const ONE_DAY_IN_SECONDS = 86400;
+export const TWELVE_HOURS_IN_SECONDS = ONE_DAY_IN_SECONDS / 2;
+export const SIX_HOURS_IN_SECONDS = ONE_DAY_IN_SECONDS / 4;
+
+/**
+ * Filter maintenance thresholds
+ */
+export const FILTER_CHANGE_THRESHOLD_PERCENT = 95;

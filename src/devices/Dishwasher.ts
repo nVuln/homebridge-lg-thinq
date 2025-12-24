@@ -4,6 +4,7 @@ import { Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { normalizeNumber } from '../helper.js';
 import { WasherDryerStatus } from './WasherDryer.js';
+import { SIX_HOURS_IN_SECONDS } from '../lib/constants.js';
 
 export default class Dishwasher extends BaseDevice {
   public isRunning = false;
@@ -182,7 +183,7 @@ export default class Dishwasher extends BaseDevice {
     this.serviceDishwasher.getCharacteristic(this.platform.Characteristic.StatusFault)
       .on('get', this.getRinseLevel.bind(this));
     this.serviceDishwasher.getCharacteristic(Characteristic.RemainingDuration).setProps({
-      maxValue: 86400 / 4,
+      maxValue: SIX_HOURS_IN_SECONDS,
     });
     this.serviceDishwasher.getCharacteristic(this.platform.Characteristic.SetDuration)
       .on('get', (callback) => {
@@ -190,7 +191,7 @@ export default class Dishwasher extends BaseDevice {
         callback(null, currentValue);
       })
       .setProps({
-        maxValue: 86400 / 4, // 1 day
+        maxValue: SIX_HOURS_IN_SECONDS,
       });
 
     // Door open state

@@ -3,7 +3,7 @@ import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { DeviceModel } from '../lib/DeviceModel.js';
-import { STYLER_NOT_RUNNING_STATUS } from '../lib/constants.js';
+import { STYLER_NOT_RUNNING_STATUS, ONE_DAY_IN_SECONDS } from '../lib/constants.js';
 
 /** @deprecated Use STYLER_NOT_RUNNING_STATUS from lib/constants.js instead */
 export const NOT_RUNNING_STATUS = STYLER_NOT_RUNNING_STATUS;
@@ -35,7 +35,7 @@ export default class Styler extends BaseDevice {
     this.serviceStyter.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.GENERIC_VALVE);
     this.serviceStyter.setCharacteristic(Characteristic.InUse, Characteristic.InUse.NOT_IN_USE);
     this.serviceStyter.getCharacteristic(Characteristic.RemainingDuration).setProps({
-      maxValue: 86400, // 1 day
+      maxValue: ONE_DAY_IN_SECONDS,
     });
   }
 
