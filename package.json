@@ -78,6 +78,7 @@
     "help-me": {
       "glob": "^13.0.0"
     },
-    "node-persist": "^4.0.4"
+    "node-persist": "^4.0.4",
+    "test-exclude": "^7.0.1"
   }
 }
