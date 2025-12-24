@@ -1,6 +1,6 @@
 import AirPurifier from './AirPurifier.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
-import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { AccessoryContext } from '../baseDevice.js';
 import { normalizeNumber } from '../helper.js';
@@ -14,9 +14,9 @@ export enum LightBrightness {
 }
 
 export default class AeroTower extends AirPurifier {
-  protected serviceTemperatureSensor;
-  protected serviceHumiditySensor;
-  protected serviceUVNano;
+  protected serviceTemperatureSensor: Service;
+  protected serviceHumiditySensor: Service;
+  protected serviceUVNano: Service;
 
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,

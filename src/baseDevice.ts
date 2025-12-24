@@ -79,13 +79,9 @@ export class BaseDevice extends EventEmitter {
     name: string,
     subType?: string,
   ): Service {
-    let service: Service | undefined;
-
-    if (subType) {
-      service = this.accessory.getService(subType) || this.accessory.addService(serviceType, name, subType);
-    } else {
-      service = this.accessory.getService(serviceType) || this.accessory.addService(serviceType, name);
-    }
+    const effectiveSubType = subType || name;
+    const service = this.accessory.getService(effectiveSubType)
+      || this.accessory.addService(serviceType, name, effectiveSubType);
 
     // Add ConfiguredName for better HomeKit display
     service.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);

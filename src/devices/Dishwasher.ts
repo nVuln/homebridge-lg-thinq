@@ -28,17 +28,17 @@ export default class Dishwasher extends BaseDevice {
   public standbyTimetMS = 0;
   public finishedTime = 'Today';
 
-  protected serviceDishwasher;
-  protected serviceDoorOpened;
+  protected serviceDishwasher: Service;
+  protected serviceDoorOpened: Service;
   protected serviceEventFinished: Service | undefined;
-  protected tvService;
-  protected dishwasherState;
-  protected dishwasherOptions;
-  protected startTime;
-  protected courseDuration;
-  protected endTime;
-  protected dishwasherRinseLevel;
-  protected dishwasherClaenness;
+  protected tvService: Service;
+  protected dishwasherState: Service;
+  protected dishwasherOptions: Service;
+  protected startTime: Service;
+  protected courseDuration: Service;
+  protected endTime: Service;
+  protected dishwasherRinseLevel: Service;
+  protected dishwasherCleanliness: Service;
 
   createInputSourceService(name: string, subtype: string, identifier: number, configuredName: string, isShow: boolean) {
     return this.accessory.getService(name) ||
@@ -159,14 +159,14 @@ export default class Dishwasher extends BaseDevice {
       });
     this.tvService.addLinkedService(this.dishwasherRinseLevel);
 
-    this.dishwasherClaenness = this.createInputSourceService('Dishwasher Cleanness Status', 'CataNicoGaTa-10060', 7, this.inputNameMachine, this.onStatus());
-    this.dishwasherClaenness.getCharacteristic(this.platform.Characteristic.ConfiguredName)
+    this.dishwasherCleanliness = this.createInputSourceService('Dishwasher Cleanness Status', 'CataNicoGaTa-10060', 7, this.inputNameMachine, this.onStatus());
+    this.dishwasherCleanliness.getCharacteristic(this.platform.Characteristic.ConfiguredName)
       .on('get', (callback) => {
         this.updateRinseLevel();
         const currentValue = this.inputNameMachine;
         callback(null, currentValue);
       });
-    this.tvService.addLinkedService(this.dishwasherClaenness);
+    this.tvService.addLinkedService(this.dishwasherCleanliness);
 
     this.serviceDishwasher = accessory.getService(Valve) || accessory.addService(Valve, 'LG Dishwasher');
     this.serviceDishwasher.setCharacteristic(Characteristic.Name, device.name);
@@ -648,24 +648,24 @@ export default class Dishwasher extends BaseDevice {
     if (this.Status.data.tclCount > 30) {
       this.inputID = 7;
       this.inputNameMachine = 'Machine Cleaning Cycle is Needed Soon';
-      if (this.dishwasherClaenness.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.inputNameMachine) {
-        this.dishwasherClaenness.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.inputNameMachine);
+      if (this.dishwasherCleanliness.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.inputNameMachine) {
+        this.dishwasherCleanliness.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.inputNameMachine);
       }
-      this.dishwasherClaenness.updateCharacteristic(
+      this.dishwasherCleanliness.updateCharacteristic(
         this.platform.Characteristic.TargetVisibilityState,
         this.onStatus() ? this.platform.Characteristic.TargetVisibilityState.SHOWN : this.platform.Characteristic.TargetVisibilityState.HIDDEN);
-      this.dishwasherClaenness.updateCharacteristic(
+      this.dishwasherCleanliness.updateCharacteristic(
         this.platform.Characteristic.CurrentVisibilityState,
         this.onStatus() ? this.platform.Characteristic.CurrentVisibilityState.SHOWN : this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
 
     } else {
       this.inputNameMachine = 'Dishwasher is Clean';
-      if (this.dishwasherClaenness.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.inputNameMachine) {
-        this.dishwasherClaenness.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.inputNameMachine);
+      if (this.dishwasherCleanliness.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.inputNameMachine) {
+        this.dishwasherCleanliness.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.inputNameMachine);
       }
-      this.dishwasherClaenness.updateCharacteristic(
+      this.dishwasherCleanliness.updateCharacteristic(
         this.platform.Characteristic.TargetVisibilityState, this.platform.Characteristic.TargetVisibilityState.HIDDEN);
-      this.dishwasherClaenness.updateCharacteristic(
+      this.dishwasherCleanliness.updateCharacteristic(
         this.platform.Characteristic.CurrentVisibilityState, this.platform.Characteristic.CurrentVisibilityState.HIDDEN);
     }
     if (this.dishwasherRinseLevel.getCharacteristic(this.platform.Characteristic.ConfiguredName).value !== this.inputNameRinse) {

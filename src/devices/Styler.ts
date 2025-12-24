@@ -1,6 +1,6 @@
 import { AccessoryContext, BaseDevice } from '../baseDevice.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
-import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { DeviceModel } from '../lib/DeviceModel.js';
 import { STYLER_NOT_RUNNING_STATUS, ONE_DAY_IN_SECONDS } from '../lib/constants.js';
@@ -9,7 +9,7 @@ import { STYLER_NOT_RUNNING_STATUS, ONE_DAY_IN_SECONDS } from '../lib/constants.
 export const NOT_RUNNING_STATUS = STYLER_NOT_RUNNING_STATUS;
 
 export default class Styler extends BaseDevice {
-  protected serviceStyter;
+  protected serviceStyler: Service;
 
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
@@ -27,14 +27,14 @@ export default class Styler extends BaseDevice {
       Characteristic,
     } = this.platform;
 
-    this.serviceStyter = accessory.getService(Valve) || accessory.addService(Valve, device.name);
-    this.serviceStyter.getCharacteristic(Characteristic.Active)
+    this.serviceStyler = accessory.getService(Valve) || accessory.addService(Valve, device.name);
+    this.serviceStyler.getCharacteristic(Characteristic.Active)
       .onSet(this.setActive.bind(this))
       .updateValue(Characteristic.Active.INACTIVE);
-    this.serviceStyter.setCharacteristic(Characteristic.Name, device.name);
-    this.serviceStyter.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.GENERIC_VALVE);
-    this.serviceStyter.setCharacteristic(Characteristic.InUse, Characteristic.InUse.NOT_IN_USE);
-    this.serviceStyter.getCharacteristic(Characteristic.RemainingDuration).setProps({
+    this.serviceStyler.setCharacteristic(Characteristic.Name, device.name);
+    this.serviceStyler.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.GENERIC_VALVE);
+    this.serviceStyler.setCharacteristic(Characteristic.InUse, Characteristic.InUse.NOT_IN_USE);
+    this.serviceStyler.getCharacteristic(Characteristic.RemainingDuration).setProps({
       maxValue: ONE_DAY_IN_SECONDS,
     });
   }
@@ -45,14 +45,14 @@ export default class Styler extends BaseDevice {
     const {
       Characteristic,
     } = this.platform;
-    this.serviceStyter.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
-    this.serviceStyter.updateCharacteristic(Characteristic.InUse, this.Status.isRunning ? 1 : 0);
-    const prevRemainDuration = this.serviceStyter.getCharacteristic(Characteristic.RemainingDuration).value;
+    this.serviceStyler.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
+    this.serviceStyler.updateCharacteristic(Characteristic.InUse, this.Status.isRunning ? 1 : 0);
+    const prevRemainDuration = this.serviceStyler.getCharacteristic(Characteristic.RemainingDuration).value;
     if (this.Status.remainDuration !== prevRemainDuration) {
-      this.serviceStyter.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
+      this.serviceStyler.updateCharacteristic(Characteristic.RemainingDuration, this.Status.remainDuration);
     }
 
-    this.serviceStyter.updateCharacteristic(Characteristic.StatusFault,
+    this.serviceStyler.updateCharacteristic(Characteristic.StatusFault,
       this.Status.isError ? Characteristic.StatusFault.GENERAL_FAULT : Characteristic.StatusFault.NO_FAULT);
   }
 
