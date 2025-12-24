@@ -1060,46 +1060,54 @@ export default class Microwave extends BaseDevice {
   async timeModeCommand() {
     const ctrlKey = 'SetPreference';
     const device = this.accessory.context.device;
-    this.platform.ThinQ?.deviceControl(device, {
-      dataKey: null,
-      dataValue: null,
-      dataSetList: {
-        ovenState: {
-          'cmdOptionContentsType': 'REMOTE_SETTING',
-          'cmdOptionDataLength': 'REMOTE_SETTING',
-          'mwoSettingClockSetTimeHour': 128,
-          'mwoSettingClockSetTimeMin': 128,
-          'mwoSettingClockSetHourMode': '24H_MODE',
-          'mwoSettingSound': 'NOT_SET',
-          'mwoSettingClockDisplay': 'NOT_SET',
-          'mwoSettingDisplayScrollSpeed': 'SLOW',
-          'mwoSettingDefrostWeightMode': 'NOT_SET',
-          'mwoSettingDemoMode': 'NOT_SET',
+    try {
+      await this.platform.ThinQ?.deviceControl(device, {
+        dataKey: null,
+        dataValue: null,
+        dataSetList: {
+          ovenState: {
+            'cmdOptionContentsType': 'REMOTE_SETTING',
+            'cmdOptionDataLength': 'REMOTE_SETTING',
+            'mwoSettingClockSetTimeHour': 128,
+            'mwoSettingClockSetTimeMin': 128,
+            'mwoSettingClockSetHourMode': '24H_MODE',
+            'mwoSettingSound': 'NOT_SET',
+            'mwoSettingClockDisplay': 'NOT_SET',
+            'mwoSettingDisplayScrollSpeed': 'SLOW',
+            'mwoSettingDefrostWeightMode': 'NOT_SET',
+            'mwoSettingDemoMode': 'NOT_SET',
+          },
         },
-      },
-      dataGetList: null,
-    }, 'Set', ctrlKey);
+        dataGetList: null,
+      }, 'Set', ctrlKey);
+    } catch (error) {
+      this.logger.error('Error sending time mode command:', error);
+    }
   }
 
   async sendLightVentCommand() {
     this.platform.log.debug('Fan Speed: ' + this.ventSpeed + ' Light: ' + this.lampLevel);
     const ctrlKey = 'setVentLampLevel';
     const device = this.accessory.context.device;
-    this.platform.ThinQ?.deviceControl(device, {
-      dataKey: null,
-      dataValue: null,
-      dataSetList: {
-        ovenState: {
-          'cmdOptionContentsType': 'REMOTE_VENT_LAMP',
-          'cmdOptionDataLength': 'REMOTE_VENT_LAMP',
-          'mwoVentOnOff': this.ventSpeed > 0 ? 'ENABLE' : 'DISABLE',
-          'mwoVentSpeedLevel': this.ventSpeed,
-          'mwoLampOnOff': this.lampLevel > 0 ? 'ENABLE' : 'DISABLE',
-          'mwoLampLevel': this.lampLevel,
+    try {
+      await this.platform.ThinQ?.deviceControl(device, {
+        dataKey: null,
+        dataValue: null,
+        dataSetList: {
+          ovenState: {
+            'cmdOptionContentsType': 'REMOTE_VENT_LAMP',
+            'cmdOptionDataLength': 'REMOTE_VENT_LAMP',
+            'mwoVentOnOff': this.ventSpeed > 0 ? 'ENABLE' : 'DISABLE',
+            'mwoVentSpeedLevel': this.ventSpeed,
+            'mwoLampOnOff': this.lampLevel > 0 ? 'ENABLE' : 'DISABLE',
+            'mwoLampLevel': this.lampLevel,
+          },
         },
-      },
-      dataGetList: null,
-    }, 'Set', ctrlKey);
+        dataGetList: null,
+      }, 'Set', ctrlKey);
+    } catch (error) {
+      this.logger.error('Error sending light/vent command:', error);
+    }
   }
 
   async sendTimerCommand(time: number) {
@@ -1107,23 +1115,27 @@ export default class Microwave extends BaseDevice {
       this.platform.log.debug('Alarm Set to: ' + this.secondsToTime(time));
       const ctrlKey = 'SetTimer';
       const device = this.accessory.context.device;
-      this.platform.ThinQ?.deviceControl(device, {
-        dataKey: null,
-        dataValue: null,
-        dataSetList: {
-          ovenState: {
-            'cmdOptionContentsType': 'TIMER',
-            'cmdOptionDataLength': 'TIMER',
-            'lowerTimerHour': 128,
-            'lowerTimerMinute': 128,
-            'lowerTimerSecond': 128,
-            'upperTimerHour': 0,
-            'upperTimerMinute': Math.floor(time / 60),
-            'upperTimerSecond': Math.floor(time % 60),
+      try {
+        await this.platform.ThinQ?.deviceControl(device, {
+          dataKey: null,
+          dataValue: null,
+          dataSetList: {
+            ovenState: {
+              'cmdOptionContentsType': 'TIMER',
+              'cmdOptionDataLength': 'TIMER',
+              'lowerTimerHour': 128,
+              'lowerTimerMinute': 128,
+              'lowerTimerSecond': 128,
+              'upperTimerHour': 0,
+              'upperTimerMinute': Math.floor(time / 60),
+              'upperTimerSecond': Math.floor(time % 60),
+            },
           },
-        },
-        dataGetList: null,
-      }, 'Set', ctrlKey);
+          dataGetList: null,
+        }, 'Set', ctrlKey);
+      } catch (error) {
+        this.logger.error('Error sending timer command:', error);
+      }
       this.waitingForCommand = true;
       setTimeout(() => {
         this.pauseUpdate = false;
@@ -1135,7 +1147,7 @@ export default class Microwave extends BaseDevice {
     }, 1000);
   }
 
-  sendOvenCommand() {
+  async sendOvenCommand() {
     if (!this.monitorOnly) {
       if (!this.waitingForCommand) {
         this.pauseUpdate = true;
@@ -1266,64 +1278,66 @@ export default class Microwave extends BaseDevice {
           this.ovenCommandList.ovenMode.includes('DEHYDRATE')
           || this.ovenCommandList.ovenMode.includes('PROOF');
 
-        if (isDehydrateOrProof) {
-          const ctrlKey = 'SetCookStart';
-          const device = this.accessory.context.device;
-          this.platform.ThinQ?.deviceControl(device.id, {
-            dataKey: null,
-            dataValue: null,
-            dataSetList: {
-              ovenState: {
-                'cmdOptionContentsType': 'REMOTE_COOK_START',
-                'cmdOptionDataLength': 'REMOTE_COOK_START',
-                'cmdOptionSetCookName': this.ovenCommandList.ovenMode,
-                'cmdOptionSetReserved': 0,
-                'cmdOptionSetSubCookNumber': this.ovenCommandList.subCookNumber,
-                'cmdOptionSetTargetTemperatureUnit': this.ovenCommandList.tempUnits,
-                'cmdOptionSetTargetTimeHour': Math.floor(this.ovenCommandList.ovenSetDuration / 3600),
-                'cmdOptionSetTargetTimeMinute': Math.floor(this.ovenCommandList.ovenSetDuration % 3600 / 60),
-                'cmdOptionSetTargetTimeSecond': Math.floor(this.ovenCommandList.ovenSetDuration % 60),
-                'cmdOptionSetWeightUnit': this.ovenCommandList.weightUnits,
-                'cmdOptionStep': 0,
-                'setMwoPowerLevel': this.ovenCommandList.microwavePower,
-                'setTargetSteamLevel': 'NONE',
-                'setTargetTemp': this.ovenCommandList.ovenSetTemperature,
-                'setTargetTempLevel': this.ovenCommandList.ovenMode === 'WARM' ? 'HIGH' : 0,
-                'setTargetWeight': this.ovenCommandList.targetWeight,
-                'setWarmType': 'NONE',
+        const ctrlKey = 'SetCookStart';
+        const device = this.accessory.context.device;
+        try {
+          if (isDehydrateOrProof) {
+            await this.platform.ThinQ?.deviceControl(device.id, {
+              dataKey: null,
+              dataValue: null,
+              dataSetList: {
+                ovenState: {
+                  'cmdOptionContentsType': 'REMOTE_COOK_START',
+                  'cmdOptionDataLength': 'REMOTE_COOK_START',
+                  'cmdOptionSetCookName': this.ovenCommandList.ovenMode,
+                  'cmdOptionSetReserved': 0,
+                  'cmdOptionSetSubCookNumber': this.ovenCommandList.subCookNumber,
+                  'cmdOptionSetTargetTemperatureUnit': this.ovenCommandList.tempUnits,
+                  'cmdOptionSetTargetTimeHour': Math.floor(this.ovenCommandList.ovenSetDuration / 3600),
+                  'cmdOptionSetTargetTimeMinute': Math.floor(this.ovenCommandList.ovenSetDuration % 3600 / 60),
+                  'cmdOptionSetTargetTimeSecond': Math.floor(this.ovenCommandList.ovenSetDuration % 60),
+                  'cmdOptionSetWeightUnit': this.ovenCommandList.weightUnits,
+                  'cmdOptionStep': 0,
+                  'setMwoPowerLevel': this.ovenCommandList.microwavePower,
+                  'setTargetSteamLevel': 'NONE',
+                  'setTargetTemp': this.ovenCommandList.ovenSetTemperature,
+                  'setTargetTempLevel': this.ovenCommandList.ovenMode === 'WARM' ? 'HIGH' : 0,
+                  'setTargetWeight': this.ovenCommandList.targetWeight,
+                  'setWarmType': 'NONE',
+                },
               },
-            },
-            dataGetList: null,
-          }, 'Set', ctrlKey);
-        } else {
-          const ctrlKey = 'SetCookStart';
-          const device = this.accessory.context.device;
-          this.platform.ThinQ?.deviceControl(device.id, {
-            dataKey: null,
-            dataValue: null,
-            dataSetList: {
-              ovenState: {
-                'cmdOptionContentsType': 'REMOTE_COOK_START',
-                'cmdOptionDataLength': 'REMOTE_COOK_START',
-                'cmdOptionSetCookName': this.ovenCommandList.ovenMode,
-                'cmdOptionSetReserved': 0,
-                'cmdOptionSetSubCookNumber': this.ovenCommandList.subCookNumber,
-                'cmdOptionSetTargetTemperatureUnit': this.ovenCommandList.tempUnits,
-                'cmdOptionSetTargetTimeHour': 0,
-                'cmdOptionSetTargetTimeMinute': Math.floor(this.ovenCommandList.ovenSetDuration / 60),
-                'cmdOptionSetTargetTimeSecond': Math.floor(this.ovenCommandList.ovenSetDuration % 60),
-                'cmdOptionSetWeightUnit': this.ovenCommandList.weightUnits,
-                'cmdOptionStep': 0,
-                'setMwoPowerLevel': this.ovenCommandList.microwavePower,
-                'setTargetSteamLevel': 'NONE',
-                'setTargetTemp': this.ovenCommandList.ovenSetTemperature,
-                'setTargetTempLevel': this.ovenCommandList.ovenMode === 'WARM' ? 'HIGH' : 0,
-                'setTargetWeight': this.ovenCommandList.targetWeight,
-                'setWarmType': 'NONE',
+              dataGetList: null,
+            }, 'Set', ctrlKey);
+          } else {
+            await this.platform.ThinQ?.deviceControl(device.id, {
+              dataKey: null,
+              dataValue: null,
+              dataSetList: {
+                ovenState: {
+                  'cmdOptionContentsType': 'REMOTE_COOK_START',
+                  'cmdOptionDataLength': 'REMOTE_COOK_START',
+                  'cmdOptionSetCookName': this.ovenCommandList.ovenMode,
+                  'cmdOptionSetReserved': 0,
+                  'cmdOptionSetSubCookNumber': this.ovenCommandList.subCookNumber,
+                  'cmdOptionSetTargetTemperatureUnit': this.ovenCommandList.tempUnits,
+                  'cmdOptionSetTargetTimeHour': 0,
+                  'cmdOptionSetTargetTimeMinute': Math.floor(this.ovenCommandList.ovenSetDuration / 60),
+                  'cmdOptionSetTargetTimeSecond': Math.floor(this.ovenCommandList.ovenSetDuration % 60),
+                  'cmdOptionSetWeightUnit': this.ovenCommandList.weightUnits,
+                  'cmdOptionStep': 0,
+                  'setMwoPowerLevel': this.ovenCommandList.microwavePower,
+                  'setTargetSteamLevel': 'NONE',
+                  'setTargetTemp': this.ovenCommandList.ovenSetTemperature,
+                  'setTargetTempLevel': this.ovenCommandList.ovenMode === 'WARM' ? 'HIGH' : 0,
+                  'setTargetWeight': this.ovenCommandList.targetWeight,
+                  'setWarmType': 'NONE',
+                },
               },
-            },
-            dataGetList: null,
-          }, 'Set', ctrlKey);
+              dataGetList: null,
+            }, 'Set', ctrlKey);
+          }
+        } catch (error) {
+          this.logger.error('Error sending oven command:', error);
         }
         this.waitingForCommand = true;
         setTimeout(() => {
@@ -1345,16 +1359,20 @@ export default class Microwave extends BaseDevice {
         this.platform.log.debug('Stop Command Sent to Microwave');
         const ctrlKey = 'SetCookStop';
         const device = this.accessory.context.device;
-        this.platform.ThinQ?.deviceControl(device.id, {
-          dataKey: null,
-          dataValue: null,
-          dataSetList: {
-            ovenState: {
-              'cmdOptionCookStop': 'UPPER',
+        try {
+          await this.platform.ThinQ?.deviceControl(device.id, {
+            dataKey: null,
+            dataValue: null,
+            dataSetList: {
+              ovenState: {
+                'cmdOptionCookStop': 'UPPER',
+              },
             },
-          },
-          dataGetList: null,
-        }, 'Set', ctrlKey);
+            dataGetList: null,
+          }, 'Set', ctrlKey);
+        } catch (error) {
+          this.logger.error('Error stopping microwave:', error);
+        }
         this.waitingForCommand = true;
         setTimeout(() => {
           this.pauseUpdate = false;
