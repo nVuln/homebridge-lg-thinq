@@ -68,7 +68,7 @@ export default class RangeHood extends BaseDevice {
   async setHoodRotationSpeed(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
     try {
-      await this.platform.ThinQ?.deviceControl(device, {
+      await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: null,
         dataValue: null,
         dataSetList: {
@@ -90,7 +90,7 @@ export default class RangeHood extends BaseDevice {
   async setLightBrightness(value: CharacteristicValue) {
     const device: Device = this.accessory.context.device;
     try {
-      await this.platform.ThinQ?.deviceControl(device, {
+      await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: null,
         dataValue: null,
         dataSetList: {
