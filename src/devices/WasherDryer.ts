@@ -4,7 +4,8 @@ import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebri
 import { Device } from '../lib/Device.js';
 import { PlatformType, WASHER_NOT_RUNNING_STATUS, ONE_DAY_IN_SECONDS, TEN_MINUTES_MS } from '../lib/constants.js';
 import { DeviceModel } from '../lib/DeviceModel.js';
-import { safeParseInt, toSeconds } from '../helper.js';
+import { safeParseInt } from '../utils/normalize.js';
+import { toSeconds } from '../utils/normalize.js';
 
 /** @deprecated Use WASHER_NOT_RUNNING_STATUS from lib/constants.js instead */
 export const NOT_RUNNING_STATUS = WASHER_NOT_RUNNING_STATUS;

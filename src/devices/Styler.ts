@@ -4,7 +4,7 @@ import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebri
 import { Device } from '../lib/Device.js';
 import { DeviceModel } from '../lib/DeviceModel.js';
 import { STYLER_NOT_RUNNING_STATUS, ONE_DAY_IN_SECONDS } from '../lib/constants.js';
-import { toSeconds } from '../helper.js';
+import { toSeconds } from '../utils/normalize.js';
 
 /** @deprecated Use STYLER_NOT_RUNNING_STATUS from lib/constants.js instead */
 export const NOT_RUNNING_STATUS = STYLER_NOT_RUNNING_STATUS;
