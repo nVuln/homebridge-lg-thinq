@@ -25,8 +25,7 @@ export default class RangeHood extends BaseDevice {
       Characteristic,
     } = this.platform;
 
-    this.serviceHood = accessory.getService(Fan) || accessory.addService(Fan, device.name);
-    this.serviceHood.updateCharacteristic(Characteristic.Name, device.name);
+    this.serviceHood = this.getOrCreateService(Fan, device.name);
     this.serviceHood.getCharacteristic(Characteristic.On)
       .onSet(this.setHoodActive.bind(this));
     this.serviceHood.getCharacteristic(Characteristic.RotationSpeed)
@@ -43,8 +42,7 @@ export default class RangeHood extends BaseDevice {
     }
 
     // vent lamp
-    this.serviceLight = accessory.getService(Lightbulb) || accessory.addService(Lightbulb, device.name + ' - Light');
-    this.serviceLight.updateCharacteristic(Characteristic.Name, device.name + ' - Light');
+    this.serviceLight = this.getOrCreateService(Lightbulb, device.name + ' - Light', 'Light');
     this.serviceLight.getCharacteristic(Characteristic.On)
       .onSet(this.setLightActive.bind(this));
     this.serviceLight.getCharacteristic(Characteristic.Brightness)
