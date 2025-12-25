@@ -4,7 +4,7 @@ import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebri
 import { Device } from '../lib/Device.js';
 import { EnumValue, RangeValue, ValueType } from '../lib/DeviceModel.js';
 import { cToF, fToC, normalizeBoolean, normalizeNumber, safeParseInt } from '../helper.js';
-import { AC_MODEL_FEATURES, ONE_MINUTE_MS } from '../lib/constants.js';
+import { AC_MODEL_FEATURES, ONE_MINUTE_MS, HUNDRED_MS } from '../lib/constants.js';
 
 export enum ACModelType {
   AWHP = 'AWHP',
@@ -220,7 +220,7 @@ export default class AirConditioner extends BaseDevice {
 
           this.serviceFanV2?.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE);
           this.serviceFanV2?.updateCharacteristic(Characteristic.RotationSpeed, this.Status.windStrength);
-        }, 100);
+        }, HUNDRED_MS);
       })
       .updateValue(Characteristic.Active.INACTIVE);
 

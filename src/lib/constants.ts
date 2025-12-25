@@ -99,7 +99,9 @@ export const SIX_MINUTES_MS = 360000;
 export const TWO_MINUTES_MS = 120000;
 export const ONE_MINUTE_MS = 60000;
 export const TEN_SECONDS_MS = 10000;
+export const ONE_POINT_FIVE_SECONDS_MS = 1500;
 export const ONE_SECOND_MS = 1000;
+export const HUNDRED_MS = 100;
 export const ONE_HOUR_MS = 3600000;
 export const DISHWASHER_STANDBY_INTERVAL_MS = 902500; // ~15 minutes
 
