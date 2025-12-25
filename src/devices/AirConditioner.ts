@@ -74,6 +74,7 @@ export default class AirConditioner extends BaseDevice {
   protected currentTargetState = 2; // default target: COOL
 
   protected serviceLabelButtons: Service | undefined;
+  protected monitorInterval: ReturnType<typeof setInterval> | undefined;
 
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
@@ -169,14 +170,25 @@ export default class AirConditioner extends BaseDevice {
 
     // send request every minute to update temperature
     // https://github.com/nVuln/homebridge-lg-thinq/issues/177
-    setInterval(async () => {
+    this.monitorInterval = setInterval(async () => {
       if (device.online) {
-        await this.platform.ThinQ?.deviceControl(device.id, {
-          dataKey: 'airState.mon.timeout',
-          dataValue: '70',
-        }, 'Set', 'allEventEnable', 'control');
+        try {
+          await this.platform.ThinQ?.deviceControl(device.id, {
+            dataKey: 'airState.mon.timeout',
+            dataValue: '70',
+          }, 'Set', 'allEventEnable', 'control');
+        } catch (error) {
+          this.logger.debug('Error sending monitor timeout command:', error);
+        }
       }
     }, ONE_MINUTE_MS);
+  }
+
+  public destroy() {
+    if (this.monitorInterval) {
+      clearInterval(this.monitorInterval);
+      this.monitorInterval = undefined;
+    }
   }
 
   protected createFanService() {
