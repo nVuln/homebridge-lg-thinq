@@ -293,7 +293,7 @@ export default class Microwave extends BaseDevice {
       .on('set', (inputIdentifier, callback) => {
         const vNum = normalizeNumber(inputIdentifier);
         if (vNum === null) {
-          this.platform.log.error('ActiveIdentifier is not a number');
+          this.logger.error('ActiveIdentifier is not a number');
           callback();
           return;
         }
@@ -687,12 +687,12 @@ export default class Microwave extends BaseDevice {
       .on('set', (value, callback) => {
         const vNum = normalizeNumber(value);
         if (vNum === null) {
-          this.platform.log.error('SetDuration is not a number');
+          this.logger.error('SetDuration is not a number');
           callback();
           return;
         }
         this.pauseUpdate = true;
-        this.platform.log.debug('Cooking Duration set to to: ' + this.secondsToTime(vNum));
+        this.logger.debug('Cooking Duration set to to: ' + this.secondsToTime(vNum));
         this.ovenCommandList.ovenSetDuration = vNum;
         callback(null);
       });
@@ -747,7 +747,7 @@ export default class Microwave extends BaseDevice {
       .on('set', (value, callback) => {
         let vNum = normalizeNumber(value);
         if (vNum === null) {
-          this.platform.log.error('SetDuration is not a number');
+          this.logger.error('SetDuration is not a number');
           callback();
           return;
         }
@@ -1040,7 +1040,7 @@ export default class Microwave extends BaseDevice {
       .on('set', (value, callback) => {
         const vNum = normalizeNumber(value);
         if (vNum === null) {
-          this.platform.log.error('TargetTemperature is not a number');
+          this.logger.error('TargetTemperature is not a number');
           callback();
           return;
         }
@@ -1087,7 +1087,7 @@ export default class Microwave extends BaseDevice {
   }
 
   async sendLightVentCommand() {
-    this.platform.log.debug('Fan Speed: ' + this.ventSpeed + ' Light: ' + this.lampLevel);
+    this.logger.debug('Fan Speed: ' + this.ventSpeed + ' Light: ' + this.lampLevel);
     const ctrlKey = 'setVentLampLevel';
     const device = this.accessory.context.device;
     try {
@@ -1113,7 +1113,7 @@ export default class Microwave extends BaseDevice {
 
   async sendTimerCommand(time: number) {
     if (!this.waitingForCommand) {
-      this.platform.log.debug('Alarm Set to: ' + this.secondsToTime(time));
+      this.logger.debug('Alarm Set to: ' + this.secondsToTime(time));
       const ctrlKey = 'SetTimer';
       const device = this.accessory.context.device;
       try {
@@ -1274,7 +1274,7 @@ export default class Microwave extends BaseDevice {
           };
         }
         const debugMsg = 'Sending the Folowing Commands to the Microwave: ' + JSON.stringify(this.ovenCommandList);
-        this.platform.log.debug(debugMsg);
+        this.logger.debug(debugMsg);
         const isDehydrateOrProof =
           this.ovenCommandList.ovenMode.includes('DEHYDRATE')
           || this.ovenCommandList.ovenMode.includes('PROOF');
@@ -1357,7 +1357,7 @@ export default class Microwave extends BaseDevice {
     if (!this.monitorOnly) {
       if (!this.waitingForCommand) {
         this.pauseUpdate = true;
-        this.platform.log.debug('Stop Command Sent to Microwave');
+        this.logger.debug('Stop Command Sent to Microwave');
         const ctrlKey = 'SetCookStop';
         const device = this.accessory.context.device;
         try {
@@ -1387,7 +1387,7 @@ export default class Microwave extends BaseDevice {
   }
 
   setActive() {
-    this.platform.log.debug('Microwave Response: ', this.Status.data);
+    this.logger.debug('Microwave Response: ', this.Status.data);
     //  this.platform.log('Oven Response 2', this.Status.deviceModel.DeviceModel.data.ControlWifi);
     // this.platform.log('Oven Response 3', this.Status.deviceModel.DeviceModel.data.UpperManualCook);
     //this.platform.log('Oven Response 4', this.Status.deviceModel.DeviceModel.data.Monitoring);
