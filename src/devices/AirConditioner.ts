@@ -4,7 +4,7 @@ import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebri
 import { Device } from '../lib/Device.js';
 import { EnumValue, RangeValue, ValueType } from '../lib/DeviceModel.js';
 import { cToF, fToC, normalizeBoolean, normalizeNumber, safeParseInt } from '../helper.js';
-import { AC_MODEL_FEATURES } from '../lib/constants.js';
+import { AC_MODEL_FEATURES, ONE_MINUTE_MS } from '../lib/constants.js';
 
 export enum ACModelType {
   AWHP = 'AWHP',
@@ -176,7 +176,7 @@ export default class AirConditioner extends BaseDevice {
           dataValue: '70',
         }, 'Set', 'allEventEnable', 'control');
       }
-    }, 60000);
+    }, ONE_MINUTE_MS);
   }
 
   protected createFanService() {

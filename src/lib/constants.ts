@@ -97,6 +97,7 @@ export const TEN_MINUTES_MS = 600000;
 export const TWO_MINUTES_MS = 120000;
 export const TEN_SECONDS_MS = 10000;
 export const ONE_SECOND_MS = 1000;
+export const ONE_MINUTE_MS = 60000;
 
 /**
  * Filter maintenance thresholds
