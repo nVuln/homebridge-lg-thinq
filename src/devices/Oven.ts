@@ -181,7 +181,7 @@ export default class Oven extends BaseDevice {
       .on('set', (inputIdentifier, callback) => {
         const vNum = normalizeNumber(inputIdentifier);
         if (vNum === null) {
-          this.platform.log.error('ActiveIdentifier is not a number');
+          this.logger.error('ActiveIdentifier is not a number');
           callback();
           return;
         }
@@ -357,12 +357,12 @@ export default class Oven extends BaseDevice {
       .on('set', (value, callback) => {
         const vNum = normalizeNumber(value);
         if (vNum === null) {
-          this.platform.log.error('SetDuration is not a number');
+          this.logger.error('SetDuration is not a number');
           callback();
           return;
         }
         this.pauseUpdate = true;
-        this.platform.log.debug('Cooking Duration set to to: ' + this.secondsToTime(vNum));
+        this.logger.debug('Cooking Duration set to to: ' + this.secondsToTime(vNum));
         this.ovenCommandList.ovenSetDuration = vNum;
         callback(null);
       });
@@ -416,7 +416,7 @@ export default class Oven extends BaseDevice {
       .on('set', (value, callback) => {
         let vNum = normalizeNumber(value);
         if (vNum === null) {
-          this.platform.log.error('SetDuration is not a number');
+          this.logger.error('SetDuration is not a number');
           callback();
           return;
         }
@@ -433,7 +433,7 @@ export default class Oven extends BaseDevice {
     this.bakeSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Bake Mode');
     this.bakeSwitch.getCharacteristic(this.platform.Characteristic.On)
       .on('get', (callback) => {
-        this.platform.log.debug('Bake Switch Get state');
+        this.logger.debug('Bake Switch Get state');
         const currentValue = false;
         callback(null, currentValue);
       })
@@ -737,7 +737,7 @@ export default class Oven extends BaseDevice {
       .on('set', (value, callback) => {
         const vNum = normalizeNumber(value);
         if (vNum === null) {
-          this.platform.log.error('TargetTemperature is not a number');
+          this.logger.error('TargetTemperature is not a number');
           callback();
           return;
         }
@@ -794,7 +794,7 @@ export default class Oven extends BaseDevice {
       .on('set', (value, callback) => {
         const v = normalizeNumber(value);
         if (v === null) {
-          this.platform.log.error('TargetTemperature is not a valid number');
+          this.logger.error('TargetTemperature is not a valid number');
           callback(null);
           return;
         }
@@ -826,7 +826,7 @@ export default class Oven extends BaseDevice {
 
   async sendTimerCommand(time: number) {
     if (!this.waitingForCommand) {
-      this.platform.log.debug('Alarm Set to: ' + this.secondsToTime(time));
+      this.logger.debug('Alarm Set to: ' + this.secondsToTime(time));
       const ctrlKey = 'SetTimer';
       const device = this.accessory.context.device;
       try {
@@ -950,7 +950,7 @@ export default class Oven extends BaseDevice {
             };
           }
         }
-        this.platform.log.debug('Sending the Folowing Commands: ' + JSON.stringify(this.ovenCommandList));
+        this.logger.debug('Sending the Folowing Commands: ' + JSON.stringify(this.ovenCommandList));
         const ctrlKey = 'SetCookStart';
         const device = this.accessory.context.device;
         try {
@@ -997,7 +997,7 @@ export default class Oven extends BaseDevice {
     if (!this.monitorOnly) {
       if (!this.waitingForCommand) {
         this.pauseUpdate = true;
-        this.platform.log.debug('Stop Command Sent to Oven');
+        this.logger.debug('Stop Command Sent to Oven');
         const ctrlKey = 'SetCookStop';
         const device = this.accessory.context.device;
         try {
@@ -1037,7 +1037,7 @@ export default class Oven extends BaseDevice {
   }
 
   setActive() {
-    this.platform.log.info('Oven Response 1', this.Status.data);
+    this.logger.info('Oven Response 1', this.Status.data);
     //  this.platform.log('Oven Response 2', this.Status.deviceModel.DeviceModel.data.ControlWifi);
     // this.platform.log('Oven Response 3', this.Status.deviceModel.DeviceModel.data.UpperManualCook);
     //this.platform.log('Oven Response 4', this.Status.deviceModel.DeviceModel.data.Monitoring);
@@ -1501,7 +1501,7 @@ export default class Oven extends BaseDevice {
       .onGet(() => {
         const currentState = device.deviceModel.lookupMonitorValue('UpperOvenState', this.Status.getState(key));
         if (currentState === null) {
-          this.platform.log.error('Current Oven State is null');
+          this.logger.error('Current Oven State is null');
           return Characteristic.CurrentHeaterCoolerState.INACTIVE;
         }
         if (currentState === OvenState.COOLING) {
