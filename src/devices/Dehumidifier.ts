@@ -77,7 +77,7 @@ export default class Dehumidifier extends BaseDevice {
   }
 
   async setActive(value: CharacteristicValue) {
-    this.platform.log.debug('Set Dehumidifier Active State ->', value);
+    this.logger.debug('Set Dehumidifier Active State ->', value);
     const device: Device = this.accessory.context.device;
     const isOn = value as boolean;
     if (this.Status.isPowerOn && isOn) {
@@ -146,7 +146,7 @@ export default class Dehumidifier extends BaseDevice {
         this.updateAccessoryCharacteristic(device);
       }
     } catch (error) {
-      this.platform.log.error('Error setting dehumidifier speed:', error);
+      this.logger.error('Error setting dehumidifier speed:', error);
     }
   }
 

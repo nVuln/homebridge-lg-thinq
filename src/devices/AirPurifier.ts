@@ -125,7 +125,7 @@ export default class AirPurifier extends BaseDevice {
       return; // don't send same status
     }
 
-    this.platform.log.debug('Set Active State ->', value);
+    this.logger.debug('Set Active State ->', value);
     try {
       const result = await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.operation',
@@ -146,7 +146,7 @@ export default class AirPurifier extends BaseDevice {
       return; // just skip it
     }
 
-    this.platform.log.debug('Set Target State ->', value);
+    this.logger.debug('Set Target State ->', value);
     try {
       await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.opMode',
@@ -167,7 +167,7 @@ export default class AirPurifier extends BaseDevice {
       return;
     }
 
-    this.platform.log.debug('Set Rotation Speed ->', value);
+    this.logger.debug('Set Rotation Speed ->', value);
     const device: Device = this.accessory.context.device;
     const values = Object.keys(RotateSpeed);
     const windStrength = safeParseInt(values[Math.round(vNum) - 1], RotateSpeed.EXTRA);

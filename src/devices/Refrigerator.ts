@@ -164,7 +164,7 @@ export default class Refrigerator extends BaseDevice {
         },
         dataGetList: null,
       });
-      this.platform.log.debug('Set Express Freezer ->', value);
+      this.logger.debug('Set Express Freezer ->', value);
     } catch (error) {
       this.logger.error('Failed to set express mode:', error);
     }
@@ -186,7 +186,7 @@ export default class Refrigerator extends BaseDevice {
         },
         dataGetList: null,
       });
-      this.platform.log.debug('Set Express Fridge ->', value);
+      this.logger.debug('Set Express Fridge ->', value);
     } catch (error) {
       this.logger.error('Failed to set express fridge:', error);
     }
@@ -208,7 +208,7 @@ export default class Refrigerator extends BaseDevice {
         },
         dataGetList: null,
       });
-      this.platform.log.debug('Set Eco Friendly ->', value);
+      this.logger.debug('Set Eco Friendly ->', value);
     } catch (error) {
       this.logger.error('Failed to set eco friendly:', error);
     }

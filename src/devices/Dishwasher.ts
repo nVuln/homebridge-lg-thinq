@@ -92,7 +92,7 @@ export default class Dishwasher extends BaseDevice {
       .on('set', (inputIdentifier, callback) => {
         const vNum = normalizeNumber(inputIdentifier);
         if (vNum === null) {
-          this.platform.log.error('Dishwasher ActiveIdentifier is not a number');
+          this.logger.error('Dishwasher ActiveIdentifier is not a number');
           callback();
           return;
         }
@@ -550,7 +550,7 @@ export default class Dishwasher extends BaseDevice {
   }
 
   setActive() {
-    this.platform.log.debug('Dishwasher Response', this.Status.data);
+    this.logger.debug('Dishwasher Response', this.Status.data);
 
     // this.platform.log('Dishwasher rinse', this.Status.data.rinseLevel);
     //  this.platform.log('Dishwasher rinse typeof', typeof this.Status.data.rinseLevel);
