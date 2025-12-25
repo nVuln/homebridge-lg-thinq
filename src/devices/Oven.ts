@@ -7,7 +7,7 @@ import { Logger, Perms, PlatformAccessory, Service } from 'homebridge';
 import { DeviceModel } from '../lib/DeviceModel.js';
 import { Device } from '../lib/Device.js';
 import { normalizeBoolean, normalizeNumber } from '../helper.js';
-import { TWELVE_HOURS_IN_SECONDS, ONE_HOUR_IN_SECONDS, ONE_SECOND_MS, TEN_SECONDS_MS, TWO_MINUTES_MS } from '../lib/constants.js';
+import { TWELVE_HOURS_IN_SECONDS, ONE_HOUR_IN_SECONDS, ONE_SECOND_MS, TEN_SECONDS_MS, TWO_MINUTES_MS, THIRTY_MINUTES_IN_SECONDS } from '../lib/constants.js';
 
 enum OvenState {
   INITIAL = '@OV_STATE_INITIAL_W',
@@ -76,7 +76,7 @@ export default class Oven extends BaseDevice {
     ovenMode: 'BAKE',
     ovenSetTemperature: 350,
     tempUnits: 'FAHRENHEIT',
-    ovenSetDuration: 1800,
+    ovenSetDuration: THIRTY_MINUTES_IN_SECONDS,
     probeTemperature: 0,
     ovenKeepWarm: 'DISABLE',
   };
@@ -867,7 +867,7 @@ export default class Oven extends BaseDevice {
         this.pauseUpdate = true;
         this.ovenCommandList.tempUnits = this.Status.data?.upperCurrentTemperatureUnit;
         if (this.ovenCommandList.ovenSetDuration === 0) {
-          this.ovenCommandList.ovenSetDuration = 1800;
+          this.ovenCommandList.ovenSetDuration = THIRTY_MINUTES_IN_SECONDS;
         }
         if (this.ovenCommandList.ovenMode === 'NONE') {
           this.ovenCommandList.ovenMode = 'BAKE';
@@ -1729,7 +1729,7 @@ export default class Oven extends BaseDevice {
           ovenMode: 'NONE',
           ovenSetTemperature: 350,
           tempUnits: 'FAHRENHEIT',
-          ovenSetDuration: 1800,
+          ovenSetDuration: THIRTY_MINUTES_IN_SECONDS,
           probeTemperature: 0,
           ovenKeepWarm: 'DISABLE',
         };

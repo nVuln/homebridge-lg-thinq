@@ -4,7 +4,7 @@ import { Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { normalizeNumber } from '../helper.js';
 import { WasherDryerStatus } from './WasherDryer.js';
-import { SIX_HOURS_IN_SECONDS, TEN_MINUTES_MS, ONE_HOUR_IN_SECONDS } from '../lib/constants.js';
+import { SIX_HOURS_IN_SECONDS, TEN_MINUTES_MS, ONE_HOUR_IN_SECONDS, SIX_MINUTES_MS, DISHWASHER_STANDBY_INTERVAL_MS } from '../lib/constants.js';
 
 export default class Dishwasher extends BaseDevice {
   public isRunning = false;
@@ -250,7 +250,7 @@ export default class Dishwasher extends BaseDevice {
             this.serviceDishwasher.updateCharacteristic(this.platform.Characteristic.Active, this.timerStatus());
             this.tvService.updateCharacteristic(this.platform.Characteristic.Active, this.onStatus() ? 1 : 0);
             this.serviceDoorOpened.updateCharacteristic(this.platform.Characteristic.StatusActive, this.onStatus());
-          }, 3610000 / 4);
+          }, DISHWASHER_STANDBY_INTERVAL_MS);
         }
 
       } else if (this.Status.data.state.includes('INITIAL')) {
@@ -683,7 +683,7 @@ export default class Dishwasher extends BaseDevice {
     const newCurrentTime = new Date();
     const newCurrentTimeMS = newCurrentTime.getTime();
     if (this.standbyTimetMS !== 0) {
-      if (newCurrentTimeMS - this.standbyTimetMS > 3600000 / 10) {
+      if (newCurrentTimeMS - this.standbyTimetMS > SIX_MINUTES_MS) {
         return false;
       } else {
         return this.Status.isPowerOn;
