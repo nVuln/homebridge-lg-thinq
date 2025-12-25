@@ -858,7 +858,7 @@ export default class Oven extends BaseDevice {
     }
     setTimeout(() => {
       this.waitingForCommand = false;
-    }, 1000);
+    }, ONE_SECOND_MS);
   }
 
   async sendOvenCommand() {
