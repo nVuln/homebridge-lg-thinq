@@ -170,18 +170,22 @@ export default class AirConditioner extends BaseDevice {
 
     // send request every minute to update temperature
     // https://github.com/nVuln/homebridge-lg-thinq/issues/177
-    this.monitorInterval = setInterval(async () => {
-      if (device.online) {
-        try {
-          await this.platform.ThinQ?.deviceControl(device.id, {
-            dataKey: 'airState.mon.timeout',
-            dataValue: '70',
-          }, 'Set', 'allEventEnable', 'control');
-        } catch (error) {
-          this.logger.debug('Error sending monitor timeout command:', error);
+    // Skip for models that don't support the monitor timeout command
+    const supportsMonitorTimeout = !AC_MODEL_FEATURES.noMonitorTimeout.some(m => device.model.includes(m));
+    if (supportsMonitorTimeout) {
+      this.monitorInterval = setInterval(async () => {
+        if (device.online) {
+          try {
+            await this.platform.ThinQ?.deviceControl(device.id, {
+              dataKey: 'airState.mon.timeout',
+              dataValue: '70',
+            }, 'Set', 'allEventEnable', 'control');
+          } catch (error) {
+            this.logger.debug('Error sending monitor timeout command:', error);
+          }
         }
-      }
-    }, ONE_MINUTE_MS);
+      }, ONE_MINUTE_MS);
+    }
   }
 
   public destroy() {
