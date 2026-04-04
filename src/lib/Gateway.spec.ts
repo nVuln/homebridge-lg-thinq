@@ -6,7 +6,6 @@ describe('Gateway', () => {
     empTermsUri: 'https://example.com/terms',
     empSpxUri: 'https://example.com/login',
     thinq2Uri: 'https://example.com/thinq2',
-    thinq1Uri: 'https://example.com/thinq1',
     countryCode: 'US',
     languageCode: 'en-US',
   };
@@ -27,10 +26,6 @@ describe('Gateway', () => {
 
   test('should return the correct thinq2_url', () => {
     expect(gateway.thinq2_url).toBe('https://example.com/thinq2/');
-  });
-
-  test('should return the correct thinq1_url', () => {
-    expect(gateway.thinq1_url).toBe('https://example.com/thinq1/');
   });
 
   test('should return the correct country_code', () => {

@@ -57,18 +57,10 @@
       "default": "en-US",
       "required": true
     },
-    "thinq1": {
-      "title": "Enable ThinQ1 Support?",
-      "type": "boolean",
-      "default": false
-    },
     "refresh_interval": {
-      "title": "Refresh interval (in second)",
+      "title": "Refresh interval (in seconds)",
       "type": "number",
-      "default": 60,
-      "condition": {
-        "functionBody": "return !!model.thinq1;"
-      }
+      "default": 60
     },
     "devices": {
       "title": "Devices",
@@ -90,19 +82,7 @@
             "title": "Device Type",
             "type": "string",
             "enum": [
-              "AC",
-              "WASHER",
-              "WASHER_NEW",
-              "WASH_TOWER",
-              "DRYER",
-              "REFRIGERATOR",
-              "DISHWASHER",
-              "AIR_PURIFIER",
-              "DEHUMIDIFIER",
-              "AERO_TOWER",
-              "OVEN",
-              "RANGE",
-              "COOKTOP"
+              "AC"
             ],
             "condition": {
               "functionBody": "return false;"
@@ -111,22 +91,6 @@
           "serial_number": {
             "title": "Serial Number (optional)",
             "type": "string"
-          },
-          "dishwasher_trigger": {
-            "title": "Enable program finished trigger?",
-            "type": "boolean"
-          },
-          "washer_tub_clean": {
-            "title": "Enable Tub Clean Event",
-            "type": "boolean"
-          },
-          "washer_trigger": {
-            "title": "Enable program finished trigger?",
-            "type": "boolean"
-          },
-          "washer_door_lock": {
-            "title": "Enable door lock status",
-            "type": "boolean"
           },
           "ac_air_quality": {
             "title": "Enable Air Quality",
@@ -243,22 +207,6 @@
                 ]
               }
             ]
-          },
-          "ref_express_freezer": {
-            "title": "Express Freezer / Ice Plus",
-            "type": "boolean"
-          },
-          "ref_express_fridge": {
-            "title": "Express Fridge",
-            "type": "boolean"
-          },
-          "ref_eco_friendly": {
-            "title": "Eco Friendly",
-            "type": "boolean"
-          },
-          "air_fast_mode": {
-            "title": "Air Fast Mode",
-            "type": "boolean"
           }
         }
       }
@@ -286,7 +234,6 @@
         "language"
       ]
     },
-    "thinq1",
     "refresh_interval",
     {
       "key": "devices",
@@ -304,35 +251,7 @@
           "items": [
             {
               "type": "fieldset",
-              "title": "Air purifier specific settings",
-              "description": "Configure air purifier device settings.",
-              "expandable": true,
-              "expanded": false,
-              "items": [
-                "devices[].air_fast_mode"
-              ],
-              "condition": {
-                "functionBody": "return model.devices && model.devices[arrayIndices] && ['AIR_PURIFIER'].includes(model.devices[arrayIndices].type);"
-              }
-            },
-            {
-              "type": "fieldset",
-              "title": "Washer / Dryer specific settings",
-              "description": "Configure washer/dryer device settings.",
-              "expandable": true,
-              "expanded": false,
-              "items": [
-                "devices[].washer_trigger",
-                "devices[].washer_tub_clean",
-                "devices[].washer_door_lock"
-              ],
-              "condition": {
-                "functionBody": "return model.devices && model.devices[arrayIndices] && ['WASHER','WASHER_NEW', 'WASH_TOWER', 'DRYER', 'WASH_TOWER_2'].includes(model.devices[arrayIndices].type);"
-              }
-            },
-            {
-              "type": "fieldset",
-              "title": "Air conditioner specific settings",
+              "title": "Air conditioner settings",
               "description": "Configure AC device settings.",
               "expandable": true,
               "expanded": false,
@@ -358,38 +277,7 @@
                     "devices[].ac_buttons[].op_mode"
                   ]
                 }
-              ],
-              "condition": {
-                "functionBody": "return model.devices && model.devices[arrayIndices] && ['AC'].includes(model.devices[arrayIndices].type);"
-              }
-            },
-            {
-              "type": "fieldset",
-              "title": "Refrigerator specific settings",
-              "description": "Configure refrigerator device settings.",
-              "expandable": true,
-              "expanded": false,
-              "items": [
-                "devices[].ref_express_freezer",
-                "devices[].ref_express_fridge",
-                "devices[].ref_eco_friendly"
-              ],
-              "condition": {
-                "functionBody": "return model.devices && model.devices[arrayIndices] && ['REFRIGERATOR'].includes(model.devices[arrayIndices].type);"
-              }
-            },
-            {
-              "type": "fieldset",
-              "title": "Dishwasher specific settings",
-              "description": "Configure dishwasher device settings.",
-              "expandable": true,
-              "expanded": false,
-              "items": [
-                "devices[].dishwasher_trigger"
-              ],
-              "condition": {
-                "functionBody": "return model.devices && model.devices[arrayIndices] && ['DISHWASHER'].includes(model.devices[arrayIndices].type);"
-              }
+              ]
             }
           ]
         }

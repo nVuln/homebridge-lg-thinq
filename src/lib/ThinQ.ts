@@ -2,24 +2,17 @@ import { Logger, PlatformConfig } from 'homebridge';
 import { API } from './API.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { Device, DeviceData } from './Device.js';
-import { DeviceType, PlatformType } from './constants.js';
 import { DeviceModel, ValueType } from './DeviceModel.js';
-import { randomUUID } from 'crypto';
 import * as Path from 'path';
 import * as FS from 'fs';
 import forge from 'node-forge';
-import Helper from '../v1/helper.js';
-import { MonitorError, NotConnectedError } from '../errors/index.js';
 import { PLUGIN_NAME } from '../settings.js';
 import { device as awsIotDevice } from 'aws-iot-device-sdk';
 import { URL } from 'url';
 import Persist from './Persist.js';
 
-export type WorkId = string;
-
 export class ThinQ {
   protected api: API;
-  protected workIds: Record<string, WorkId> = {};
   protected deviceModel: Record<string, DeviceModel> = {};
   protected persist;
   constructor(
@@ -55,7 +48,6 @@ export class ThinQ {
   }
 
   public async setup(device: Device) {
-    // load device model
     device.deviceModel = await this.loadDeviceModel(device);
 
     if (device.deviceModel.data.Monitoring === undefined
@@ -64,38 +56,7 @@ export class ThinQ {
       this.logger.warn('[' + device.name + '] This device may not "smart" device. Ignore it!');
     }
 
-    if (device.platform === PlatformType.ThinQ1) {
-      // register work uuid
-      await this.registerWorkId(device);
-
-      // transform thinq1 device
-      const deviceWithSnapshot = Helper.transform(device, null);
-      device.snapshot = deviceWithSnapshot.snapshot;
-    }
-
     return true;
-  }
-
-  public async unregister(device: Device) {
-    if (device.platform === PlatformType.ThinQ1 && device.id in this.workIds && this.workIds[device.id] !== null) {
-      try {
-        await this.api.sendMonitorCommand(device.id, 'Stop', this.workIds[device.id]);
-      } catch (err) {
-        //this.log.error(err);
-      }
-
-      delete this.workIds[device.id];
-    }
-  }
-
-  protected async registerWorkId(device: any) {
-    return this.workIds[device.id] = await this.api.sendMonitorCommand(device.id, 'Start', randomUUID()).then(data => {
-      if (data !== undefined && 'workId' in data) {
-        return data.workId;
-      }
-
-      return null;
-    });
   }
 
   protected async loadDeviceModel(device: Device) {
@@ -106,68 +67,7 @@ export class ThinQ {
       await this.persist.setItem(device.id, deviceModel);
     }
 
-    const modelVersion = parseFloat(deviceModel.Info?.version);
-    // new washer model
-    if (device.type === DeviceType[DeviceType.WASH_TOWER_2]
-      && modelVersion && modelVersion >= 3
-      && deviceModel.Info?.defaultTargetDeviceRoot
-      && deviceModel[deviceModel.Info.defaultTargetDeviceRoot]
-    ) {
-      deviceModel = deviceModel[deviceModel.Info.defaultTargetDeviceRoot];
-    }
-
     return this.deviceModel[device.id] = device.deviceModel = new DeviceModel(deviceModel);
-  }
-
-  public async pollMonitor(device: Device) {
-    device.deviceModel = await this.loadDeviceModel(device);
-
-    if (device.platform === PlatformType.ThinQ1) {
-      let result: Buffer<ArrayBuffer> | null = null;
-      // check if work id is registered
-      if (!(device.id in this.workIds) || this.workIds[device.id] === null) {
-        // register work id
-        const workId = await this.registerWorkId(device);
-        if (workId === undefined || workId === null) { // device may not connected
-          return Helper.transform(device, result);
-        }
-      }
-
-      try {
-        result = await this.api.getMonitorResult(device.id, this.workIds[device.id]);
-      } catch (err) {
-        if (err instanceof MonitorError) {
-          // restart monitor and try again
-          await this.unregister(device);
-          await this.registerWorkId(device);
-
-          // retry 1 times
-          try {
-            result = await this.api.getMonitorResult(device.id, this.workIds[device.id]);
-          } catch (err) {
-            // stop it
-            // await this.stopMonitor(device);
-          }
-        } else if (err instanceof NotConnectedError) {
-          // device not online
-          // this.log.debug('Device not connected: ', device.toString());
-        } else {
-          throw err;
-        }
-      }
-
-      return Helper.transform(device, result);
-    }
-
-    return device;
-  }
-
-  public thinq1DeviceControl(device: Device, key: string, value: any) {
-    const data = Helper.prepareControlData(device, key, value);
-
-    return this.api.thinq1PostRequest('rti/rtiControl', data).catch(err => {
-      this.logger.error('Unknown Error: ', err);
-    });
   }
 
   public async deviceControl(

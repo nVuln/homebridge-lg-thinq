@@ -6,8 +6,7 @@ import { Gateway } from './Gateway.js';
 
 import { requestClient } from './request.js';
 import { Auth } from './Auth.js';
-import { WorkId } from './ThinQ.js';
-import { ManualProcessNeeded, MonitorError, NotConnectedError, TokenExpiredError } from '../errors/index.js';
+import { ManualProcessNeeded, NotConnectedError, TokenExpiredError } from '../errors/index.js';
 import crypto from 'crypto';
 import axios, { Method } from 'axios';
 import { Logger } from 'homebridge';
@@ -20,8 +19,7 @@ import { Logger } from 'homebridge';
  *
  * @remarks
  * This class includes methods for sending commands to devices, retrieving device
- * and home information, and managing authentication tokens. It supports both
- * ThinQ1 and ThinQ2 APIs.
+ * and home information, and managing authentication tokens.
  *
  * @example
  * ```typescript
@@ -40,7 +38,6 @@ export class API {
   protected _homes: any;
   protected _gateway: Gateway | undefined;
   protected session: Session = new Session('', '', 0);
-  protected jsessionId!: string;
   protected auth!: Auth;
   protected userNumber!: string;
 
@@ -100,18 +97,13 @@ export class API {
    */
   protected async request(method: Method | undefined, uri: string, data?: any, retry = false): Promise<any> {
     const gateway = await this.gateway();
-    // Determine the appropriate headers based on the URI
-    const requestHeaders = (gateway.thinq1_url && uri.startsWith(gateway.thinq1_url))
-      ? this.monitorHeaders
-      : this.defaultHeaders;
-
     const url = this.resolveUrl(gateway.thinq2_url, uri);
 
     return await this.httpClient.request({
       method,
       url,
       data,
-      headers: requestHeaders,
+      headers: this.defaultHeaders,
     }).then(res => res.data).catch(async err => {
       // Handle token expiration and retry the request
       if (err instanceof TokenExpiredError && !retry) {
@@ -150,24 +142,6 @@ export class API {
         return {};
       }
     });
-  }
-
-  protected get monitorHeaders() {
-    const monitorHeaders: Record<string,string> = {
-      'Accept': 'application/json',
-      'x-thinq-application-key': 'wideq',
-      'x-thinq-security-key': 'nuts_securitykey',
-    };
-
-    if (typeof this.session?.accessToken === 'string') {
-      monitorHeaders['x-thinq-token'] = this.session?.accessToken;
-    }
-
-    if (this.jsessionId) {
-      monitorHeaders['x-thinq-jsessionId'] = this.jsessionId;
-    }
-
-    return monitorHeaders;
   }
 
   protected get defaultHeaders() {
@@ -279,67 +253,6 @@ export class API {
     });
   }
 
-  /**
-   * Sends a monitor command to a specific device.
-   *
-   * @param deviceId - The ID of the device to monitor.
-   * @param cmdOpt - The command option for monitoring.
-   * @param workId - The work ID associated with the monitoring command.
-   * @returns A promise resolving to the response of the monitor command.
-   * @throws Error if `deviceId` or `cmdOpt` is not a valid non-empty string.
-   */
-  public async sendMonitorCommand(deviceId: string, cmdOpt: string, workId: WorkId) {
-    if (typeof deviceId !== 'string' || !deviceId.trim()) {
-      throw new Error('Invalid deviceId: must be a non-empty string.');
-    }
-    if (typeof cmdOpt !== 'string' || !cmdOpt.trim()) {
-      throw new Error('Invalid cmdOpt: must be a non-empty string.');
-    }
-    const data = {
-      cmd: 'Mon',
-      cmdOpt,
-      deviceId,
-      workId,
-    };
-
-    return await this.thinq1PostRequest('rti/rtiMon', data);
-  }
-
-  /**
-   * Retrieves the monitor result for a specific device and work ID.
-   *
-   * @param device_id - The ID of the device.
-   * @param work_id - The work ID associated with the monitor result.
-   * @returns A promise resolving to the monitor result or null if not available.
-   * @throws Error if `device_id` or `work_id` is not a valid non-empty string.
-   */
-  public async getMonitorResult(device_id: string, work_id: string) {
-    if (typeof device_id !== 'string' || !device_id.trim()) {
-      throw new Error('Invalid device_id: must be a non-empty string.');
-    }
-    if (typeof work_id !== 'string' || !work_id.trim()) {
-      throw new Error('Invalid work_id: must be a non-empty string.');
-    }
-
-    return await this.thinq1PostRequest('rti/rtiResult', { workList: [{ deviceId: device_id, workId: work_id }] })
-      .then(data => {
-        if (!('workList' in data) || !('returnCode' in data.workList)) {
-          return null;
-        }
-
-        const workList = data.workList;
-        if (workList.returnCode !== '0000') {
-          throw new MonitorError(data);
-        }
-
-        if (!('returnData' in workList)) {
-          return null;
-        }
-
-        return Buffer.from(workList.returnData, 'base64');
-      });
-  }
-
   public setRefreshToken(refreshToken: string) {
     if (typeof refreshToken !== 'string' || !refreshToken.trim()) {
       throw new Error('Invalid refreshToken: refreshToken must be a non-empty string.');
@@ -379,11 +292,6 @@ export class API {
       await this.refreshNewToken(this.session);
     }
 
-    if (!this.jsessionId) {
-      // get new jsessionid
-      this.jsessionId = await this.auth.getJSessionId(this.session.accessToken);
-    }
-
     if (!this.userNumber) {
       this.userNumber = await this.auth.getUserNumber(this.session?.accessToken);
     }
@@ -397,13 +305,5 @@ export class API {
   public async refreshNewToken(session: Session | null = null) {
     session = session || this.session;
     this.session = await this.auth.refreshNewToken(session);
-
-    this.jsessionId = await this.auth.getJSessionId(this.session.accessToken);
-  }
-
-  async thinq1PostRequest(endpoint: string, data: any) {
-    return await this.postRequest(this._gateway?.thinq1_url + endpoint, {
-      lgedmRoot: data,
-    }).then(data => data.lgedmRoot);
   }
 }

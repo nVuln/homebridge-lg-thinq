@@ -2,7 +2,7 @@ export interface GatewayData {
   empTermsUri: string;
   empSpxUri: string;
   thinq2Uri: string;
-  thinq1Uri: string;
+  thinq1Uri?: string;
   countryCode: string;
   languageCode: string;
 }
@@ -20,10 +20,6 @@ export class Gateway {
 
   public get thinq2_url() {
     return this.data.thinq2Uri + '/';
-  }
-
-  public get thinq1_url() {
-    return this.data.thinq1Uri + '/';
   }
 
   public get country_code() {

@@ -17,7 +17,6 @@ describe('Auth', () => {
       empTermsUri: 'https://example.com/emp',
       empSpxUri: 'https://example.com/spx',
       thinq2Uri: 'https://example.com/thinq2',
-      thinq1Uri: 'https://example.com/thinq1',
       countryCode: 'US',
       languageCode: 'en-US',
     });

@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { DateTime } from 'luxon';
 import qs from 'qs';
 import { URL } from 'url';
-import { AuthenticationError, ManualProcessNeededErrorCode, TokenError } from '../errors/index.js';
+import { AuthenticationError, TokenError } from '../errors/index.js';
 import * as constants from './constants.js';
 import { Gateway } from './Gateway.js';
 import { requestClient } from './request.js';
@@ -228,45 +228,6 @@ export class Auth {
         headers,
       });
     }
-  }
-
-  /**
-   * Retrieves the JSession ID for ThinQ v1 API compatibility.
-   *
-   * @param accessToken - The access token for the session.
-   * @returns A promise that resolves with the JSession ID.
-   */
-  public async getJSessionId(accessToken: string) {
-    // login to old gateway also - thinq v1
-    const memberLoginUrl = this.gateway.thinq1_url + 'member/login';
-    const memberLoginHeaders = {
-      'x-thinq-application-key': 'wideq',
-      'x-thinq-security-key': 'nuts_securitykey',
-      'Accept': 'application/json',
-      'x-thinq-token': accessToken,
-    };
-    const memberLoginData = {
-      countryCode: this.gateway.country_code,
-      langCode: this.gateway.language_code,
-      loginType: 'EMP',
-      token: accessToken,
-    };
-
-    return await requestClient.post(memberLoginUrl, { lgedmRoot: memberLoginData }, {
-      headers: memberLoginHeaders,
-    })
-      .then(res => res.data)
-      .then(data => data.lgedmRoot.jsessionId)
-      .catch(err => {
-        this.logger.debug(
-          err.message.startsWith(ManualProcessNeededErrorCode)
-            ? 'Please open the native LG App and sign in to your account to see what happened,'
-            + ' maybe new agreement need your accept. Then try restarting Homebridge.'
-            : err.message,
-        );
-        this.logger.debug(err);
-        this.logger.info('Failed to login to old thinq v1 gateway. See debug logs for more details. Continuing anyways.');
-      });
   }
 
   /**
