@@ -43,6 +43,7 @@ describe('MQTT certificate helpers', () => {
     expect(rootCaUrlForMqttHost('abc-ats.iot.us-east-1.amazonaws.com')).toBe(ATS_ROOT_CA_URL);
     expect(rootCaUrlForMqttHost('abc.iot.ruic.lgthinq.com')).toBe(LG_ROOT_CA_URL);
     expect(rootCaUrlForMqttHost('legacy.example.com')).toBe(LEGACY_ROOT_CA_URL);
+    expect(new URL(LG_ROOT_CA_URL).protocol).toBe('https:');
   });
 
   test('strips CSR PEM envelope and line breaks for the LG certificate request body', () => {

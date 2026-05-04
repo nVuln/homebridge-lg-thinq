@@ -76,6 +76,29 @@ describe('ThinQ1 monitor helpers', () => {
     expect(api.getMonitorResult).not.toHaveBeenCalled();
   });
 
+  test.each([
+    null,
+    'not-an-object',
+    1,
+    { workId: 1 },
+  ])('treats invalid ThinQ1 work id response %p as unregistered', async response => {
+    const api = fakeApi({
+      sendMonitorCommand: jest.fn(async () => response),
+    });
+    const workIds: WorkIdRegistry = {};
+
+    const workId = await registerThinQ1WorkId({
+      api,
+      workIds,
+      device,
+      createWorkId: () => 'generated-id',
+    });
+
+    expect(workId).toBeNull();
+    expect(workIds['device-1']).toBeNull();
+    expect(api.sendMonitorCommand).toHaveBeenCalledWith('device-1', 'Start', 'generated-id');
+  });
+
   test('polls monitor results with an existing work id', async () => {
     const api = fakeApi();
     const workIds: WorkIdRegistry = {

@@ -14,6 +14,10 @@ export function hasThinQ1WorkId(workIds: WorkIdRegistry, device: Pick<Device, 'i
   return device.id in workIds && workIds[device.id] !== null;
 }
 
+function isThinQ1WorkIdResponse(data: unknown): data is { workId?: unknown } {
+  return data !== null && typeof data === 'object' && 'workId' in data;
+}
+
 export async function registerThinQ1WorkId(options: {
   api: ThinQ1MonitorApi;
   workIds: WorkIdRegistry;
@@ -28,7 +32,7 @@ export async function registerThinQ1WorkId(options: {
   } = options;
 
   const workId = await api.sendMonitorCommand(device.id, 'Start', createWorkId()).then(data => {
-    if (data !== undefined && 'workId' in data) {
+    if (isThinQ1WorkIdResponse(data) && typeof data.workId === 'string') {
       return data.workId;
     }
 

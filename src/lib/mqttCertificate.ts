@@ -4,7 +4,7 @@ import forge from 'node-forge';
 import { URL } from 'url';
 
 export const ATS_ROOT_CA_URL = 'https://www.amazontrust.com/repository/AmazonRootCA1.pem';
-export const LG_ROOT_CA_URL = 'http://www.tbs-x509.com/Comodo_AAA_Certificate_Services.crt';
+export const LG_ROOT_CA_URL = 'https://support.sectigo.com/sfc/servlet.shepherd/version/download/0683l00000G9fLm';
 export const LEGACY_ROOT_CA_URL =
   'https://www.websecurity.digicert.com/content/dam/websitesecurity/digitalassets/desktop/pdfs/roots/' +
   'VeriSign-Class%203-Public-Primary-Certification-Authority-G5.pem';
