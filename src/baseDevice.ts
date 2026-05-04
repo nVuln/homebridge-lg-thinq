@@ -1,6 +1,5 @@
 import { LGThinQHomebridgePlatform } from './platform.js';
 import {
-  CharacteristicGetCallback,
   CharacteristicValue,
   Logger,
   PlatformAccessory,
@@ -66,17 +65,6 @@ export class BaseDevice extends EventEmitter {
     return () => {
       this.requireDeviceOnline();
       return getter();
-    };
-  }
-
-  protected onlineGetCallback<T extends CharacteristicValue>(getter: () => T): (callback: CharacteristicGetCallback) => void {
-    return (callback: CharacteristicGetCallback) => {
-      if (!this.isOnlineForHomeKit) {
-        callback(this.deviceOfflineError());
-        return;
-      }
-
-      callback(null, getter());
     };
   }
 

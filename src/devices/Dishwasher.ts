@@ -178,12 +178,10 @@ export default class Dishwasher extends BaseDevice {
     this.tvService
       .setCharacteristic(this.platform.Characteristic.ActiveIdentifier, this.inputID);
     this.tvService
-      .getCharacteristic(this.platform.Characteristic.ActiveIdentifier)
-      .on('set', (inputIdentifier, callback) => {
+      .getCharacteristic(this.platform.Characteristic.ActiveIdentifier).onSet((inputIdentifier) => {
         const vNum = normalizeNumber(inputIdentifier);
         if (vNum === null) {
           this.platform.log.error('Dishwasher ActiveIdentifier is not a number');
-          callback();
           return;
         }
         if (vNum > 7 || vNum < 1) {
@@ -191,71 +189,62 @@ export default class Dishwasher extends BaseDevice {
         } else {
           this.inputID = vNum;
         }
-        callback();
-      })
-      .on('get', (callback) => {
+      }).onGet(() => {
         const currentValue = this.inputID;
-        callback(null, currentValue);
+        return currentValue;
       });
 
     this.dishwasherState = this.createInputSourceService('Dishwasher Status', 'CataNicoGaTa-10030', 1, this.inputName, true);
-    this.dishwasherState.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        this.currentInputName();
-        const currentValue = this.inputName;
-        callback(null, currentValue);
-      });
+    this.dishwasherState.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      this.currentInputName();
+      const currentValue = this.inputName;
+      return currentValue;
+    });
     this.tvService.addLinkedService(this.dishwasherState);
 
     this.dishwasherOptions = this.createInputSourceService('Dishwasher Options', 'CataNicoGaTa-10040', 2, this.inputNameOptions, this.onStatus());
-    this.dishwasherOptions.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        this.currentInputName();
-        const currentValue = this.inputNameOptions;
-        callback(null, currentValue);
-      });
+    this.dishwasherOptions.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      this.currentInputName();
+      const currentValue = this.inputNameOptions;
+      return currentValue;
+    });
     this.tvService.addLinkedService(this.dishwasherOptions);
 
     this.startTime = this.createInputSourceService('Cycle Start Time', 'CataNico-Always10', 3, this.courseStartString, this.showTime);
-    this.startTime.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.courseStartString;
-        callback(null, currentValue);
-      });
+    this.startTime.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.courseStartString;
+      return currentValue;
+    });
     this.tvService.addLinkedService(this.startTime);
 
     this.courseDuration = this.createInputSourceService('Cycle Duration', 'CataNico-Always20', 4, this.courseTimeString, this.showTime);
-    this.courseDuration.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.courseTimeString;
-        callback(null, currentValue);
-      });
+    this.courseDuration.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.courseTimeString;
+      return currentValue;
+    });
     this.tvService.addLinkedService(this.courseDuration);
 
     this.endTime = this.createInputSourceService('Cycle End Time', 'CataNico-Always30', 5, this.courseTimeEndString, this.showTime);
-    this.endTime.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.courseTimeEndString;
-        callback(null, currentValue);
-      });
+    this.endTime.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.courseTimeEndString;
+      return currentValue;
+    });
     this.tvService.addLinkedService(this.endTime);
 
     this.dishwasherRinseLevel = this.createInputSourceService('Dishwasher Rinse Aid Level', 'CataNicoGaTa-10050', 6, this.inputNameRinse, this.onStatus());
-    this.dishwasherRinseLevel.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        this.updateRinseLevel();
-        const currentValue = this.inputNameRinse;
-        callback(null, currentValue);
-      });
+    this.dishwasherRinseLevel.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      this.updateRinseLevel();
+      const currentValue = this.inputNameRinse;
+      return currentValue;
+    });
     this.tvService.addLinkedService(this.dishwasherRinseLevel);
 
     this.dishwasherClaenness = this.createInputSourceService('Dishwasher Cleanness Status', 'CataNicoGaTa-10060', 7, this.inputNameMachine, this.onStatus());
-    this.dishwasherClaenness.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        this.updateRinseLevel();
-        const currentValue = this.inputNameMachine;
-        callback(null, currentValue);
-      });
+    this.dishwasherClaenness.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      this.updateRinseLevel();
+      const currentValue = this.inputNameMachine;
+      return currentValue;
+    });
     this.tvService.addLinkedService(this.dishwasherClaenness);
 
     this.serviceDishwasher = accessory.getService(Valve) || accessory.addService(Valve, 'LG Dishwasher');
@@ -266,20 +255,15 @@ export default class Dishwasher extends BaseDevice {
     this.serviceDishwasher.getCharacteristic(Characteristic.Active)
       .onSet(this.setActive.bind(this))
       .updateValue(Characteristic.Active.INACTIVE)
-      .onGet(this.onlineGet(() => {
-        return this.timerStatus();
-      }));
+      .onGet(this.onlineGet(() => this.timerStatus()));
     this.serviceDishwasher.setCharacteristic(Characteristic.InUse, Characteristic.InUse.NOT_IN_USE);
     this.serviceDishwasher.getCharacteristic(this.platform.Characteristic.StatusFault)
-      .on('get', this.getRinseLevel.bind(this));
+      .onGet(this.onlineGet(() => this.getRinseLevel()));
     this.serviceDishwasher.getCharacteristic(Characteristic.RemainingDuration).setProps({
       maxValue: 86400 / 4,
     });
     this.serviceDishwasher.getCharacteristic(this.platform.Characteristic.SetDuration)
-      .on('get', (callback) => {
-        const currentValue = this.settingDuration;
-        callback(null, currentValue);
-      })
+      .onGet(this.onlineGet(() => this.settingDuration))
       .setProps({
         maxValue: 86400 / 4, // 1 day
       });
@@ -289,11 +273,11 @@ export default class Dishwasher extends BaseDevice {
     this.serviceDoorOpened.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.serviceDoorOpened.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Dishwasher Door');
     this.serviceDoorOpened.getCharacteristic(this.platform.Characteristic.StatusActive)
-      .on('get', this.getDoorStatus.bind(this));
+      .onGet(this.onlineGet(() => this.onStatus()));
     this.serviceDoorOpened.getCharacteristic(this.platform.Characteristic.BatteryLevel)
-      .on('get', this.getRinseLevelPercent.bind(this));
+      .onGet(this.onlineGet(() => this.getRinseLevelPercent()));
     this.serviceDoorOpened.getCharacteristic(this.platform.Characteristic.StatusLowBattery)
-      .on('get', this.getRinseLevelStatus.bind(this));
+      .onGet(this.onlineGet(() => this.getRinseLevelStatus()));
 
     this.serviceEventFinished = accessory.getService(OccupancySensor);
     if (this.config.dishwasher_trigger as boolean) {
@@ -792,12 +776,7 @@ export default class Dishwasher extends BaseDevice {
     }
   }
 
-  getRinseLevel(callback: (error: Error | null, result?: number) => void) {
-    if (!this.isOnlineForHomeKit) {
-      callback(this.deviceOfflineError());
-      return;
-    }
-
+  getRinseLevel(): number {
     if (this.Status.data.state.includes('RUNNING')) {
       this.rinseLevel = this.Status.data.rinseLevel || 'LEVEL_1';
     }
@@ -806,25 +785,10 @@ export default class Dishwasher extends BaseDevice {
       rinseStatus = 1;
     }
 
-    callback(null, rinseStatus);
+    return rinseStatus;
   }
 
-  getDoorStatus(callback: (error: Error | null, result?: boolean) => void) {
-    if (!this.isOnlineForHomeKit) {
-      callback(this.deviceOfflineError());
-      return;
-    }
-
-    const currentStatus = this.onStatus();
-    callback(null, currentStatus);
-  }
-
-  getRinseLevelPercent(callback: (error: Error | null, result?: number) => void) {
-    if (!this.isOnlineForHomeKit) {
-      callback(this.deviceOfflineError());
-      return;
-    }
-
+  getRinseLevelPercent(): number {
     let levelPercent = this.rinseLevel;
     if (this.Status.data.state.includes('RUNNING')) {
       levelPercent = this.Status.data.rinseLevel || 'LEVEL_1';
@@ -835,15 +799,10 @@ export default class Dishwasher extends BaseDevice {
     } else if (levelPercent === 'LEVEL_1') {
       rinseLevelPercent = 50;
     }
-    callback(null, rinseLevelPercent);
+    return rinseLevelPercent;
   }
 
-  getRinseLevelStatus(callback: (error: Error | null, result?: number) => void) {
-    if (!this.isOnlineForHomeKit) {
-      callback(this.deviceOfflineError());
-      return;
-    }
-
+  getRinseLevelStatus(): number {
     let levelStatus = this.rinseLevel;
     if (this.Status.data.state.includes('RUNNING')) {
       levelStatus = this.Status.data.rinseLevel || 'LEVEL_1';
@@ -852,7 +811,7 @@ export default class Dishwasher extends BaseDevice {
     if (levelStatus === 'LEVEL_0') {
       rinseLevelStatus = 1;
     }
-    callback(null, rinseLevelStatus);
+    return rinseLevelStatus;
   }
 
   resetTimeSettings() {

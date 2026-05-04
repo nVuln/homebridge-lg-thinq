@@ -1,6 +1,6 @@
 import { BaseDevice, AccessoryContext, isDeviceOnlineForHomeKit } from './baseDevice.js';
 import { LGThinQHomebridgePlatform } from './platform.js';
-import { CharacteristicGetCallback, Logger, PlatformAccessory } from 'homebridge';
+import { Logger, PlatformAccessory } from 'homebridge';
 import { Device, DeviceData } from './lib/Device.js';
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 
@@ -11,10 +11,6 @@ jest.mock('./lib/Device');
 class TestBaseDevice extends BaseDevice {
   public testOnlineGet<T extends number | string | boolean>(getter: () => T) {
     return this.onlineGet(getter);
-  }
-
-  public testOnlineGetCallback<T extends number | string | boolean>(getter: () => T) {
-    return this.onlineGetCallback(getter);
   }
 }
 
@@ -154,16 +150,6 @@ describe('BaseDevice', () => {
 
     Object.defineProperty(accessory.context.device, 'online', { configurable: true, get: () => false });
     expect(() => (baseDevice as TestBaseDevice).testOnlineGet(() => 1)()).toThrow('-70402');
-  });
-
-  it('should guard callback get handlers when the device is offline', () => {
-    baseDevice = new TestBaseDevice(platform, accessory, logger);
-    Object.defineProperty(accessory.context.device, 'online', { configurable: true, get: () => false });
-
-    const callback = jest.fn() as jest.MockedFunction<CharacteristicGetCallback>;
-    (baseDevice as TestBaseDevice).testOnlineGetCallback(() => 1)(callback);
-
-    expect(callback).toHaveBeenCalledWith(expect.objectContaining({ message: '-70402' }));
   });
 
   it('should update top-level online status from explicit snapshot updates', () => {
