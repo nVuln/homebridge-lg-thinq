@@ -172,9 +172,9 @@ export default class Dishwasher extends BaseDevice {
     this.tvService.getCharacteristic(this.platform.Characteristic.Active)
       .onSet(this.setActive.bind(this))
       .updateValue(this.platform.Characteristic.Active.INACTIVE)
-      .onGet(() => {
+      .onGet(this.onlineGet(() => {
         return this.onStatus() ? 1 : 0;
-      });
+      }));
     this.tvService
       .setCharacteristic(this.platform.Characteristic.ActiveIdentifier, this.inputID);
     this.tvService
@@ -266,9 +266,9 @@ export default class Dishwasher extends BaseDevice {
     this.serviceDishwasher.getCharacteristic(Characteristic.Active)
       .onSet(this.setActive.bind(this))
       .updateValue(Characteristic.Active.INACTIVE)
-      .onGet(() => {
+      .onGet(this.onlineGet(() => {
         return this.timerStatus();
-      });
+      }));
     this.serviceDishwasher.setCharacteristic(Characteristic.InUse, Characteristic.InUse.NOT_IN_USE);
     this.serviceDishwasher.getCharacteristic(this.platform.Characteristic.StatusFault)
       .on('get', this.getRinseLevel.bind(this));
@@ -638,6 +638,7 @@ export default class Dishwasher extends BaseDevice {
   }
 
   setActive() {
+    this.requireDeviceOnline();
     this.platform.log.debug('Dishwasher Response', this.Status.data);
 
     // this.platform.log('Dishwasher rinse', this.Status.data.rinseLevel);
@@ -792,6 +793,11 @@ export default class Dishwasher extends BaseDevice {
   }
 
   getRinseLevel(callback: (error: Error | null, result?: number) => void) {
+    if (!this.isOnlineForHomeKit) {
+      callback(this.deviceOfflineError());
+      return;
+    }
+
     if (this.Status.data.state.includes('RUNNING')) {
       this.rinseLevel = this.Status.data.rinseLevel || 'LEVEL_1';
     }
@@ -804,11 +810,21 @@ export default class Dishwasher extends BaseDevice {
   }
 
   getDoorStatus(callback: (error: Error | null, result?: boolean) => void) {
+    if (!this.isOnlineForHomeKit) {
+      callback(this.deviceOfflineError());
+      return;
+    }
+
     const currentStatus = this.onStatus();
     callback(null, currentStatus);
   }
 
-  getRinseLevelPercent(callback: (error: Error | null, result: number) => void) {
+  getRinseLevelPercent(callback: (error: Error | null, result?: number) => void) {
+    if (!this.isOnlineForHomeKit) {
+      callback(this.deviceOfflineError());
+      return;
+    }
+
     let levelPercent = this.rinseLevel;
     if (this.Status.data.state.includes('RUNNING')) {
       levelPercent = this.Status.data.rinseLevel || 'LEVEL_1';
@@ -822,7 +838,12 @@ export default class Dishwasher extends BaseDevice {
     callback(null, rinseLevelPercent);
   }
 
-  getRinseLevelStatus(callback: (error: Error | null, result: number) => void) {
+  getRinseLevelStatus(callback: (error: Error | null, result?: number) => void) {
+    if (!this.isOnlineForHomeKit) {
+      callback(this.deviceOfflineError());
+      return;
+    }
+
     let levelStatus = this.rinseLevel;
     if (this.Status.data.state.includes('RUNNING')) {
       levelStatus = this.Status.data.rinseLevel || 'LEVEL_1';

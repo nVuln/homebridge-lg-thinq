@@ -51,8 +51,10 @@ export default class RangeHood extends BaseDevice {
     this.serviceHood = accessory.getService(Fan) || accessory.addService(Fan, device.name);
     this.serviceHood.updateCharacteristic(Characteristic.Name, device.name);
     this.serviceHood.getCharacteristic(Characteristic.On)
+      .onGet(this.onlineGet(() => readRangeHoodState(this.accessory.context.device.snapshot, this.accessory.context.device.deviceModel).isVentOn))
       .onSet(this.setHoodActive.bind(this));
     this.serviceHood.getCharacteristic(Characteristic.RotationSpeed)
+      .onGet(this.onlineGet(() => readRangeHoodState(this.accessory.context.device.snapshot, this.accessory.context.device.deviceModel).ventLevel))
       .onSet(this.setHoodRotationSpeed.bind(this));
 
     const ventLevelSpec = device.deviceModel.value('VentLevel');
@@ -69,8 +71,10 @@ export default class RangeHood extends BaseDevice {
     this.serviceLight = accessory.getService(Lightbulb) || accessory.addService(Lightbulb, device.name + ' - Light');
     this.serviceLight.updateCharacteristic(Characteristic.Name, device.name + ' - Light');
     this.serviceLight.getCharacteristic(Characteristic.On)
+      .onGet(this.onlineGet(() => readRangeHoodState(this.accessory.context.device.snapshot, this.accessory.context.device.deviceModel).isLampOn))
       .onSet(this.setLightActive.bind(this));
     this.serviceLight.getCharacteristic(Characteristic.Brightness)
+      .onGet(this.onlineGet(() => readRangeHoodState(this.accessory.context.device.snapshot, this.accessory.context.device.deviceModel).lampLevel))
       .onSet(this.setLightBrightness.bind(this));
 
     const ventLightSpec = device.deviceModel.value('LampLevel');
@@ -87,10 +91,12 @@ export default class RangeHood extends BaseDevice {
   }
 
   async setHoodActive(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     await this.setHoodRotationSpeed(value ? 1 : 0);
   }
 
   async setHoodRotationSpeed(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const device: Device = this.accessory.context.device;
     await this.platform.ThinQ?.deviceControl(device, {
       dataKey: null,
@@ -105,10 +111,12 @@ export default class RangeHood extends BaseDevice {
   }
 
   async setLightActive(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     await this.setLightBrightness(value? 1 : 0);
   }
 
   async setLightBrightness(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const device: Device = this.accessory.context.device;
     await this.platform.ThinQ?.deviceControl(device, {
       dataKey: null,

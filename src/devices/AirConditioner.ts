@@ -455,10 +455,6 @@ export function isSwingModeEnabled(swingMode: string): boolean {
   return swingMode !== 'NONE';
 }
 
-export function isDeviceOnlineForHomeKit(device: Pick<Device, 'online'>): boolean {
-  return device.online !== false;
-}
-
 export function airQualityCharacteristicUpdateFromState(
   state: Pick<AirConditionerState, 'airQuality'>,
   enabled = true,
@@ -723,19 +719,6 @@ export default class AirConditioner extends BaseDevice {
     this.setupButton(device);
 
     this.startTemperatureKeepAlive(device);
-  }
-
-  private requireDeviceOnline() {
-    if (!isDeviceOnlineForHomeKit(this.accessory.context.device)) {
-      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
-    }
-  }
-
-  private onlineGet<T extends CharacteristicValue>(getter: () => T): () => T {
-    return () => {
-      this.requireDeviceOnline();
-      return getter();
-    };
   }
 
   private configureSwingModeCharacteristic(service: Service | undefined) {
@@ -1117,6 +1100,7 @@ export default class AirConditioner extends BaseDevice {
     dataKey: string,
     updateAccessoryCharacteristic: () => void,
   ) {
+    this.requireDeviceOnline();
     const status = this.Status;
     const command = coolModeFeatureCommandFromState(status, value, dataKey);
     if (!command) {
@@ -1224,6 +1208,7 @@ export default class AirConditioner extends BaseDevice {
    * @throws This method does not throw errors directly but logs them if the ThinQ API call fails.
    */
   async setFanState(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const status = this.Status;
     if (!status.isPowerOn) {
       this.logger.debug('Power is off, cannot set fan state');
@@ -1559,6 +1544,7 @@ export default class AirConditioner extends BaseDevice {
   }
 
   async setLight(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const status = this.Status;
     if (!status.isPowerOn) {
       this.logger.debug('Power is off, cannot set light state');
@@ -1589,6 +1575,7 @@ export default class AirConditioner extends BaseDevice {
    * @throws Logs an error if the operation mode cannot be updated on the device.
    */
   async setTargetState(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     this.logger.debug('Set target AC mode = ', value);
     this.currentTargetState = value as number;
     const {
@@ -1610,6 +1597,7 @@ export default class AirConditioner extends BaseDevice {
   }
 
   async setActive(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const device: Device = this.accessory.context.device;
     const isOn = normalizeBoolean(value);
     const isOnNumeric = isOn ? 1 : 0;
@@ -1651,6 +1639,7 @@ export default class AirConditioner extends BaseDevice {
    * @throws This method does not throw exceptions but logs errors instead.
    */
   async setTargetTemperature(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const status = this.Status;
     if (!status.isPowerOn) {
       this.logger.error('Power is off, cannot set target temperature');
@@ -1705,6 +1694,7 @@ export default class AirConditioner extends BaseDevice {
    * @throws This method does not throw exceptions directly but logs errors internally if the operation fails.
    */
   async setFanSpeed(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     if (!this.Status.isPowerOn) {
       return;
     }
@@ -1731,6 +1721,7 @@ export default class AirConditioner extends BaseDevice {
   }
 
   async setSwingMode(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     if (!isSwingModeEnabled(this.config.ac_swing_mode)) {
       this.logger.debug('Swing mode is disabled in config.');
       return;
@@ -1758,6 +1749,7 @@ export default class AirConditioner extends BaseDevice {
   }
 
   async setOpMode(deviceId: string, opMode: number): Promise<boolean> {
+    this.requireDeviceOnline();
     return await this.platform.ThinQ?.deviceControl(deviceId, {
       dataKey: 'airState.opMode',
       dataValue: opMode,
@@ -1803,9 +1795,9 @@ export default class AirConditioner extends BaseDevice {
     serviceButton.addOptionalCharacteristic(Characteristic.ConfiguredName);
     serviceButton.setCharacteristic(Characteristic.ConfiguredName, name);
     serviceButton.getCharacteristic(this.platform.Characteristic.On)
-      .onGet(() => {
+      .onGet(this.onlineGet(() => {
         return this.Status.opMode === opMode;
-      })
+      }))
       .onSet((value: CharacteristicValue) => {
         this.handleButtonOpmode(value, opMode);
       });
@@ -1828,6 +1820,7 @@ export default class AirConditioner extends BaseDevice {
    * @returns A promise that resolves when the operation mode and related states are successfully updated.
    */
   async handleButtonOpmode(value: CharacteristicValue, opMode: number) {
+    this.requireDeviceOnline();
     if (value as boolean) {
       if (this.Status.opMode !== opMode) {
         await this.setOpMode(this.accessory.context.device.id, opMode);

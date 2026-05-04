@@ -85,14 +85,23 @@ export default class WasherDryer extends BaseDevice {
     }
 
     this.serviceWasherDryer.getCharacteristic(Characteristic.Active)
+      .onGet(this.onlineGet(() => this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE))
       .onSet(this.setActive.bind(this))
       .updateValue(Characteristic.Active.INACTIVE);
     this.serviceWasherDryer.setCharacteristic(Characteristic.Name, device.name);
     this.serviceWasherDryer.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.WATER_FAUCET);
-    this.serviceWasherDryer.setCharacteristic(Characteristic.InUse, Characteristic.InUse.NOT_IN_USE);
-    this.serviceWasherDryer.getCharacteristic(Characteristic.RemainingDuration).setProps({
-      maxValue: 86400, // 1 day
-    });
+    this.serviceWasherDryer.getCharacteristic(Characteristic.InUse)
+      .onGet(this.onlineGet(() => this.Status.isRunning ? Characteristic.InUse.IN_USE : Characteristic.InUse.NOT_IN_USE))
+      .updateValue(Characteristic.InUse.NOT_IN_USE);
+    this.serviceWasherDryer.getCharacteristic(Characteristic.RemainingDuration)
+      .onGet(this.onlineGet(() => this.Status.remainDuration))
+      .setProps({
+        maxValue: 86400, // 1 day
+      });
+    this.serviceWasherDryer.getCharacteristic(Characteristic.StatusFault)
+      .onGet(this.onlineGet(() => {
+        return this.Status.isError ? Characteristic.StatusFault.GENERAL_FAULT : Characteristic.StatusFault.NO_FAULT;
+      }));
 
     // only thinq2 support door lock status
     this.serviceDoorLock = accessory.getService(LockMechanism);
@@ -107,6 +116,7 @@ export default class WasherDryer extends BaseDevice {
 
       this.serviceDoorLock.getCharacteristic(Characteristic.LockCurrentState)
         .updateValue(LockCurrentState.UNSECURED)
+        .onGet(this.onlineGet(() => this.Status.isDoorLocked ? LockCurrentState.SECURED : LockCurrentState.UNSECURED))
         .onSet(this.setActive.bind(this))
         .setProps({
           minValue: 0,
@@ -114,6 +124,7 @@ export default class WasherDryer extends BaseDevice {
           validValues: [LockCurrentState.UNSECURED, LockCurrentState.SECURED],
         });
       this.serviceDoorLock.getCharacteristic(Characteristic.LockTargetState)
+        .onGet(this.onlineGet(() => this.Status.isDoorLocked ? Characteristic.LockTargetState.SECURED : Characteristic.LockTargetState.UNSECURED))
         .onSet(this.setActive.bind(this))
         .updateValue(Characteristic.LockTargetState.UNSECURED);
     } else if (this.serviceDoorLock) {
@@ -171,6 +182,7 @@ export default class WasherDryer extends BaseDevice {
   }
 
   async setActive(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     void value;
     // do nothing, revert back
     this.updateAccessoryCharacteristic(this.accessory.context.device);

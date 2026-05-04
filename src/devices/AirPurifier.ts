@@ -116,23 +116,43 @@ export default class AirPurifier extends BaseDevice {
      * Required Characteristics: Active, CurrentAirPurifierState, TargetAirPurifierState
      */
     this.serviceAirPurifier.getCharacteristic(Characteristic.Active)
-      .onGet(() => {
+      .onGet(this.onlineGet(() => {
         return this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE;
-      })
+      }))
       .onSet(this.setActive.bind(this));
+    this.serviceAirPurifier.getCharacteristic(Characteristic.CurrentAirPurifierState)
+      .onGet(this.onlineGet(() => {
+        return this.Status.isPowerOn
+          ? Characteristic.CurrentAirPurifierState.PURIFYING_AIR
+          : Characteristic.CurrentAirPurifierState.INACTIVE;
+      }));
     this.serviceAirPurifier.getCharacteristic(Characteristic.TargetAirPurifierState)
+      .onGet(this.onlineGet(() => {
+        return this.Status.isNormalMode ? Characteristic.TargetAirPurifierState.MANUAL : Characteristic.TargetAirPurifierState.AUTO;
+      }))
       .onSet(this.setTargetAirPurifierState.bind(this));
 
     /**
      * Optional Characteristics: Name, RotationSpeed, SwingMode
      */
     this.serviceAirPurifier.setCharacteristic(Characteristic.Name, device.name);
-    this.serviceAirPurifier.getCharacteristic(Characteristic.SwingMode).onSet(this.setSwingMode.bind(this));
+    this.serviceAirPurifier.getCharacteristic(Characteristic.SwingMode)
+      .onGet(this.onlineGet(() => this.Status.isSwing ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED))
+      .onSet(this.setSwingMode.bind(this));
     this.serviceAirPurifier.getCharacteristic(Characteristic.RotationSpeed)
+      .onGet(this.onlineGet(() => this.Status.rotationSpeed))
       .onSet(this.setRotationSpeed.bind(this))
       .setProps({ minValue: 0, maxValue: Object.keys(RotateSpeed).length / 2, minStep: 0.1 });
 
     this.serviceAirQuality = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
+    this.serviceAirQuality.getCharacteristic(Characteristic.AirQuality)
+      .onGet(this.onlineGet(() => this.Status.airQuality.overall));
+    this.serviceAirQuality.getCharacteristic(Characteristic.PM2_5Density)
+      .onGet(this.onlineGet(() => this.Status.airQuality.PM2));
+    this.serviceAirQuality.getCharacteristic(Characteristic.PM10Density)
+      .onGet(this.onlineGet(() => this.Status.airQuality.PM10));
+    this.serviceAirQuality.getCharacteristic(Characteristic.StatusActive)
+      .onGet(this.onlineGet(() => this.Status.airQuality.isOn));
 
     // check if light is available
     const snapshot = device.snapshot ?? {};
@@ -144,7 +164,9 @@ export default class AirPurifier extends BaseDevice {
         this.serviceLight.updateCharacteristic(Characteristic.ConfiguredName, 'Light');
       }
 
-      this.serviceLight.getCharacteristic(Characteristic.On).onSet(this.setLight.bind(this));
+      this.serviceLight.getCharacteristic(Characteristic.On)
+        .onGet(this.onlineGet(() => this.Status.isLightOn))
+        .onSet(this.setLight.bind(this));
     }
 
     if (this.Status.filterMaxTime) {
@@ -169,6 +191,7 @@ export default class AirPurifier extends BaseDevice {
 
       this.serviceAirFastMode.updateCharacteristic(Characteristic.Name, 'Air Fast');
       this.serviceAirFastMode.getCharacteristic(Characteristic.On)
+        .onGet(this.onlineGet(() => this.Status.isAirFastEnable))
         .onSet(this.setAirFastActive.bind(this));
     } else if (this.serviceAirFastMode) {
       accessory.removeService(this.serviceAirFastMode);
@@ -186,6 +209,7 @@ export default class AirPurifier extends BaseDevice {
   }
 
   async setAirFastActive(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     if (!this.Status.isPowerOn) {
       return;
     }
@@ -201,6 +225,7 @@ export default class AirPurifier extends BaseDevice {
   }
 
   async setActive(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const device: Device = this.accessory.context.device;
     const isOn = value as boolean ? 1 : 0;
     if (this.Status.isPowerOn && isOn) {
@@ -217,6 +242,7 @@ export default class AirPurifier extends BaseDevice {
   }
 
   async setTargetAirPurifierState(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const device: Device = this.accessory.context.device;
     if (!this.Status.isPowerOn || (!!value !== this.Status.isNormalMode)) {
       return; // just skip it
@@ -230,6 +256,7 @@ export default class AirPurifier extends BaseDevice {
   }
 
   async setRotationSpeed(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     if (!this.Status.isPowerOn || !this.Status.isNormalMode) {
       return;
     }
@@ -247,6 +274,7 @@ export default class AirPurifier extends BaseDevice {
   }
 
   async setSwingMode(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     if (!this.Status.isPowerOn || !this.Status.isNormalMode) {
       return;
     }
@@ -262,6 +290,7 @@ export default class AirPurifier extends BaseDevice {
   }
 
   async setLight(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     if (!this.Status.isPowerOn) {
       return;
     }

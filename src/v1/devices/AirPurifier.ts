@@ -14,11 +14,13 @@ export default class AirPurifier extends V2 {
   }
 
   async setActive(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const device: Device = this.accessory.context.device;
     await this.platform.ThinQ?.thinq1DeviceControl(device, 'Operation', value as boolean ? '1' : '0');
   }
 
   async setTargetAirPurifierState(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const device: Device = this.accessory.context.device;
     if (!this.Status.isPowerOn || (!!value !== this.Status.isNormalMode)) {
       return; // just skip it
@@ -28,6 +30,7 @@ export default class AirPurifier extends V2 {
   }
 
   async setRotationSpeed(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     if (!this.Status.isPowerOn || !this.Status.isNormalMode) {
       return;
     }
@@ -39,6 +42,7 @@ export default class AirPurifier extends V2 {
   }
 
   async setSwingMode(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     if (!this.Status.isPowerOn || !this.Status.isNormalMode) {
       return;
     }
@@ -48,6 +52,7 @@ export default class AirPurifier extends V2 {
   }
 
   async setLight(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     if (!this.Status.isPowerOn) {
       return;
     }
@@ -57,6 +62,7 @@ export default class AirPurifier extends V2 {
   }
 
   async setAirFastActive(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     if (!this.Status.isPowerOn) {
       return;
     }

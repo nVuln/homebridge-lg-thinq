@@ -117,7 +117,9 @@ export default class Refrigerator extends BaseDevice {
         this.serviceExpressMode.updateCharacteristic(Characteristic.ConfiguredName, 'Express Freezer');
       }
 
-      this.serviceExpressMode.getCharacteristic(Characteristic.On).onSet(this.setExpressMode.bind(this));
+      this.serviceExpressMode.getCharacteristic(Characteristic.On)
+        .onGet(this.onlineGet(() => this.Status.isExpressModeOn))
+        .onSet(this.setExpressMode.bind(this));
     } else if (this.serviceExpressMode) {
       accessory.removeService(this.serviceExpressMode);
       this.serviceExpressMode = undefined;
@@ -131,7 +133,9 @@ export default class Refrigerator extends BaseDevice {
         this.serviceExpressFridge.updateCharacteristic(Characteristic.ConfiguredName, 'Express Fridge');
       }
 
-      this.serviceExpressFridge.getCharacteristic(Characteristic.On).onSet(this.setExpressFridge.bind(this));
+      this.serviceExpressFridge.getCharacteristic(Characteristic.On)
+        .onGet(this.onlineGet(() => this.Status.isExpressFridgeOn))
+        .onSet(this.setExpressFridge.bind(this));
     } else if (this.serviceExpressFridge) {
       accessory.removeService(this.serviceExpressFridge);
       this.serviceExpressFridge = undefined;
@@ -145,7 +149,9 @@ export default class Refrigerator extends BaseDevice {
         this.serviceEcoFriendly.updateCharacteristic(Characteristic.ConfiguredName, 'Eco Friendly');
       }
 
-      this.serviceEcoFriendly.getCharacteristic(Characteristic.On).onSet(this.setEcoFriendly.bind(this));
+      this.serviceEcoFriendly.getCharacteristic(Characteristic.On)
+        .onGet(this.onlineGet(() => this.Status.isEcoFriendlyOn))
+        .onSet(this.setEcoFriendly.bind(this));
     } else if (this.serviceEcoFriendly) {
       accessory.removeService(this.serviceEcoFriendly);
       this.serviceEcoFriendly = undefined;
@@ -160,7 +166,18 @@ export default class Refrigerator extends BaseDevice {
       }
 
       this.serviceWaterFilter.updateCharacteristic(Characteristic.Name, 'Water Filter Maintenance');
+      this.serviceWaterFilter.getCharacteristic(Characteristic.FilterLifeLevel)
+        .onGet(this.onlineGet(() => this.Status.waterFilterRemain));
+      this.serviceWaterFilter.getCharacteristic(Characteristic.FilterChangeIndication)
+        .onGet(this.onlineGet(() => {
+          return this.Status.waterFilterRemain < 5
+            ? Characteristic.FilterChangeIndication.CHANGE_FILTER
+            : Characteristic.FilterChangeIndication.FILTER_OK;
+        }));
     }
+
+    this.serviceDoorOpened.getCharacteristic(Characteristic.ContactSensorState)
+      .onGet(this.onlineGet(() => contactSensorStateValue(this.Status.isDoorClosed, Characteristic.ContactSensorState)));
   }
 
   public get config() {
@@ -232,6 +249,7 @@ export default class Refrigerator extends BaseDevice {
   }
 
   async setExpressMode(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const device: Device = this.accessory.context.device;
     const On = device.deviceModel.lookupMonitorName('expressMode', '@CP_ON_EN_W');
     const Off = device.deviceModel.lookupMonitorName('expressMode', '@CP_OFF_EN_W');
@@ -240,6 +258,7 @@ export default class Refrigerator extends BaseDevice {
   }
 
   async setExpressFridge(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const device: Device = this.accessory.context.device;
     const On = device.deviceModel.lookupMonitorName('expressFridge', '@CP_ON_EN_W');
     const Off = device.deviceModel.lookupMonitorName('expressFridge', '@CP_OFF_EN_W');
@@ -248,6 +267,7 @@ export default class Refrigerator extends BaseDevice {
   }
 
   async setEcoFriendly(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const device: Device = this.accessory.context.device;
     const On = device.deviceModel.lookupMonitorName('ecoFriendly', '@CP_ON_EN_W');
     const Off = device.deviceModel.lookupMonitorName('ecoFriendly', '@CP_OFF_EN_W');
@@ -296,10 +316,21 @@ export default class Refrigerator extends BaseDevice {
         validValues: [Characteristic.TargetHeatingCoolingState.COOL], // Hide Heat/Auto/Off
       });
 
+    service.getCharacteristic(Characteristic.CurrentHeatingCoolingState)
+      .onGet(this.onlineGet(() => Characteristic.CurrentHeatingCoolingState.COOL));
+
+    service.getCharacteristic(Characteristic.TargetHeatingCoolingState)
+      .onGet(this.onlineGet(() => Characteristic.TargetHeatingCoolingState.COOL));
+
+    const currentTemperature = () => name === 'Freezer' ? this.Status.freezerTemperature : this.Status.fridgeTemperature;
+
+    service.getCharacteristic(Characteristic.CurrentTemperature)
+      .onGet(this.onlineGet(currentTemperature));
+
     service.getCharacteristic(Characteristic.TemperatureDisplayUnits).setProps({
       minValue: Characteristic.TemperatureDisplayUnits.CELSIUS,
       maxValue: Characteristic.TemperatureDisplayUnits.FAHRENHEIT,
-    }).onGet(this.tempUnit.bind(this));
+    }).onGet(this.onlineGet(() => this.tempUnit()));
 
     const valueMapping = device.deviceModel.monitoringValueMapping(key + '_C') || device.deviceModel.monitoringValueMapping(key);
     if (!valueMapping) {
@@ -321,7 +352,9 @@ export default class Refrigerator extends BaseDevice {
 
     service.getCharacteristic(Characteristic.TargetTemperature)
       .updateValue(Math.min(...values))
+      .onGet(this.onlineGet(currentTemperature))
       .onSet(async (value: CharacteristicValue) => { // value in celsius
+        this.requireDeviceOnline();
         let indexValue;
         if (this.Status.tempUnit === 'FAHRENHEIT') {
           indexValue = device.deviceModel.lookupMonitorName(key + '_F', cToF(value as number).toString())
@@ -343,6 +376,7 @@ export default class Refrigerator extends BaseDevice {
   }
 
   async setTemperature(key: string, temp: string) {
+    this.requireDeviceOnline();
     const device: Device = this.accessory.context.device;
     await this.platform.ThinQ?.deviceControl(device.id, refrigeratorTemperatureCommand(key, temp, this.Status.tempUnit));
   }

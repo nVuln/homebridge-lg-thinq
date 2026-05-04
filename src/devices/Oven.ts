@@ -185,10 +185,7 @@ export default class Oven extends BaseDevice {
     this.ovenService.setCharacteristic(this.platform
       .Characteristic.SleepDiscoveryMode, this.platform.Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE);
     this.ovenService.getCharacteristic(this.platform.Characteristic.Active)
-      .on('get', (callback) => {
-        const currentValue = this.ovenServiceActive();
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.ovenServiceActive()))
       .on('set', (value, callback) => {
         const enabled = normalizeBoolean(value);
         if (!enabled) {
@@ -340,13 +337,7 @@ export default class Oven extends BaseDevice {
     this.ovenTimerService.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Oven Cook Time');
     this.ovenTimerService.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.IRRIGATION);
     this.ovenTimerService.getCharacteristic(Characteristic.Active)
-      .on('get', (callback) => {
-        let currentValue = 0;
-        if (this.remainTime() !== 0) {
-          currentValue = 1;
-        }
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.remainTime() !== 0 ? 1 : 0))
       .on('set', (value, callback) => {
         const enabled = normalizeBoolean(value);
         if (!enabled) {
@@ -364,19 +355,12 @@ export default class Oven extends BaseDevice {
       .setProps({
         maxValue: (86400 / 2) - 1, // 12hours
       })
-      .on('get', (callback) => {
-        const currentValue = this.remainTime();
-        callback(null, currentValue);
-      });
+      .on('get', this.onlineGetCallback(() => this.remainTime()));
     this.ovenTimerService.getCharacteristic(this.platform.Characteristic.SetDuration)
       .setProps({
         maxValue: (86400 / 2) - 1, // 12hours
       })
-      .on('get', (callback) => {
-        const currentValue = this.oventTargetTime();
-
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.oventTargetTime()))
       .on('set', (value, callback) => {
         const vNum = normalizeNumber(value);
         if (vNum === null) {
@@ -396,13 +380,7 @@ export default class Oven extends BaseDevice {
     this.ovenAlarmService.setCharacteristic(Characteristic.Name, 'Oven Timer');
     this.ovenAlarmService.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.IRRIGATION);
     this.ovenAlarmService.getCharacteristic(Characteristic.Active)
-      .on('get', (callback) => {
-        let currentValue = 0;
-        if (this.ovenTimerTime() !== 0) {
-          currentValue = 1;
-        }
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.ovenTimerTime() !== 0 ? 1 : 0))
       .on('set', (value, callback) => {
         const enabled = normalizeBoolean(value);
         if (!enabled) {
@@ -424,18 +402,12 @@ export default class Oven extends BaseDevice {
       .setProps({
         maxValue: (86400 / 2), // 12hours
       })
-      .on('get', (callback) => {
-        const currentValue = this.ovenTimerTime();
-        callback(null, currentValue);
-      });
+      .on('get', this.onlineGetCallback(() => this.ovenTimerTime()));
     this.ovenAlarmService.getCharacteristic(this.platform.Characteristic.SetDuration)
       .setProps({
         maxValue: (86400 / 2), // 12hours
       })
-      .on('get', (callback) => {
-        const currentValue = this.timerAlarmSec;
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.timerAlarmSec))
       .on('set', (value, callback) => {
         let vNum = normalizeNumber(value);
         if (vNum === null) {
@@ -717,12 +689,13 @@ export default class Oven extends BaseDevice {
         .setCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits, 1);
     this.ovenTempControl.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.ovenTempControl.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Oven Temperature Control');
+    this.ovenTempControl.getCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState)
+      .on('get', this.onlineGetCallback(() => this.currentHeatingState()));
+    this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits)
+      .on('get', this.onlineGetCallback(() => temperatureDisplayUnitsValue(this.Status.data, 'upperCurrentTemperatureUnit')));
     this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState)
       .setProps({ validValues: [this.platform.Characteristic.TargetHeatingCoolingState.OFF, this.platform.Characteristic.TargetHeatingCoolingState.HEAT] })
-      .on('get', (callback) => {
-        const currentValue = this.targetHeatingState();
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.targetHeatingState()))
       .on('set', (value, callback) => {
         const enabled = normalizeBoolean(value);
         if (!enabled) {
@@ -738,26 +711,16 @@ export default class Oven extends BaseDevice {
         maxValue: 218,
         minStep: 0.5,
       })
-      .on('get', (callback) => {
-        const currentValue = this.ovenCurrentTemperature();
-        callback(null, currentValue);
-      });
+      .on('get', this.onlineGetCallback(() => this.ovenCurrentTemperature()));
     this.ovenTempControl.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
-      .on('get', (callback) => {
-        const currentValue = this.localHumidity;
-        callback(null, currentValue);
-      });
+      .on('get', this.onlineGetCallback(() => this.localHumidity));
     this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TargetTemperature)
       .setProps({
         minValue: 38,
         maxValue: 218,
         minStep: 0.5,
       })
-      .on('get', (callback) => {
-        const currentValue = this.ovenTargetTemperature();
-        // this.platform.log('Get Target Temp' + this.ovenTargetTemperature())
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.ovenTargetTemperature()))
       .on('set', (value, callback) => {
         const vNum = normalizeNumber(value);
         if (vNum === null) {
@@ -780,12 +743,13 @@ export default class Oven extends BaseDevice {
         .setCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits, 1);
     this.probeTempControl.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.probeTempControl.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Probe Temperature Control');
+    this.probeTempControl.getCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState)
+      .on('get', this.onlineGetCallback(() => this.probeCurrentState()));
+    this.probeTempControl.getCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits)
+      .on('get', this.onlineGetCallback(() => temperatureDisplayUnitsValue(this.Status.data, 'upperCurrentTemperatureUnit')));
     this.probeTempControl.getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState)
       .setProps({ validValues: [this.platform.Characteristic.TargetHeatingCoolingState.OFF, this.platform.Characteristic.TargetHeatingCoolingState.HEAT] })
-      .on('get', (callback) => {
-        const currentValue = this.probeTargetState();
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.probeTargetState()))
       .on('set', (value, callback) => {
         this.pauseUpdate = true;
         callback(null);
@@ -796,25 +760,16 @@ export default class Oven extends BaseDevice {
         maxValue: 285,
         minStep: 0.1,
       })
-      .on('get', (callback) => {
-        const currentValue = this.probeCurrentTemperature();
-        callback(null, currentValue);
-      });
+      .on('get', this.onlineGetCallback(() => this.probeCurrentTemperature()));
     this.probeTempControl.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
-      .on('get', (callback) => {
-        const currentValue = this.localHumidity;
-        callback(null, currentValue);
-      });
+      .on('get', this.onlineGetCallback(() => this.localHumidity));
     this.probeTempControl.getCharacteristic(this.platform.Characteristic.TargetTemperature)
       .setProps({
         minValue: 38,
         maxValue: 285,
         minStep: 0.1,
       })
-      .on('get', (callback) => {
-        const currentValue = this.probeTargetTemperature();
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.probeTargetTemperature()))
       .on('set', (value, callback) => {
         const v = normalizeNumber(value);
         if (v === null) {
@@ -849,6 +804,10 @@ export default class Oven extends BaseDevice {
   }
 
   async sendTimerCommand(time: number) {
+    if (!this.isOnlineForHomeKit) {
+      return;
+    }
+
     if (!this.waitingForCommand) {
       this.platform.log.debug('Alarm Set to: ' + this.secondsToTime(time));
       const device = this.accessory.context.device;
@@ -866,6 +825,10 @@ export default class Oven extends BaseDevice {
   }
 
   async sendOvenCommand() {
+    if (!this.isOnlineForHomeKit) {
+      return;
+    }
+
     if (!this.monitorOnly) {
       if (!this.waitingForCommand) {
         this.pauseUpdate = true;
@@ -890,6 +853,10 @@ export default class Oven extends BaseDevice {
   }
 
   async stopOven() {
+    if (!this.isOnlineForHomeKit) {
+      return;
+    }
+
     if (!this.monitorOnly) {
       if (!this.waitingForCommand) {
         this.pauseUpdate = true;
@@ -1342,7 +1309,7 @@ export default class Oven extends BaseDevice {
     const device = this.accessory.context.device;
     const service = this.accessory.getService(HeaterCooler) || this.accessory.addService(HeaterCooler, device.name);
     service.getCharacteristic(Characteristic.CurrentHeaterCoolerState)
-      .onGet(() => {
+      .onGet(this.onlineGet(() => {
         const currentState = device.deviceModel.lookupMonitorValue('UpperOvenState', this.Status.getState(key));
         if (currentState === null) {
           this.platform.log.error('Current Oven State is null');
@@ -1355,7 +1322,7 @@ export default class Oven extends BaseDevice {
         } else {
           return Characteristic.CurrentHeaterCoolerState.IDLE;
         }
-      });
+      }));
     service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
       .setProps({
         validValues: [Characteristic.TargetHeaterCoolerState.HEAT],

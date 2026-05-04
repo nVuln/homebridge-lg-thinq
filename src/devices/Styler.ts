@@ -55,14 +55,23 @@ export default class Styler extends BaseDevice {
 
     this.serviceStyter = accessory.getService(Valve) || accessory.addService(Valve, device.name);
     this.serviceStyter.getCharacteristic(Characteristic.Active)
+      .onGet(this.onlineGet(() => this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE))
       .onSet(this.setActive.bind(this))
       .updateValue(Characteristic.Active.INACTIVE);
     this.serviceStyter.setCharacteristic(Characteristic.Name, device.name);
     this.serviceStyter.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.GENERIC_VALVE);
-    this.serviceStyter.setCharacteristic(Characteristic.InUse, Characteristic.InUse.NOT_IN_USE);
-    this.serviceStyter.getCharacteristic(Characteristic.RemainingDuration).setProps({
-      maxValue: 86400, // 1 day
-    });
+    this.serviceStyter.getCharacteristic(Characteristic.InUse)
+      .onGet(this.onlineGet(() => this.Status.isRunning ? Characteristic.InUse.IN_USE : Characteristic.InUse.NOT_IN_USE))
+      .updateValue(Characteristic.InUse.NOT_IN_USE);
+    this.serviceStyter.getCharacteristic(Characteristic.RemainingDuration)
+      .onGet(this.onlineGet(() => this.Status.remainDuration))
+      .setProps({
+        maxValue: 86400, // 1 day
+      });
+    this.serviceStyter.getCharacteristic(Characteristic.StatusFault)
+      .onGet(this.onlineGet(() => {
+        return this.Status.isError ? Characteristic.StatusFault.GENERAL_FAULT : Characteristic.StatusFault.NO_FAULT;
+      }));
   }
 
   public updateAccessoryCharacteristic(device: Device) {
@@ -80,6 +89,7 @@ export default class Styler extends BaseDevice {
   }
 
   async setActive(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     void value;
     if (this.Status.isRemoteStartOn) {
       // turn on styler

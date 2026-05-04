@@ -45,17 +45,37 @@ export default class AeroTower extends AirPurifier {
     this.serviceHumiditySensor = accessory.getService(HumiditySensor)
       || accessory.addService(HumiditySensor, 'Humidity Sensor');
 
-    this.serviceLight?.getCharacteristic(Characteristic.Brightness)
-      .setProps({
-        maxValue: 3, // 3 level of light
-      })
-      .onSet(this.setLightBrightness.bind(this));
+    if (this.serviceLight) {
+      this.serviceLight.getCharacteristic(Characteristic.Brightness)
+        .setProps({
+          maxValue: 3, // 3 level of light
+        })
+        .onGet(this.onlineGet(() => {
+          const values = [LightBrightness.LEVEL_1, LightBrightness.LEVEL_2, LightBrightness.LEVEL_3];
+          const brightnessValue = values.indexOf(snapshotNumber(this.accessory.context.device.snapshot, 'airState.lightingState.displayControl'));
+          return brightnessValue === -1 ? 0 : brightnessValue + 1;
+        }))
+        .onSet(this.setLightBrightness.bind(this));
+    }
+
+    this.serviceTemperatureSensor.getCharacteristic(Characteristic.CurrentTemperature)
+      .onGet(this.onlineGet(() => snapshotNumber(this.accessory.context.device.snapshot, 'airState.tempState.current')));
+    this.serviceTemperatureSensor.getCharacteristic(Characteristic.StatusActive)
+      .onGet(this.onlineGet(() => this.Status.isPowerOn));
+
+    this.serviceHumiditySensor.getCharacteristic(Characteristic.CurrentRelativeHumidity)
+      .onGet(this.onlineGet(() => snapshotNumber(this.accessory.context.device.snapshot, 'airState.humidity.current')));
+    this.serviceHumiditySensor.getCharacteristic(Characteristic.StatusActive)
+      .onGet(this.onlineGet(() => this.Status.isPowerOn));
 
     this.serviceUVNano = accessory.getService(Switch) || accessory.addService(Switch, 'UV Purifier');
-    this.serviceUVNano.getCharacteristic(Characteristic.On).onSet(this.setUVMode.bind(this));
+    this.serviceUVNano.getCharacteristic(Characteristic.On)
+      .onGet(this.onlineGet(() => snapshotBoolean(this.accessory.context.device.snapshot, 'airState.miscFuncState.Uvnano')))
+      .onSet(this.setUVMode.bind(this));
   }
 
   async setLight(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     if (!this.Status.isPowerOn) {
       return;
     }
@@ -71,6 +91,7 @@ export default class AeroTower extends AirPurifier {
   }
 
   protected async setUVMode(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const uvModeValue = value ? 1 : 0;
     await this.platform.ThinQ?.deviceControl(this.accessory.context.device, {
       dataKey: 'airState.miscFuncState.Uvnano',
@@ -81,6 +102,7 @@ export default class AeroTower extends AirPurifier {
   }
 
   protected async setLightBrightness(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const brightnessValue = (value as number) - 1;
     const values = [LightBrightness.LEVEL_1, LightBrightness.LEVEL_2, LightBrightness.LEVEL_3];
 

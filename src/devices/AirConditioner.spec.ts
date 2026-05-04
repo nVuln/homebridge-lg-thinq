@@ -1,4 +1,5 @@
 import { describe, expect, jest, test } from '@jest/globals';
+import { isDeviceOnlineForHomeKit } from '../baseDevice.js';
 import type { Device } from '../lib/Device.js';
 import {
   ACModelType,
@@ -13,7 +14,6 @@ import {
   featureToggleValue,
   heaterCoolerCharacteristicUpdateFromState,
   humiditySensorCharacteristicUpdateFromState,
-  isDeviceOnlineForHomeKit,
   isSwingModeEnabled,
   modelFeatureToggleValue,
   readAirConditionerState,

@@ -118,13 +118,7 @@ export default class Microwave extends BaseDevice {
     this.serviceHood.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.serviceHood.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Fan');
     this.serviceHood.getCharacteristic(Characteristic.Active)
-      .on('get', (callback) => {
-        let currentValue = 0;
-        if (hasNonZeroSnapshotNumber(this.Status.data, 'mwoVentSpeedLevel')) {
-          currentValue = 1;
-        }
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => hasNonZeroSnapshotNumber(this.Status.data, 'mwoVentSpeedLevel') ? 1 : 0))
       .on('set', (value, callback) => {
         this.ventSpeed = value as number;
         if (this.ventSpeed !== snapshotNumber(this.Status.data, 'mwoVentSpeedLevel')) {
@@ -133,10 +127,10 @@ export default class Microwave extends BaseDevice {
         callback(null);
       });
     this.serviceHood.getCharacteristic(Characteristic.RotationSpeed)
-      .on('get', (callback) => {
+      .on('get', this.onlineGetCallback(() => {
         this.ventSpeed = snapshotNumber(this.Status.data, 'mwoVentSpeedLevel');
-        callback(null, this.ventSpeed);
-      })
+        return this.ventSpeed;
+      }))
       .on('set', (value, callback) => {
         this.ventSpeed = value as number;
         this.sendLightVentCommand();
@@ -165,18 +159,12 @@ export default class Microwave extends BaseDevice {
         }
         callback(null);
       })
-      .on('get', (callback) => {
-        let currentValue = false;
-        if (hasNonZeroSnapshotNumber(this.Status.data, 'mwoLampLevel')) {
-          currentValue = true;
-        }
-        callback(null, currentValue);
-      });
+      .on('get', this.onlineGetCallback(() => hasNonZeroSnapshotNumber(this.Status.data, 'mwoLampLevel')));
     this.serviceLight.getCharacteristic(Characteristic.Brightness)
-      .on('get', (callback) => {
+      .on('get', this.onlineGetCallback(() => {
         this.lampLevel = snapshotNumber(this.Status.data, 'mwoLampLevel');
-        callback(null, this.lampLevel);
-      })
+        return this.lampLevel;
+      }))
       .on('set', (value, callback) => {
         this.lampLevel = value as number;
         if (this.lampLevel !== snapshotNumber(this.Status.data, 'mwoLampLevel')) {
@@ -230,19 +218,10 @@ export default class Microwave extends BaseDevice {
         }
         callback(null);
       })
-      .on('get', (callback) => {
-        let currentValue = false;
-        if (microwavePowerPercent(this.Status.data) > 0) {
-          currentValue = true;
-        }
-        callback(null, currentValue);
-      });
+      .on('get', this.onlineGetCallback(() => microwavePowerPercent(this.Status.data) > 0));
 
     this.microwavePower.getCharacteristic(this.platform.Characteristic.Brightness)
-      .on('get', (callback) => {
-        const currentValue = microwavePowerPercent(this.Status.data);
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => microwavePowerPercent(this.Status.data)))
       .on('set', (value, callback) => {
         this.mwPower = value as number;
         callback(null);
@@ -262,10 +241,7 @@ export default class Microwave extends BaseDevice {
     this.ovenService.setCharacteristic(this.platform
       .Characteristic.SleepDiscoveryMode, this.platform.Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE);
     this.ovenService.getCharacteristic(this.platform.Characteristic.Active)
-      .on('get', (callback) => {
-        const currentValue = this.ovenServiceActive();
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.ovenServiceActive()))
       .on('set', (value, callback) => {
         const enabled = normalizeBoolean(value);
         if (!enabled) {
@@ -654,13 +630,7 @@ export default class Microwave extends BaseDevice {
     this.ovenTimerService.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Cook Time');
     this.ovenTimerService.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.IRRIGATION);
     this.ovenTimerService.getCharacteristic(Characteristic.Active)
-      .on('get', (callback) => {
-        let currentValue = 0;
-        if (this.remainTime() !== 0) {
-          currentValue = 1;
-        }
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.remainTime() !== 0 ? 1 : 0))
       .on('set', (value, callback) => {
         const enabled = normalizeBoolean(value);
         if (!enabled) {
@@ -678,19 +648,12 @@ export default class Microwave extends BaseDevice {
       .setProps({
         maxValue: 32400, // 9hours
       })
-      .on('get', (callback) => {
-        const currentValue = this.remainTime();
-        callback(null, currentValue);
-      });
+      .on('get', this.onlineGetCallback(() => this.remainTime()));
     this.ovenTimerService.getCharacteristic(this.platform.Characteristic.SetDuration)
       .setProps({
         maxValue: 32400, // 9hours
       })
-      .on('get', (callback) => {
-        const currentValue = this.oventTargetTime();
-
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.oventTargetTime()))
       .on('set', (value, callback) => {
         const vNum = normalizeNumber(value);
         if (vNum === null) {
@@ -710,13 +673,7 @@ export default class Microwave extends BaseDevice {
     this.ovenAlarmService.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Timer');
     this.ovenAlarmService.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.IRRIGATION);
     this.ovenAlarmService.getCharacteristic(Characteristic.Active)
-      .on('get', (callback) => {
-        let currentValue = 0;
-        if (this.ovenTimerTime() !== 0) {
-          currentValue = 1;
-        }
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.ovenTimerTime() !== 0 ? 1 : 0))
       .on('set', (value, callback) => {
         const enabled = normalizeBoolean(value);
         if (!enabled) {
@@ -738,19 +695,13 @@ export default class Microwave extends BaseDevice {
       .setProps({
         maxValue: (6000 - 1), // 100 minutes
       })
-      .on('get', (callback) => {
-        const currentValue = this.ovenTimerTime();
-        callback(null, currentValue);
-      });
+      .on('get', this.onlineGetCallback(() => this.ovenTimerTime()));
     this.ovenAlarmService.getCharacteristic(this.platform.Characteristic.SetDuration)
       .setProps({
         maxValue: (6000 - 1), // 100 minutes
         minStep: 60,
       })
-      .on('get', (callback) => {
-        const currentValue = this.timerAlarmSec;
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.timerAlarmSec))
       .on('set', (value, callback) => {
         let vNum = normalizeNumber(value);
         if (vNum === null) {
@@ -1004,12 +955,13 @@ export default class Microwave extends BaseDevice {
         .setCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits, 1);
     this.ovenTempControl.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.ovenTempControl.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Microwave Oven Temperature Control');
+    this.ovenTempControl.getCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState)
+      .on('get', this.onlineGetCallback(() => this.currentHeatingState()));
+    this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits)
+      .on('get', this.onlineGetCallback(() => temperatureDisplayUnitsValue(this.Status.data, 'LWOTargetTemperatureUnit')));
     this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState)
       .setProps({ validValues: [this.platform.Characteristic.TargetHeatingCoolingState.OFF, this.platform.Characteristic.TargetHeatingCoolingState.HEAT] })
-      .on('get', (callback) => {
-        const currentValue = this.targetHeatingState();
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.targetHeatingState()))
       .on('set', (value, callback) => {
         const enabled = normalizeBoolean(value);
         if (!enabled) {
@@ -1025,25 +977,16 @@ export default class Microwave extends BaseDevice {
         maxValue: 233,
         minStep: 0.5,
       })
-      .on('get', (callback) => {
-        const currentValue = this.ovenCurrentTemperature();
-        callback(null, currentValue);
-      });
+      .on('get', this.onlineGetCallback(() => this.ovenCurrentTemperature()));
     this.ovenTempControl.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
-      .on('get', (callback) => {
-        const currentValue = this.localHumidity;
-        callback(null, currentValue);
-      });
+      .on('get', this.onlineGetCallback(() => this.localHumidity));
     this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TargetTemperature)
       .setProps({
         minValue: 38,
         maxValue: 233,
         minStep: 0.5,
       })
-      .on('get', (callback) => {
-        const currentValue = this.ovenTargetTemperature();
-        callback(null, currentValue);
-      })
+      .on('get', this.onlineGetCallback(() => this.ovenTargetTemperature()))
       .on('set', (value, callback) => {
         const vNum = normalizeNumber(value);
         if (vNum === null) {
@@ -1066,6 +1009,10 @@ export default class Microwave extends BaseDevice {
 
 
   async timeModeCommand() {
+    if (!this.isOnlineForHomeKit) {
+      return;
+    }
+
     const ctrlKey = 'SetPreference';
     const device = this.accessory.context.device;
     await this.platform.ThinQ?.deviceControl(device, {
@@ -1090,6 +1037,10 @@ export default class Microwave extends BaseDevice {
   }
 
   async sendLightVentCommand() {
+    if (!this.isOnlineForHomeKit) {
+      return;
+    }
+
     this.platform.log.debug('Fan Speed: ' + this.ventSpeed + ' Light: ' + this.lampLevel);
     const device = this.accessory.context.device;
     const ventLampCommand = microwaveVentLampCommand(this.ventSpeed, this.lampLevel);
@@ -1097,6 +1048,10 @@ export default class Microwave extends BaseDevice {
   }
 
   async sendTimerCommand(time: number) {
+    if (!this.isOnlineForHomeKit) {
+      return;
+    }
+
     if (!this.waitingForCommand) {
       this.platform.log.debug('Alarm Set to: ' + this.secondsToTime(time));
       const device = this.accessory.context.device;
@@ -1114,6 +1069,10 @@ export default class Microwave extends BaseDevice {
   }
 
   async sendOvenCommand() {
+    if (!this.isOnlineForHomeKit) {
+      return;
+    }
+
     if (!this.monitorOnly) {
       if (!this.waitingForCommand) {
         this.pauseUpdate = true;
@@ -1138,6 +1097,10 @@ export default class Microwave extends BaseDevice {
   }
 
   async stopOven() {
+    if (!this.isOnlineForHomeKit) {
+      return;
+    }
+
     if (!this.monitorOnly) {
       if (!this.waitingForCommand) {
         this.pauseUpdate = true;

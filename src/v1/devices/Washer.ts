@@ -26,6 +26,7 @@ export default class Washer extends WasherV2 {
   }
 
   async setActive(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const device: Device = this.accessory.context.device;
     await this.platform.ThinQ?.thinq1DeviceControl(device, 'Power', value as boolean ? 'On' : 'Off');
   }

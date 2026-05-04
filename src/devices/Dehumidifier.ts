@@ -70,9 +70,17 @@ export default class Dehumidifier extends BaseDevice {
     this.serviceDehumidifier = accessory.getService(HumidifierDehumidifier) || accessory.addService(HumidifierDehumidifier);
     this.serviceDehumidifier.setCharacteristic(Characteristic.Name, device.name);
     this.serviceDehumidifier.getCharacteristic(Characteristic.Active)
+      .onGet(this.onlineGet(() => this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE))
       .onSet(this.setActive.bind(this))
       .updateValue(Characteristic.Active.INACTIVE);
     this.serviceDehumidifier.getCharacteristic(Characteristic.CurrentHumidifierDehumidifierState)
+      .onGet(this.onlineGet(() => {
+        if (!this.Status.isPowerOn) {
+          return CurrentHumidifierDehumidifierState.INACTIVE;
+        }
+
+        return this.Status.isDehumidifying ? CurrentHumidifierDehumidifierState.DEHUMIDIFYING : CurrentHumidifierDehumidifierState.IDLE;
+      }))
       .setProps({
         validValues: [
           CurrentHumidifierDehumidifierState.INACTIVE,
@@ -87,7 +95,11 @@ export default class Dehumidifier extends BaseDevice {
       })
       .updateValue(Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER);
 
+    this.serviceDehumidifier.getCharacteristic(Characteristic.CurrentRelativeHumidity)
+      .onGet(this.onlineGet(() => this.Status.humidityCurrent));
+
     this.serviceDehumidifier.getCharacteristic(Characteristic.RelativeHumidityDehumidifierThreshold)
+      .onGet(this.onlineGet(() => this.Status.humidityTarget))
       .onSet(this.setHumidityThreshold.bind(this))
       .setProps({
         minValue: 0,
@@ -96,6 +108,7 @@ export default class Dehumidifier extends BaseDevice {
       });
 
     this.serviceDehumidifier.getCharacteristic(Characteristic.RotationSpeed)
+      .onGet(this.onlineGet(() => this.Status.rotationSpeed))
       .onSet(this.setSpeed.bind(this))
       .setProps({
         minValue: 1,
@@ -103,11 +116,19 @@ export default class Dehumidifier extends BaseDevice {
         minStep: 1,
       });
 
+    this.serviceDehumidifier.getCharacteristic(Characteristic.WaterLevel)
+      .onGet(this.onlineGet(() => this.Status.isWaterTankFull ? 100 : 0));
+
     this.serviceHumiditySensor = accessory.getService(HumiditySensor) || accessory.addService(HumiditySensor);
     this.serviceHumiditySensor.addLinkedService(this.serviceDehumidifier);
+    this.serviceHumiditySensor.getCharacteristic(Characteristic.CurrentRelativeHumidity)
+      .onGet(this.onlineGet(() => this.Status.humidityCurrent));
+    this.serviceHumiditySensor.getCharacteristic(Characteristic.StatusActive)
+      .onGet(this.onlineGet(() => this.Status.isPowerOn));
   }
 
   async setActive(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     this.platform.log.debug('Set Dehumidifier Active State ->', value);
     const device: Device = this.accessory.context.device;
     const isOn = value as boolean;
@@ -124,6 +145,7 @@ export default class Dehumidifier extends BaseDevice {
   }
 
   async setHumidityThreshold(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     if (!this.Status.isPowerOn) {
       return;
     }
@@ -138,6 +160,7 @@ export default class Dehumidifier extends BaseDevice {
   }
 
   async setSpeed(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     if (!this.Status.isPowerOn) {
       return;
     }
