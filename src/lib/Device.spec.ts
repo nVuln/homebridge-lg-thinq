@@ -1,4 +1,4 @@
-import { Device, DeviceData } from './Device.js';
+import { Device, DeviceData, devicesFromList, isValidDeviceId } from './Device.js';
 import { describe, test, beforeEach, expect } from '@jest/globals';
 import Fs from 'fs';
 import Path from 'path';
@@ -62,7 +62,52 @@ describe('Device', () => {
     expect(device.online).toBe(mockDeviceData.online);
   });
 
+  test('should read online status from snapshot when top-level value is missing', () => {
+    const deviceWithoutTopLevelOnline = new Device({
+      ...mockDeviceData,
+      online: undefined,
+      snapshot: {
+        online: true,
+      },
+    } as unknown as DeviceData);
+    const deviceWithoutSnapshot = new Device({
+      ...mockDeviceData,
+      online: undefined,
+      snapshot: undefined,
+    } as unknown as DeviceData);
+
+    expect(deviceWithoutTopLevelOnline.online).toBe(true);
+    expect(deviceWithoutSnapshot.online).toBeUndefined();
+  });
+
   test('should return string representation of the device', () => {
     expect(device.toString()).toBe(`${mockDeviceData.deviceId}: ${mockDeviceData.alias} (AC ${mockDeviceData.modelName.slice(0, -3)})`);
+  });
+
+  test('validates ThinQ device UUIDs', () => {
+    expect(isValidDeviceId('123e4567-e89b-12d3-a456-426614174000')).toBe(true);
+    expect(isValidDeviceId('not-a-device-id')).toBe(false);
+    expect(isValidDeviceId(undefined)).toBe(false);
+  });
+
+  test('creates devices from API lists and skips invalid ids', () => {
+    const validId = '123e4567-e89b-12d3-a456-426614174000';
+    const devices = devicesFromList([
+      {
+        ...mockDeviceData,
+        deviceId: validId,
+      },
+      {
+        ...mockDeviceData,
+        deviceId: 'not-a-device-id',
+      },
+      {
+        ...mockDeviceData,
+        deviceId: undefined,
+      },
+    ]);
+
+    expect(devices).toHaveLength(1);
+    expect(devices[0].id).toBe(validId);
   });
 });

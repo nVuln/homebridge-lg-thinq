@@ -1,5 +1,6 @@
 /* eslint-disable dot-notation */
 import { API } from './API.js';
+import { NotConnectedError } from '../errors/index.js';
 import { Logger } from 'homebridge';
 import { beforeEach, describe, expect, jest, test } from '@jest/globals';
 
@@ -24,6 +25,12 @@ describe('API', () => {
     expect(api.httpClient).toBeDefined();
   });
 
+  test('can be constructed by JavaScript callers without a logger', async () => {
+    const apiWithoutLogger = new API('US', 'en-US');
+
+    await expect(apiWithoutLogger.getRequest('')).rejects.toThrow('Invalid URI');
+  });
+
   test('should set username and password', () => {
     api.setUsernamePassword('testUser', 'testPass');
     expect(api['username']).toBe('testUser');
@@ -46,6 +53,16 @@ describe('API', () => {
 
     const devices = await api.getListDevices();
     expect(devices).toEqual(mockDevices);
+  });
+
+  test('propagates not-connected request failures', async () => {
+    api['_gateway'] = {
+      thinq1_url: '',
+      thinq2_url: 'https://example.com/',
+    } as any;
+    jest.spyOn(api.httpClient, 'request').mockRejectedValueOnce(new NotConnectedError('offline'));
+
+    await expect(api.getRequest('service/homes')).rejects.toThrow(NotConnectedError);
   });
 
   test('should send command to device', async () => {

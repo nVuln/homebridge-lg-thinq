@@ -11,7 +11,10 @@ const makeLogger = (): Logger => (console as unknown as Logger);
 
 const input = (question: string) => new Promise<string>((resolve) => {
   const rl = readline.createInterface(process.stdin, process.stdout);
-  rl.question(question, (answer) => resolve(answer));
+  rl.question(question, (answer) => {
+    rl.close();
+    resolve(answer);
+  });
 });
 
 const program = new Command();
@@ -34,7 +37,7 @@ program
   .argument('<password>', 'LG password')
   .action(async (username, password) => {
 
-    console.info('Start login: username =', username, ', password =', password, ', country =', options.country, ', language =', options.language);
+    console.info('Start login: username =', username, ', country =', options.country, ', language =', options.language);
     const logger = makeLogger();
     try {
       const api = new API(options.country, options.language, logger);

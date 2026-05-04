@@ -15,11 +15,16 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
     "resolveJsonModule": true,
   },
   "include": [
     "eslint.config.js",
     "homebridge-ui",
     "src"
+  ],
+  "exclude": [
+    "src/**/*.spec.ts",
+    "src/**/__tests__/**"
   ]
 }

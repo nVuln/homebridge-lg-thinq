@@ -3,6 +3,12 @@ import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { AccessoryContext } from '../baseDevice.js';
+import {
+  hasSnapshotKey,
+  snapshotBoolean,
+  snapshotNumber,
+  updateCharacteristicIfChanged,
+} from './helpers.js';
 
 export enum LightBrightness {
   OFF = 0,
@@ -56,38 +62,35 @@ export default class AeroTower extends AirPurifier {
 
     const device: Device = this.accessory.context.device;
     const isLightOn = value as boolean ? 1 : 0;
-    this.platform.ThinQ?.deviceControl(device.id, {
+    await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.lightingState.displayControl',
       dataValue: isLightOn,
-    }).then(() => {
-      device.data.snapshot['airState.lightingState.displayControl'] = isLightOn;
-      this.updateAccessoryCharacteristic(device);
     });
+    device.data.snapshot['airState.lightingState.displayControl'] = isLightOn;
+    this.updateAccessoryCharacteristic(device);
   }
 
-  protected setUVMode(value: CharacteristicValue) {
+  protected async setUVMode(value: CharacteristicValue) {
     const uvModeValue = value ? 1 : 0;
-    this.platform.ThinQ?.deviceControl(this.accessory.context.device, {
+    await this.platform.ThinQ?.deviceControl(this.accessory.context.device, {
       dataKey: 'airState.miscFuncState.Uvnano',
       dataValue: uvModeValue,
-    }).then(() => {
-      this.accessory.context.device.data.snapshot['airState.miscFuncState.Uvnano'] = uvModeValue;
-      this.updateAccessoryCharacteristic(this.accessory.context.device);
     });
+    this.accessory.context.device.data.snapshot['airState.miscFuncState.Uvnano'] = uvModeValue;
+    this.updateAccessoryCharacteristic(this.accessory.context.device);
   }
 
-  protected setLightBrightness(value: CharacteristicValue) {
+  protected async setLightBrightness(value: CharacteristicValue) {
     const brightnessValue = (value as number) - 1;
     const values = [LightBrightness.LEVEL_1, LightBrightness.LEVEL_2, LightBrightness.LEVEL_3];
 
     if (typeof values[brightnessValue] !== 'undefined') {
-      this.platform.ThinQ?.deviceControl(this.accessory.context.device, {
+      await this.platform.ThinQ?.deviceControl(this.accessory.context.device, {
         dataKey: 'airState.lightingState.displayControl',
         dataValue: values[brightnessValue],
-      }).then(() => {
-        this.accessory.context.device.data.snapshot['airState.lightingState.displayControl'] = values[brightnessValue];
-        this.updateAccessoryCharacteristic(this.accessory.context.device);
       });
+      this.accessory.context.device.data.snapshot['airState.lightingState.displayControl'] = values[brightnessValue];
+      this.updateAccessoryCharacteristic(this.accessory.context.device);
     }
   }
 
@@ -98,24 +101,32 @@ export default class AeroTower extends AirPurifier {
       Characteristic,
     } = this.platform;
 
-    const snapshot = device.data.snapshot;
+    const snapshot = device.data.snapshot ?? {};
 
     // light brightness
     const values = [LightBrightness.LEVEL_1, LightBrightness.LEVEL_2, LightBrightness.LEVEL_3];
-    const brightnessValue = values.indexOf(snapshot['airState.lightingState.displayControl'] || 0);
+    const brightnessValue = values.indexOf(snapshotNumber(snapshot, 'airState.lightingState.displayControl'));
     if (brightnessValue !== -1) {
-      this.serviceLight?.updateCharacteristic(Characteristic.Brightness, brightnessValue + 1);
+      updateCharacteristicIfChanged(this.serviceLight, Characteristic.Brightness, brightnessValue + 1);
     }
 
-    if (typeof snapshot['airState.tempState.current'] !== 'undefined') {
-      this.serviceTemperatureSensor.updateCharacteristic(Characteristic.CurrentTemperature, snapshot['airState.tempState.current']);
+    if (hasSnapshotKey(snapshot, 'airState.tempState.current')) {
+      updateCharacteristicIfChanged(
+        this.serviceTemperatureSensor,
+        Characteristic.CurrentTemperature,
+        snapshotNumber(snapshot, 'airState.tempState.current'),
+      );
     }
 
-    if (typeof snapshot['airState.humidity.current'] !== 'undefined') {
-      this.serviceHumiditySensor.updateCharacteristic(Characteristic.CurrentRelativeHumidity, snapshot['airState.humidity.current']);
+    if (hasSnapshotKey(snapshot, 'airState.humidity.current')) {
+      updateCharacteristicIfChanged(
+        this.serviceHumiditySensor,
+        Characteristic.CurrentRelativeHumidity,
+        snapshotNumber(snapshot, 'airState.humidity.current'),
+      );
     }
 
     // uv mode
-    this.serviceUVNano.updateCharacteristic(Characteristic.On, !!(snapshot['airState.miscFuncState.Uvnano'] || 0));
+    updateCharacteristicIfChanged(this.serviceUVNano, Characteristic.On, snapshotBoolean(snapshot, 'airState.miscFuncState.Uvnano'));
   }
 }

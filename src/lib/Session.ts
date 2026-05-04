@@ -58,6 +58,14 @@ export class Session {
     this.expiresIn = expiresIn;
   }
 
+  public newTokenFromExpiresIn(accessToken: string, expiresInSeconds: number): void {
+    this.newToken(accessToken, Session.expiryTimestampFromExpiresIn(expiresInSeconds));
+  }
+
+  public static expiryTimestampFromExpiresIn(expiresInSeconds: number): number {
+    return Session.getCurrentEpoch() + expiresInSeconds;
+  }
+
   /**
    * Gets the access token.
    *

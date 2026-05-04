@@ -2,12 +2,77 @@ import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { AccessoryContext, BaseDevice } from '../baseDevice.js';
+import { hasSnapshotKey, snapshotBoolean, snapshotNumber, updateCharacteristicIfChanged } from './helpers.js';
 
 export enum RotateSpeed {
   LOW = 2,
   MEDIUM = 4,
   HIGH = 6,
   EXTRA = 7,
+}
+
+export type AirQualityState = {
+  isOn: boolean;
+  overall: number;
+  PM2: number;
+  PM10: number;
+};
+
+export type AirPurifierState = {
+  isPowerOn: boolean;
+  isLightOn: boolean;
+  isSwing: boolean;
+  airQuality: AirQualityState;
+  rotationSpeed: number;
+  windStrength: number;
+  isNormalMode: boolean;
+  filterUsedTimePercent: number;
+  filterMaxTime: number;
+  filterUseTime: number;
+  isAirFastEnable: boolean;
+};
+
+function rotationSpeedFromWindStrength(windStrength: number): number {
+  const index = Object.keys(RotateSpeed).indexOf(windStrength.toString());
+  return index !== -1 ? index + 1 : Object.keys(RotateSpeed).length / 2;
+}
+
+function readLightState(snapshot: any, isPowerOn: boolean): boolean {
+  if (hasSnapshotKey(snapshot, 'airState.lightingState.signal')) {
+    return isPowerOn && snapshotBoolean(snapshot, 'airState.lightingState.signal');
+  }
+
+  if (hasSnapshotKey(snapshot, 'airState.lightingState.displayControl')) {
+    return isPowerOn && snapshotBoolean(snapshot, 'airState.lightingState.displayControl');
+  }
+
+  return false;
+}
+
+export function readAirPurifierState(snapshot: any): AirPurifierState {
+  const isPowerOn = snapshotBoolean(snapshot, 'airState.operation');
+  const windStrength = snapshotNumber(snapshot, 'airState.windStrength');
+  const filterMaxTime = snapshotNumber(snapshot, 'airState.filterMngStates.maxTime');
+  const filterUseTime = snapshotNumber(snapshot, 'airState.filterMngStates.useTime');
+
+  return {
+    isPowerOn,
+    isLightOn: readLightState(snapshot, isPowerOn),
+    isSwing: snapshotBoolean(snapshot, 'airState.circulate.rotate'),
+    airQuality: {
+      isOn: isPowerOn || snapshotBoolean(snapshot, 'airState.quality.sensorMon'),
+      overall: snapshotNumber(snapshot, 'airState.quality.overall'),
+      PM2: snapshotNumber(snapshot, 'airState.quality.PM2'),
+      PM10: snapshotNumber(snapshot, 'airState.quality.PM10'),
+    },
+    rotationSpeed: rotationSpeedFromWindStrength(windStrength),
+    windStrength,
+    isNormalMode: snapshotNumber(snapshot, 'airState.opMode') === 14,
+    filterUsedTimePercent: filterMaxTime ? Math.round((1 - (filterUseTime / filterMaxTime)) * 100) : 0,
+    filterMaxTime,
+    filterUseTime,
+    isAirFastEnable: snapshotBoolean(snapshot, 'airState.miscFuncState.airFast'),
+  };
 }
 
 // opMode = 14 => normal mode, can rotate speed
@@ -70,7 +135,8 @@ export default class AirPurifier extends BaseDevice {
     this.serviceAirQuality = accessory.getService(AirQualitySensor) || accessory.addService(AirQualitySensor);
 
     // check if light is available
-    if ('airState.lightingState.displayControl' in device.snapshot || 'airState.lightingState.signal' in device.snapshot) {
+    const snapshot = device.snapshot ?? {};
+    if ('airState.lightingState.displayControl' in snapshot || 'airState.lightingState.signal' in snapshot) {
       this.serviceLight = accessory.getService(Lightbulb);
       if (!this.serviceLight) {
         this.serviceLight = accessory.addService(Lightbulb, device.name + ' - Light');
@@ -110,7 +176,7 @@ export default class AirPurifier extends BaseDevice {
   }
 
   public get Status() {
-    return new AirPurifierStatus(this.accessory.context.device.snapshot);
+    return readAirPurifierState(this.accessory.context.device.snapshot);
   }
 
   public get config() {
@@ -126,13 +192,12 @@ export default class AirPurifier extends BaseDevice {
 
     const device: Device = this.accessory.context.device;
     const isOn = value as boolean ? 1 : 0;
-    this.platform.ThinQ?.deviceControl(device.id, {
+    await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.miscFuncState.airFast',
       dataValue: isOn as number,
-    }).then(() => {
-      device.data.snapshot['airState.miscFuncState.airFast'] = isOn as number;
-      this.updateAccessoryCharacteristic(device);
     });
+    device.data.snapshot['airState.miscFuncState.airFast'] = isOn as number;
+    this.updateAccessoryCharacteristic(device);
   }
 
   async setActive(value: CharacteristicValue) {
@@ -143,13 +208,12 @@ export default class AirPurifier extends BaseDevice {
     }
 
     this.platform.log.debug('Set Active State ->', value);
-    this.platform.ThinQ?.deviceControl(device.id, {
+    await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.operation',
       dataValue: isOn as number,
-    }).then(() => {
-      device.data.snapshot['airState.operation'] = isOn as number;
-      this.updateAccessoryCharacteristic(device);
     });
+    device.data.snapshot['airState.operation'] = isOn as number;
+    this.updateAccessoryCharacteristic(device);
   }
 
   async setTargetAirPurifierState(value: CharacteristicValue) {
@@ -159,7 +223,7 @@ export default class AirPurifier extends BaseDevice {
     }
 
     this.platform.log.debug('Set Target State ->', value);
-    this.platform.ThinQ?.deviceControl(device.id, {
+    await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.opMode',
       dataValue: value as boolean ? 16 : 14,
     });
@@ -174,13 +238,12 @@ export default class AirPurifier extends BaseDevice {
     const device: Device = this.accessory.context.device;
     const values = Object.keys(RotateSpeed);
     const windStrength = parseInt(values[Math.round((value as number)) - 1]) || RotateSpeed.EXTRA;
-    this.platform.ThinQ?.deviceControl(device.id, {
+    await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.windStrength',
       dataValue: windStrength,
-    }).then(() => {
-      device.data.snapshot['airState.windStrength'] = windStrength;
-      this.updateAccessoryCharacteristic(device);
     });
+    device.data.snapshot['airState.windStrength'] = windStrength;
+    this.updateAccessoryCharacteristic(device);
   }
 
   async setSwingMode(value: CharacteristicValue) {
@@ -190,13 +253,12 @@ export default class AirPurifier extends BaseDevice {
 
     const device: Device = this.accessory.context.device;
     const isSwing = value as boolean ? 1 : 0;
-    this.platform.ThinQ?.deviceControl(device.id, {
+    await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey: 'airState.circulate.rotate',
       dataValue: isSwing,
-    }).then(() => {
-      device.data.snapshot['airState.circulate.rotate'] = isSwing;
-      this.updateAccessoryCharacteristic(device);
     });
+    device.data.snapshot['airState.circulate.rotate'] = isSwing;
+    this.updateAccessoryCharacteristic(device);
   }
 
   async setLight(value: CharacteristicValue) {
@@ -206,10 +268,11 @@ export default class AirPurifier extends BaseDevice {
 
     const device: Device = this.accessory.context.device;
     const isLightOn = value as boolean ? 1 : 0;
+    const snapshot = device.snapshot ?? {};
     let dataKey = '';
-    if ('airState.lightingState.signal' in device.snapshot) {
+    if ('airState.lightingState.signal' in snapshot) {
       dataKey = 'airState.lightingState.signal';
-    } else if ('airState.lightingState.displayControl' in device.snapshot) {
+    } else if ('airState.lightingState.displayControl' in snapshot) {
       dataKey = 'airState.lightingState.displayControl';
     }
 
@@ -217,13 +280,12 @@ export default class AirPurifier extends BaseDevice {
       return;
     }
 
-    this.platform.ThinQ?.deviceControl(device.id, {
+    await this.platform.ThinQ?.deviceControl(device.id, {
       dataKey,
       dataValue: isLightOn,
-    }).then(() => {
-      device.data.snapshot[dataKey] = isLightOn;
-      this.updateAccessoryCharacteristic(device);
     });
+    device.data.snapshot[dataKey] = isLightOn;
+    this.updateAccessoryCharacteristic(device);
   }
 
   public updateAccessoryCharacteristic(device: Device) {
@@ -236,94 +298,83 @@ export default class AirPurifier extends BaseDevice {
       },
     } = this.platform;
 
-    this.serviceAirPurifier?.updateCharacteristic(Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
-    this.serviceAirPurifier?.updateCharacteristic(Characteristic.CurrentAirPurifierState, this.Status.isPowerOn ? 2 : 0);
-    this.serviceAirPurifier?.updateCharacteristic(TargetAirPurifierState,
+    updateCharacteristicIfChanged(this.serviceAirPurifier, Characteristic.Active, this.Status.isPowerOn ? 1 : 0);
+    updateCharacteristicIfChanged(this.serviceAirPurifier, Characteristic.CurrentAirPurifierState, this.Status.isPowerOn ? 2 : 0);
+    updateCharacteristicIfChanged(this.serviceAirPurifier, TargetAirPurifierState,
       this.Status.isNormalMode ? TargetAirPurifierState.MANUAL : TargetAirPurifierState.AUTO);
-    this.serviceAirPurifier?.updateCharacteristic(Characteristic.SwingMode, this.Status.isSwing ? 1 : 0);
-    this.serviceAirPurifier?.updateCharacteristic(Characteristic.RotationSpeed, this.Status.rotationSpeed);
+    updateCharacteristicIfChanged(this.serviceAirPurifier, Characteristic.SwingMode, this.Status.isSwing ? 1 : 0);
+    updateCharacteristicIfChanged(this.serviceAirPurifier, Characteristic.RotationSpeed, this.Status.rotationSpeed);
 
     if (this.Status.filterMaxTime && this.serviceFilterMaintenance) {
-      this.serviceFilterMaintenance.updateCharacteristic(Characteristic.FilterLifeLevel, this.Status.filterUsedTimePercent);
-      this.serviceFilterMaintenance.updateCharacteristic(FilterChangeIndication,
+      updateCharacteristicIfChanged(this.serviceFilterMaintenance, Characteristic.FilterLifeLevel, this.Status.filterUsedTimePercent);
+      updateCharacteristicIfChanged(this.serviceFilterMaintenance, FilterChangeIndication,
         this.Status.filterUsedTimePercent > 95 ? FilterChangeIndication.CHANGE_FILTER : FilterChangeIndication.FILTER_OK);
     }
 
     // airState.quality.sensorMon = 1 mean sensor always running even device not running
-    this.serviceAirQuality.updateCharacteristic(Characteristic.AirQuality, this.Status.airQuality.overall);
-    this.serviceAirQuality.updateCharacteristic(Characteristic.PM2_5Density, this.Status.airQuality.PM2);
-    this.serviceAirQuality.updateCharacteristic(Characteristic.PM10Density, this.Status.airQuality.PM10);
-    this.serviceAirQuality.updateCharacteristic(Characteristic.StatusActive, this.Status.airQuality.isOn);
+    updateCharacteristicIfChanged(this.serviceAirQuality, Characteristic.AirQuality, this.Status.airQuality.overall);
+    updateCharacteristicIfChanged(this.serviceAirQuality, Characteristic.PM2_5Density, this.Status.airQuality.PM2);
+    updateCharacteristicIfChanged(this.serviceAirQuality, Characteristic.PM10Density, this.Status.airQuality.PM10);
+    updateCharacteristicIfChanged(this.serviceAirQuality, Characteristic.StatusActive, this.Status.airQuality.isOn);
 
     if (this.serviceLight) {
-      this.serviceLight.updateCharacteristic(Characteristic.On, this.Status.isLightOn);
+      updateCharacteristicIfChanged(this.serviceLight, Characteristic.On, this.Status.isLightOn);
     }
 
     if (this.config.air_fast_mode && this.serviceAirFastMode) {
-      this.serviceAirFastMode.updateCharacteristic(Characteristic.On, this.Status.isAirFastEnable);
+      updateCharacteristicIfChanged(this.serviceAirFastMode, Characteristic.On, this.Status.isAirFastEnable);
     }
   }
 }
 
 export class AirPurifierStatus {
-  constructor(protected data: any) {
+  private readonly state: AirPurifierState;
+
+  constructor(data: any) {
+    this.state = readAirPurifierState(data);
   }
 
   public get isPowerOn() {
-    return this.data['airState.operation'] as boolean;
+    return this.state.isPowerOn;
   }
 
   public get isLightOn() {
-    if ('airState.lightingState.signal' in this.data) {
-      return this.isPowerOn && this.data['airState.lightingState.signal'] as boolean;
-    }
-
-    if ('airState.lightingState.displayControl' in this.data) {
-      return this.isPowerOn && this.data['airState.lightingState.displayControl'] as boolean;
-    }
-
-    return false;
+    return this.state.isLightOn;
   }
 
   public get isSwing() {
-    return (this.data['airState.circulate.rotate'] || 0) as boolean;
+    return this.state.isSwing;
   }
 
   public get airQuality() {
-    return {
-      isOn: this.isPowerOn || !!this.data['airState.quality.sensorMon'],
-      overall: parseInt(this.data['airState.quality.overall']),
-      PM2: parseInt(this.data['airState.quality.PM2'] || '0'),
-      PM10: parseInt(this.data['airState.quality.PM10'] || '0'),
-    };
+    return this.state.airQuality;
   }
 
   public get rotationSpeed() {
-    const index = Object.keys(RotateSpeed).indexOf(parseInt(this.data['airState.windStrength']).toString());
-    return index !== -1 ? index + 1 : Object.keys(RotateSpeed).length / 2;
+    return this.state.rotationSpeed;
+  }
+
+  public get windStrength() {
+    return this.state.windStrength;
   }
 
   public get isNormalMode() {
-    return this.data['airState.opMode'] === 14;
+    return this.state.isNormalMode;
   }
 
   public get filterUsedTimePercent() {
-    if (!this.filterMaxTime) {
-      return 0;
-    }
-
-    return Math.round((1 - (this.filterUseTime / this.filterMaxTime)) * 100);
+    return this.state.filterUsedTimePercent;
   }
 
   public get filterMaxTime() {
-    return this.data['airState.filterMngStates.maxTime'] || 0;
+    return this.state.filterMaxTime;
   }
 
   public get filterUseTime() {
-    return this.data['airState.filterMngStates.useTime'] || 0;
+    return this.state.filterUseTime;
   }
 
   public get isAirFastEnable() {
-    return this.data['airState.miscFuncState.airFast'] || 0;
+    return this.state.isAirFastEnable;
   }
 }

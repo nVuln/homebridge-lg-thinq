@@ -3,7 +3,7 @@
 <script crossorigin="anonymous" src="js/bootstrap.js"></script>
 
 <div class="card card-body" style="display: none" id="loginForm">
-    <h5>Plugin need your LG account authorization, please login by using form below</h5>
+    <h5>The plugin needs LG account authorization. Sign in with your LG account below.</h5>
     <hr/>
     <div class="form-group">
         <label for="country_language">select country / language of your account</label>
@@ -246,7 +246,7 @@
             <div class="card-header" id="headingOne">
                 <h5 class="mb-0">
                     <button aria-controls="collapseOne" aria-expanded="true" class="btn btn-link" data-target="#collapseOne" data-toggle="collapse">
-                        Login with LG Account (plain username/password)
+                        Login with LG Account
                     </button>
                 </h5>
             </div>
@@ -288,91 +288,261 @@
                 <h5 class="mb-0">
                     <button aria-controls="collapseTwo" aria-expanded="false" class="btn btn-link collapsed" data-target="#collapseTwo"
                             data-toggle="collapse">
-                        Login with other methods (Facebook, Amazon ...)
+                        Other login methods
                     </button>
                 </h5>
             </div>
             <div aria-labelledby="headingTwo" class="collapse" data-parent="#accordion" id="collapseTwo">
                 <div class="card-body">
-                    <p>Please follow wiki <a href="https://github.com/nVuln/homebridge-lg-thinq/wiki/Plugin-Authorization-Setting"><b>Plugin Authorization Setting</b></a></p>
+                    <p>Use the <a href="https://github.com/nVuln/homebridge-lg-thinq/wiki/Plugin-Authorization-Setting"><b>Plugin Authorization Setting</b></a> guide for other login methods.</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<div class="alert alert-info" id="saveNotice" style="display: none">
+    Click the Homebridge UI Save button to apply settings. Device configuration will load after restart.
+</div>
+
 <script>
   const homebridge = window.homebridge;
   const $ = jQuery = window.jQuery;
+  let configForm;
+
+  function requestErrorMessage(error, fallback) {
+    return error?.error || error?.message || fallback;
+  }
+
+  function setLoginButtonLoading(btn, label) {
+    btn.prop('disabled', true).html(
+      '<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>' + label
+    );
+  }
+
+  function resetLoginButton(btn) {
+    btn.prop('disabled', false).text('Get Token');
+  }
+
+  function showSaveNotice() {
+    $('#saveNotice').show();
+    homebridge.fixScrollHeight();
+  }
+
+  function hideSaveNotice() {
+    $('#saveNotice').hide();
+    homebridge.fixScrollHeight();
+  }
+
+  function normalizeDevice(device, options = {}) {
+    const source = options.source || device?._source;
+
+    return {
+      ...device,
+      ...(source ? {_source: source} : {}),
+      serial_number: typeof device?.serial_number === 'string' ? device.serial_number : '',
+    };
+  }
+
+  function mergeDiscoveredDeviceMetadata(configuredDevices, discoveredDevices) {
+    const discoveredById = new Map(
+      discoveredDevices
+        .filter(device => device?.id)
+        .map(device => [device.id, device])
+    );
+
+    if (!Array.isArray(configuredDevices) || configuredDevices.length === 0) {
+      return discoveredDevices.map(device => normalizeDevice(device, {source: 'lg'}));
+    }
+
+    const configuredDeviceIds = new Set(
+      configuredDevices
+        .filter(device => device?.id)
+        .map(device => device.id)
+    );
+    const mergedConfiguredDevices = configuredDevices.map(device => {
+      const discovered = discoveredById.get(device?.id);
+
+      if (!discovered) {
+        return normalizeDevice(device, {source: device?._source || 'manual'});
+      }
+
+      return normalizeDevice({
+        ...device,
+        name: device.name || discovered.name,
+        type: discovered.type || device.type,
+        serial_number: typeof device.serial_number === 'string' ? device.serial_number : discovered.serial_number,
+      }, {source: device._source || 'lg'});
+    });
+    const newDiscoveredDevices = discoveredDevices
+      .filter(device => device?.id && !configuredDeviceIds.has(device.id))
+      .map(device => normalizeDevice(device, {source: 'lg'}));
+
+    return [
+      ...mergedConfiguredDevices,
+      ...newDiscoveredDevices,
+    ];
+  }
+
+  function normalizeFormDevices(devices, previousDevices = []) {
+    if (!Array.isArray(devices)) {
+      return [];
+    }
+
+    return devices.map((device, index) => {
+      const previous = previousDevices.find(item => item.id && item.id === device.id) || previousDevices[index] || {};
+      const source = device._source || previous._source
+        || (!device.id || !device.type ? 'manual' : undefined);
+
+      return normalizeDevice({
+        ...previous,
+        ...device,
+        type: device.type || previous.type,
+      }, {source});
+    });
+  }
+
+  function configWithoutDeviceSection(config) {
+    const next = JSON.parse(JSON.stringify(config));
+    const hiddenKeys = new Set(['devices', 'thinq1', 'refresh_interval']);
+
+    next.layout = Array.isArray(next.layout)
+      ? next.layout.filter(item => !hiddenKeys.has(item) && !hiddenKeys.has(item?.key))
+      : next.layout;
+
+    return next;
+  }
+
+  async function renderConfigForm(configuration, options = {}) {
+    let config = await homebridge.getPluginConfigSchema();
+
+    if (options.hideDevices) {
+      config = configWithoutDeviceSection(config);
+    }
+
+    if (configForm) {
+      configForm.end();
+    }
+
+    configForm = homebridge.createForm(config, configuration);
+
+    // watch for change events
+    configForm.onChange((change) => {
+      const previousDevices = Array.isArray(configuration.devices) ? configuration.devices : [];
+      Object.assign(configuration, change);
+      configuration.devices = normalizeFormDevices(configuration.devices, previousDevices);
+      homebridge.updatePluginConfig([configuration]);
+    });
+  }
+
+  async function refreshDeviceList(configuration, options = {}) {
+    const shouldRender = options.render !== false;
+
+    if (!configuration.refresh_token) {
+      return false;
+    }
+
+    try {
+      const resp = await homebridge.request('/get-all-devices', {
+        country: configuration.country,
+        language: configuration.language,
+        refresh_token: configuration.refresh_token
+      });
+
+      if (typeof resp?.success === 'undefined' || resp.success === false) {
+        homebridge.toast.error('Device lookup error. ' + requestErrorMessage(resp, 'Unable to load devices.'), 'Error');
+        return false;
+      }
+
+      const discoveredDevices = Array.isArray(resp.devices)
+        ? resp.devices.map(device => normalizeDevice(device, {source: 'lg'}))
+        : [];
+      const nextDevices = mergeDiscoveredDeviceMetadata(configuration.devices, discoveredDevices);
+      const devicesChanged = JSON.stringify(configuration.devices || []) !== JSON.stringify(nextDevices);
+      configuration.devices = nextDevices;
+
+      if (devicesChanged) {
+        await homebridge.updatePluginConfig([configuration]);
+      }
+
+      if (shouldRender) {
+        await renderConfigForm(configuration);
+      }
+
+      return true;
+    }
+    catch (error) {
+      homebridge.toast.error('Device lookup error. ' + requestErrorMessage(error, 'Unable to load devices.'), 'Error');
+      return false;
+    }
+  }
 
   async function init(configuration) {
     homebridge.showSpinner();
+    hideSaveNotice();
 
     configuration.auth_mode = 'token';
+    if (Array.isArray(configuration.devices)) {
+      configuration.devices = configuration.devices.map(normalizeDevice);
+    }
 
     $('#usernameInput').val(configuration.username);
     $('#passwordInput').val(configuration.password);
     $('#refresh_token').val(configuration.refresh_token);
-    $('#thinq1').prop('checked', !!configuration.thinq1);
     $('#rememberUsername').prop('checked', configuration.username && configuration.password);
-
-    $('#all-devices').prop('checked', !configuration.devices || !configuration.devices.length);
 
     $('#configForm, #loginForm').hide();
 
-    if (configuration.refresh_token) {
-      if (typeof configuration.devices !== 'object' || !configuration.devices || !configuration.devices.length) {
-        const resp = await homebridge.request('/get-all-devices', {
-          country: configuration.country,
-          language: configuration.language,
-          refresh_token: configuration.refresh_token
-        });
+    try {
+      if (configuration.refresh_token) {
+        await renderConfigForm(configuration, { hideDevices: true });
 
-        configuration.devices = resp.devices;
+        const refreshed = await refreshDeviceList(configuration);
+        if (!refreshed) {
+          await renderConfigForm(configuration);
+        }
       }
-
-      const config = await homebridge.getPluginConfigSchema();
-      const configForm = homebridge.createForm(config, configuration);
-
-      // watch for change events
-      configForm.onChange((change) => {
-        Object.assign(configuration, {devices: []}, change);
-        homebridge.updatePluginConfig([configuration]);
-      });
+      else {
+        $('#loginForm').show();
+      }
     }
-    else {
-      $('#loginForm').show();
+    catch (error) {
+      homebridge.toast.error(requestErrorMessage(error, 'Unable to load plugin settings.'), 'Error');
     }
 
     homebridge.hideSpinner();
   }
 
   (async () => {
-    homebridge.showSpinner();
+    let configuration;
 
-    // get the initial config - this is an array potentially containing multiple config blocks
-    const pluginConfig = await homebridge.getPluginConfig();
+    try {
+      homebridge.showSpinner();
 
-    if (!pluginConfig.length) {
-      pluginConfig.push({});
+      // get the initial config - this is an array potentially containing multiple config blocks
+      const pluginConfig = await homebridge.getPluginConfig();
+
+      if (!pluginConfig.length) {
+        pluginConfig.push({});
+      }
+      configuration = pluginConfig[0];
+
+      let option_selected = $('#country_language option[data-country="'+configuration.country+'"][data-language="'+configuration.language+'"]');
+      if (!option_selected.length) {
+        option_selected = $('#country_language option[data-country="US"][data-language="en-US"]');
+        configuration.country = 'US';
+        configuration.language = 'en-US';
+      }
+      option_selected.prop('selected', true);
+
+      await init(configuration);
     }
-    const configuration = pluginConfig[0];
-
-    let option_selected = $('#country_language option[data-country="'+configuration.country+'"][data-language="'+configuration.language+'"]');
-    if (!option_selected.length) {
-      option_selected = $('#country_language option[data-country="US"][data-language="en-US"]');
-      configuration.country = 'US';
-      configuration.language = 'en-US';
+    catch (error) {
+      homebridge.toast.error(requestErrorMessage(error, 'Unable to load plugin settings.'), 'Error');
     }
-    option_selected.prop('selected', true);
-
-    await init(configuration);
-
-    // button event
-    $('#thinq1').on('change', async function () {
-      configuration.thinq1 = $(this).prop('checked');
-      await homebridge.updatePluginConfig([configuration]);
-    });
+    finally {
+      homebridge.hideSpinner();
+    }
 
     $('#country_language').on('change', async function () {
       const selected = $(this).find(':selected');
@@ -381,24 +551,26 @@
       await homebridge.updatePluginConfig([configuration]);
     });
 
-    $('.btn-login').on('click', function (e) {
+    $('.btn-login').on('click', async function (e) {
       e.preventDefault();
       var username = $('#usernameInput').val(),
         password = $('#passwordInput').val();
 
       if (username && password) {
         var btn = $(this);
-        btn.prop('disabled', true).html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
+        setLoginButtonLoading(btn, 'Logging in');
 
-        homebridge.request('/login-by-user-pass', {
-          country: configuration.country,
-          language: configuration.language,
-          username: username,
-          password: password,
-        }).then(async data => {
+        try {
+          const data = await homebridge.request('/login-by-user-pass', {
+            country: configuration.country,
+            language: configuration.language,
+            username: username,
+            password: password,
+          });
+
           if (typeof data.success === 'undefined' || data.success === false) {
-            homebridge.toast.error('Login error. ' + data.error, 'Error');
-            btn.prop('disabled', false).html("GET TOKEN");
+            homebridge.toast.error('Login error. ' + requestErrorMessage(data, 'Unable to log in.'), 'Error');
+            resetLoginButton(btn);
           }
           else {
             configuration.refresh_token = data.token;
@@ -412,14 +584,18 @@
             }
 
             await homebridge.updatePluginConfig([configuration]);
-            await homebridge.savePluginConfig();
+            homebridge.enableSaveButton();
 
-            btn.html('Login success! Restart homebridge to apply.');
-            homebridge.toast.success('Login success', 'Success');
-
-            await init(configuration);
+            await renderConfigForm(configuration, { hideDevices: true });
+            $('#loginForm').hide();
+            showSaveNotice();
+            btn.prop('disabled', true).text('Get Token');
           }
-        })
+        }
+        catch (error) {
+          homebridge.toast.error('Login error. ' + requestErrorMessage(error, 'Unable to log in.'), 'Error');
+          resetLoginButton(btn);
+        }
       }
       else {
         homebridge.toast.error('A username and password must be provided.', 'Error');

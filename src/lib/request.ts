@@ -14,8 +14,50 @@ const MAX_REQUESTS_COUNT = 1;
 const INTERVAL_MS = 10;
 let PENDING_REQUESTS = 0;
 
+const releaseRequestSlot = () => {
+  PENDING_REQUESTS = Math.max(0, PENDING_REQUESTS - 1);
+};
+
+function stringValue(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function responseErrorMessage(err: any, fallback: string): string {
+  return stringValue(err.response?.data?.error?.message)
+    || stringValue(err.response?.data?.message)
+    || stringValue(err.response?.data?.returnMsg)
+    || stringValue(err.message)
+    || fallback;
+}
+
+function errorWithCause<T extends Error>(error: T, cause: unknown): T {
+  (error as Error & { cause?: unknown }).cause = cause;
+  return error;
+}
+
 const client = axios.create();
 client.defaults.timeout = 60000; // 60s timeout
+
+client.interceptors.request.use((config) => {
+  return new Promise((resolve) => {
+    const interval = setInterval(() => {
+      if (PENDING_REQUESTS < MAX_REQUESTS_COUNT) {
+        PENDING_REQUESTS++;
+        clearInterval(interval);
+        resolve(config);
+      }
+    }, INTERVAL_MS);
+  });
+});
+
+client.interceptors.response.use((response) => {
+  releaseRequestSlot();
+  return response;
+}, (err) => {
+  releaseRequestSlot();
+  return Promise.reject(err);
+});
+
 axiosRetry(client, {
   retries: 2, // try 3 times
   retryDelay: (retryCount) => {
@@ -31,17 +73,6 @@ axiosRetry(client, {
   shouldResetTimeout: true, // reset timeout each retries
 });
 
-client.interceptors.request.use((config) => {
-  return new Promise((resolve) => {
-    const interval = setInterval(() => {
-      if (PENDING_REQUESTS < MAX_REQUESTS_COUNT) {
-        PENDING_REQUESTS++;
-        clearInterval(interval);
-        resolve(config);
-      }
-    }, INTERVAL_MS);
-  });
-});
 client.interceptors.response.use((response) => {
   // thinq1 response
   if (typeof response.data === 'object' && 'lgedmRoot' in response.data && 'returnCd' in response.data.lgedmRoot) {
@@ -52,22 +83,25 @@ client.interceptors.response.use((response) => {
     } else if (code === TokenExpiredErrorCode) {
       throw new TokenExpiredError(data.returnMsg);
     } else if (code !== '0000') {
-      throw new MonitorError(code + ' - ' + data.returnMsg || '');
+      throw new MonitorError(data.returnMsg ? code + ' - ' + data.returnMsg : code);
     }
   }
 
-  PENDING_REQUESTS = Math.max(0, PENDING_REQUESTS - 1);
-  return Promise.resolve(response);
+  return response;
 }, (err) => {
-  if (!err.response || err.response.data?.resultCode === '9999') {
-    throw new NotConnectedError();
+  if (!err.response) {
+    throw errorWithCause(new NotConnectedError(responseErrorMessage(err, 'Network request failed.')), err);
+  } else if (err.response.data?.resultCode === '9999') {
+    throw errorWithCause(new NotConnectedError(responseErrorMessage(err, 'ThinQ service is not connected.')), err);
   } else if (err.response.data?.resultCode === TokenExpiredErrorCode) {
-    throw new TokenExpiredError();
+    throw errorWithCause(new TokenExpiredError(responseErrorMessage(err, 'ThinQ token expired.')), err);
   } else if (err.response.data?.resultCode === ManualProcessNeededErrorCode) {
-    throw new ManualProcessNeeded('Please open the native LG App and sign in to your account to see what happened, ' +
-      'maybe new agreement need your accept. Then try restarting Homebridge.');
+    throw errorWithCause(
+      new ManualProcessNeeded('Please open the native LG App and sign in to your account to see what happened, ' +
+        'maybe new agreement need your accept. Then try restarting Homebridge.'),
+      err,
+    );
   }
-  PENDING_REQUESTS = Math.max(0, PENDING_REQUESTS - 1);
   return Promise.reject(err);
 });
 

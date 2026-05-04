@@ -1,6 +1,6 @@
 /* eslint-disable dot-notation */
 /* eslint-disable @typescript-eslint/no-require-imports */
-import { Auth } from './Auth.js';
+import { Auth, authErrorCode, authErrorMessage } from './Auth.js';
 import { Gateway } from './Gateway.js';
 import { Session } from './Session.js';
 import { Logger } from 'homebridge';
@@ -13,6 +13,8 @@ describe('Auth', () => {
   let mockLogger: Logger;
 
   beforeEach(() => {
+    jest.restoreAllMocks();
+
     mockGateway = new Gateway({
       empTermsUri: 'https://example.com/emp',
       empSpxUri: 'https://example.com/spx',
@@ -36,6 +38,13 @@ describe('Auth', () => {
     expect(auth.lgeapi_url).toBe('https://us.lgeapi.com/');
   });
 
+  test('can be constructed by JavaScript callers without a logger', () => {
+    const authWithoutLogger = new Auth(mockGateway);
+
+    expect(authWithoutLogger.lgeapi_url).toBe('https://us.lgeapi.com/');
+    expect(() => authWithoutLogger.logger.debug('debug')).not.toThrow();
+  });
+
   test('should generate default EMP headers', () => {
     const headers = auth.defaultEmpHeaders;
     expect(headers['X-Device-Country']).toBe('US');
@@ -50,6 +59,25 @@ describe('Auth', () => {
     const session = await auth.login('testUser', 'testPassword');
     expect(session).toBe(mockSession);
     expect(auth.loginStep2).toHaveBeenCalledWith('testUser', expect.any(String));
+  });
+
+  test('extracts LG auth error details from response payloads', () => {
+    const err = {
+      response: {
+        data: {
+          error: {
+            code: 'MS.001.03',
+            message: 'Account already registered.',
+          },
+        },
+      },
+    };
+
+    expect(authErrorCode(err)).toBe('MS.001.03');
+    expect(authErrorMessage(err, 'fallback')).toBe('Account already registered.');
+    expect(authErrorMessage(new Error('Network down'), 'fallback')).toBe('Network down');
+    expect(authErrorMessage({ cause: new Error('Socket closed') }, 'fallback')).toBe('Socket closed');
+    expect(authErrorMessage({}, 'fallback')).toBe('fallback');
   });
 
   test('should handle loginStep2 and return a session', async () => {
@@ -99,6 +127,22 @@ describe('Auth', () => {
     expect(session).toBeInstanceOf(Session);
     expect(session.accessToken).toBe('accessToken');
     expect(session.refreshToken).toBe('refreshToken');
+    expect(session.hasValidToken()).toBe(true);
+  });
+
+  test('should refresh tokens using expires_in as a duration', async () => {
+    const requestClient = require('./request').requestClient;
+    const session = new Session('oldAccessToken', 'refreshToken', 0);
+
+    jest.spyOn(requestClient, 'post')
+      .mockResolvedValueOnce({ data: { lgedmRoot: { oauthUri: 'https://oauth.example.com' } } })
+      .mockResolvedValueOnce({ data: { access_token: 'newAccessToken', expires_in: '3600' } });
+
+    const refreshed = await auth.refreshNewToken(session);
+
+    expect(refreshed).toBe(session);
+    expect(refreshed.accessToken).toBe('newAccessToken');
+    expect(refreshed.hasValidToken()).toBe(true);
   });
 
   test('should throw AuthenticationError for invalid login', async () => {
@@ -123,6 +167,34 @@ describe('Auth', () => {
       .mockRejectedValueOnce(mockErrorResponse);
 
     await expect(auth.loginStep2('testUser', 'mockEncryptedPassword')).rejects.toThrow(AuthenticationError);
+  });
+
+  test('should wrap login request failures without response data', async () => {
+    const mockPreLoginResponse = {
+      signature: 'mockSignature',
+      tStamp: 'mockTimestamp',
+      encrypted_pw: 'mockEncryptedPassword',
+    };
+    const requestClient = require('./request').requestClient;
+    jest.spyOn(requestClient, 'post')
+      .mockResolvedValueOnce({ data: mockPreLoginResponse })
+      .mockRejectedValueOnce(new Error('Network down'));
+
+    const promise = auth.loginStep2('testUser', 'mockEncryptedPassword');
+
+    await expect(promise).rejects.toThrow(AuthenticationError);
+    await expect(promise).rejects.toThrow('Network down');
+  });
+
+  test('should keep pre-login context when pre-login fails', async () => {
+    const requestClient = require('./request').requestClient;
+    jest.spyOn(requestClient, 'post')
+      .mockRejectedValueOnce(new Error('Socket closed'));
+
+    const promise = auth.loginStep2('testUser', 'mockEncryptedPassword');
+
+    await expect(promise).rejects.toThrow(AuthenticationError);
+    await expect(promise).rejects.toThrow('LG pre-login failed');
   });
 
 });

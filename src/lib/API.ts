@@ -11,6 +11,7 @@ import { ManualProcessNeeded, MonitorError, NotConnectedError, TokenExpiredError
 import crypto from 'crypto';
 import axios, { Method } from 'axios';
 import { Logger } from 'homebridge';
+import { createNoopLogger } from './noopLogger.js';
 
 
 /**
@@ -54,7 +55,7 @@ export class API {
   constructor(
     protected country: string = 'US',
     protected language: string = 'en-US',
-    protected logger: Logger,
+    protected logger: Logger = createNoopLogger(),
   ) {
   }
 
@@ -140,10 +141,14 @@ export class API {
         }
       } else {
         // Log other errors
+        if (err instanceof NotConnectedError) {
+          throw err;
+        }
+
         if (axios.isAxiosError(err)) {
           this.logger.error('axios request error: ', err.response?.data, data);
           this.logger.error(err.stack || 'No stack error');
-        } else if (!(err instanceof NotConnectedError)) {
+        } else {
           this.logger.error('request error: ', err);
         }
 
