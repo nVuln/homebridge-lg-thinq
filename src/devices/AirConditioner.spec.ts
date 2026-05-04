@@ -13,6 +13,8 @@ import {
   featureToggleValue,
   heaterCoolerCharacteristicUpdateFromState,
   humiditySensorCharacteristicUpdateFromState,
+  isDeviceOnlineForHomeKit,
+  isSwingModeEnabled,
   modelFeatureToggleValue,
   readAirConditionerState,
   swingCommandsForMode,
@@ -397,6 +399,9 @@ describe('AirConditioner command mapping', () => {
     }]);
 
     expect(swingCommandsForMode(true, 'DISABLED')).toEqual([]);
+    expect(swingCommandsForMode(true, 'NONE')).toEqual([]);
+    expect(isSwingModeEnabled('BOTH')).toBe(true);
+    expect(isSwingModeEnabled('NONE')).toBe(false);
   });
 
   test('maps feature-toggle snapshot values only when enabled and supported', () => {
@@ -470,6 +475,10 @@ describe('AirConditioner command mapping', () => {
       id: 'ac-id',
       online: false,
     } as Device)).toBeNull();
+
+    expect(isDeviceOnlineForHomeKit({ online: true } as Device)).toBe(true);
+    expect(isDeviceOnlineForHomeKit({ online: undefined } as Device)).toBe(true);
+    expect(isDeviceOnlineForHomeKit({ online: false } as Device)).toBe(false);
   });
 
   test('maps air-quality state to optional characteristic updates', () => {

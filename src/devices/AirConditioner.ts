@@ -451,6 +451,14 @@ export function fanV2CharacteristicUpdateFromState(
   return update;
 }
 
+export function isSwingModeEnabled(swingMode: string): boolean {
+  return swingMode !== 'NONE';
+}
+
+export function isDeviceOnlineForHomeKit(device: Pick<Device, 'online'>): boolean {
+  return device.online !== false;
+}
+
 export function airQualityCharacteristicUpdateFromState(
   state: Pick<AirConditionerState, 'airQuality'>,
   enabled = true,
@@ -533,6 +541,10 @@ export function windStrengthFromRotationSpeed(value: CharacteristicValue): numbe
 }
 
 export function swingCommandsForMode(value: CharacteristicValue, swingMode: string): AirConditionerSwingCommand[] {
+  if (!isSwingModeEnabled(swingMode)) {
+    return [];
+  }
+
   const swingValue = value ? '100' : '0';
 
   if (swingMode === 'BOTH') {
@@ -711,6 +723,39 @@ export default class AirConditioner extends BaseDevice {
     this.setupButton(device);
 
     this.startTemperatureKeepAlive(device);
+  }
+
+  private requireDeviceOnline() {
+    if (!isDeviceOnlineForHomeKit(this.accessory.context.device)) {
+      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+    }
+  }
+
+  private onlineGet<T extends CharacteristicValue>(getter: () => T): () => T {
+    return () => {
+      this.requireDeviceOnline();
+      return getter();
+    };
+  }
+
+  private configureSwingModeCharacteristic(service: Service | undefined) {
+    if (!service) {
+      return;
+    }
+
+    const { SwingMode } = this.platform.Characteristic;
+
+    if (!isSwingModeEnabled(this.config.ac_swing_mode)) {
+      if (service.testCharacteristic(SwingMode)) {
+        service.removeCharacteristic(service.getCharacteristic(SwingMode));
+      }
+      return;
+    }
+
+    service.getCharacteristic(SwingMode)
+      .onGet(this.onlineGet(() => this.Status.isSwingOn ? SwingMode.SWING_ENABLED : SwingMode.SWING_DISABLED))
+      .onSet(this.setSwingMode.bind(this))
+      .updateValue(this.Status.isSwingOn ? SwingMode.SWING_ENABLED : SwingMode.SWING_DISABLED);
   }
 
   private startTemperatureKeepAlive(device: Device) {
@@ -924,9 +969,7 @@ export default class AirConditioner extends BaseDevice {
     this.serviceFanV2.addLinkedService(this.service);
 
     this.serviceFanV2.getCharacteristic(Characteristic.Active)
-      .onGet(() => {
-        return this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE;
-      })
+      .onGet(this.onlineGet(() => this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE))
       .onSet((value: CharacteristicValue) => {
         const isOn = value as boolean;
         if ((this.Status.isPowerOn && isOn) || (!this.Status.isPowerOn && !isOn)) {
@@ -945,9 +988,7 @@ export default class AirConditioner extends BaseDevice {
     this.serviceFanV2.addOptionalCharacteristic(Characteristic.ConfiguredName);
     this.serviceFanV2.setCharacteristic(Characteristic.ConfiguredName, device.name + ' Fan');
     this.serviceFanV2.getCharacteristic(Characteristic.CurrentFanState)
-      .onGet(() => {
-        return this.Status.isPowerOn ? Characteristic.CurrentFanState.BLOWING_AIR : Characteristic.CurrentFanState.INACTIVE;
-      })
+      .onGet(this.onlineGet(() => this.Status.isPowerOn ? Characteristic.CurrentFanState.BLOWING_AIR : Characteristic.CurrentFanState.INACTIVE))
       .setProps({
         validValues: [Characteristic.CurrentFanState.INACTIVE, Characteristic.CurrentFanState.BLOWING_AIR],
       })
@@ -957,9 +998,7 @@ export default class AirConditioner extends BaseDevice {
     this.serviceFanV2.getCharacteristic(Characteristic.RotationSpeed)
       .setProps(fanRotationSpeedProps())
       .onSet(this.setFanSpeed.bind(this));
-    this.serviceFanV2.getCharacteristic(Characteristic.SwingMode)
-      .onSet(this.setSwingMode.bind(this))
-      .updateValue(this.Status.isSwingOn ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED);
+    this.configureSwingModeCharacteristic(this.serviceFanV2);
   }
 
   protected createAirQualityService() {
@@ -977,8 +1016,17 @@ export default class AirConditioner extends BaseDevice {
     const { Characteristic } = this.platform;
     this.service.setCharacteristic(Characteristic.Name, device.name);
     this.service.getCharacteristic(Characteristic.Active)
+      .onGet(this.onlineGet(() => this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE))
       .onSet(this.setActive.bind(this));
-    this.service.getCharacteristic(Characteristic.CurrentHeaterCoolerState);
+    this.service.getCharacteristic(Characteristic.CurrentHeaterCoolerState)
+      .onGet(this.onlineGet(() => {
+        const update = heaterCoolerCharacteristicUpdateFromState(
+          this.Status,
+          Characteristic.CurrentHeaterCoolerState,
+          Characteristic.TargetHeaterCoolerState,
+        );
+        return update?.currentState ?? Characteristic.CurrentHeaterCoolerState.INACTIVE;
+      }));
 
     const targetSetup = targetHeaterCoolerSetupForConfig(this.config.ac_mode, Characteristic.TargetHeaterCoolerState);
     if (targetSetup) {
@@ -990,6 +1038,7 @@ export default class AirConditioner extends BaseDevice {
     }
 
     this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
+      .onGet(this.onlineGet(() => this.currentTargetState))
       .onSet(this.setTargetState.bind(this));
 
     const status = this.Status;
@@ -997,7 +1046,8 @@ export default class AirConditioner extends BaseDevice {
       this.service.updateCharacteristic(Characteristic.CurrentTemperature, status.currentTemperature);
     }
 
-    this.service.getCharacteristic(Characteristic.CurrentTemperature);
+    this.service.getCharacteristic(Characteristic.CurrentTemperature)
+      .onGet(this.onlineGet(() => this.Status.currentTemperature));
 
 
     const convertTemperature = status.convertTemperatureCelsiusFromLGToHomekit.bind(status);
@@ -1022,17 +1072,19 @@ export default class AirConditioner extends BaseDevice {
     }
 
     this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
+      .onGet(this.onlineGet(() => this.Status.targetTemperature))
       .onSet(this.setTargetTemperature.bind(this));
     this.service.getCharacteristic(Characteristic.HeatingThresholdTemperature)
+      .onGet(this.onlineGet(() => this.Status.targetTemperature))
       .onSet(this.setTargetTemperature.bind(this));
 
     if (!this.config.ac_fan_control) {
       this.service.getCharacteristic(Characteristic.RotationSpeed)
         .setProps(fanRotationSpeedProps())
+        .onGet(this.onlineGet(() => this.Status.windStrength))
         .onSet(this.setFanSpeed.bind(this));
     }
-    this.service.getCharacteristic(Characteristic.SwingMode)
-      .onSet(this.setSwingMode.bind(this));
+    this.configureSwingModeCharacteristic(this.service);
   }
 
 
@@ -1327,7 +1379,9 @@ export default class AirConditioner extends BaseDevice {
   public updateAccessoryFanStateCharacteristics() {
     const update = fanCharacteristicUpdateFromState(this.Status, this.platform.Characteristic.SwingMode);
     this.service.updateCharacteristic(this.platform.Characteristic.RotationSpeed, update.rotationSpeed);
-    this.service.updateCharacteristic(this.platform.Characteristic.SwingMode, update.swingMode);
+    if (isSwingModeEnabled(this.config.ac_swing_mode)) {
+      this.service.updateCharacteristic(this.platform.Characteristic.SwingMode, update.swingMode);
+    }
   }
 
   /**
@@ -1438,7 +1492,9 @@ export default class AirConditioner extends BaseDevice {
       if (update.rotationSpeed !== undefined) {
         this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.RotationSpeed, update.rotationSpeed);
       }
-      this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.SwingMode, update.swingMode);
+      if (isSwingModeEnabled(this.config.ac_swing_mode)) {
+        this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.SwingMode, update.swingMode);
+      }
     }
   }
 
@@ -1675,6 +1731,11 @@ export default class AirConditioner extends BaseDevice {
   }
 
   async setSwingMode(value: CharacteristicValue) {
+    if (!isSwingModeEnabled(this.config.ac_swing_mode)) {
+      this.logger.debug('Swing mode is disabled in config.');
+      return;
+    }
+
     if (!this.Status.isPowerOn) {
       this.logger.debug('Power is off, cannot set swing mode');
       return;

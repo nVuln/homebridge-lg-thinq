@@ -139,6 +139,12 @@
             "type": "string",
             "oneOf": [
               {
+                "title": "No swing",
+                "enum": [
+                  "NONE"
+                ]
+              },
+              {
                 "title": "Both vertical and horizontal swing",
                 "enum": [
                   "BOTH"
