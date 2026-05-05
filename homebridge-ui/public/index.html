@@ -375,13 +375,12 @@
     AIR_PURIFIER: ['air_fast_mode'],
     DISHWASHER: ['dishwasher_trigger'],
     DRYER: ['washer_tub_clean', 'washer_trigger', 'washer_door_lock'],
-    KIMCHI_REFRIGERATOR: ['ref_express_freezer', 'ref_express_fridge', 'ref_eco_friendly'],
     REFRIGERATOR: ['ref_express_freezer', 'ref_express_fridge', 'ref_eco_friendly'],
     WASHER: ['washer_tub_clean', 'washer_trigger', 'washer_door_lock'],
     WASHER_NEW: ['washer_tub_clean', 'washer_trigger', 'washer_door_lock'],
     WASH_TOWER: ['washer_tub_clean', 'washer_trigger', 'washer_door_lock'],
     WASH_TOWER_2: ['washer_tub_clean', 'washer_trigger', 'washer_door_lock'],
-    AERO_TOWER: [],
+    AERO_TOWER: ['air_fast_mode'],
     DEHUMIDIFIER: [],
     HOOD: [],
     MICROWAVE: [],
@@ -389,11 +388,27 @@
     STYLER: [],
   };
 
-  function pruneDeviceSettingsForType(device) {
+  function applyDeviceDefaults(device) {
+    if (device?.type !== 'AC') {
+      return device;
+    }
+
+    return {
+      ...device,
+      ac_energy_save: typeof device.ac_energy_save === 'boolean' ? device.ac_energy_save : true,
+      ac_air_clean: typeof device.ac_air_clean === 'boolean' ? device.ac_air_clean : true,
+    };
+  }
+
+  function pruneDeviceSettingsForType(device, options = {}) {
+    if (options.source !== 'lg') {
+      return applyDeviceDefaults(device);
+    }
+
     const allowedSettings = DEVICE_SETTINGS_BY_TYPE[device?.type];
 
     if (!Array.isArray(allowedSettings)) {
-      return device;
+      return applyDeviceDefaults(device);
     }
 
     const allowed = new Set(allowedSettings);
@@ -405,7 +420,7 @@
       }
     });
 
-    return next;
+    return applyDeviceDefaults(next);
   }
 
   function normalizeDevice(device, options = {}) {
@@ -415,7 +430,7 @@
       ...device,
       ...(source ? {_source: source} : {}),
       serial_number: typeof device?.serial_number === 'string' ? device.serial_number : '',
-    });
+    }, {source});
   }
 
   function mergeDiscoveredDeviceMetadata(configuredDevices, discoveredDevices) {
@@ -446,7 +461,7 @@
         name: device.name || discovered.name,
         type: discovered.type || device.type,
         serial_number: typeof device.serial_number === 'string' ? device.serial_number : discovered.serial_number,
-      }, {source: device._source || 'lg'});
+      }, {source: device._source || 'manual'});
     });
     const newDiscoveredDevices = discoveredDevices
       .filter(device => device?.id && !configuredDeviceIds.has(device.id))
@@ -466,7 +481,7 @@
     return devices.map((device, index) => {
       const previous = previousDevices.find(item => item.id && item.id === device.id) || previousDevices[index] || {};
       const source = device._source || previous._source
-        || (!device.id || !device.type ? 'manual' : undefined);
+        || 'manual';
 
       return normalizeDevice({
         ...previous,
