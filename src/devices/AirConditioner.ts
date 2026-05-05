@@ -14,6 +14,7 @@ export enum ACModelType {
 
 export const FAN_SPEED_AUTO = 8;
 export const AIR_CONDITIONER_TEMPERATURE_KEEP_ALIVE_INTERVAL_MS = 60000;
+export const AIR_CONDITIONER_TEMPERATURE_KEEP_ALIVE_MAX_FAILURES = 3;
 
 export enum FanSpeed {
   LOW = 2,
@@ -23,7 +24,7 @@ export enum FanSpeed {
   HIGH = 6
 }
 
-const HOMEKIT_FAN_SPEED_AUTO = 50;
+const HOMEKIT_FAN_SPEED_DEFAULT = 50;
 const HOMEKIT_FAN_SPEED_MAX = 100;
 const LG_FAN_SPEED_MIN = FanSpeed.LOW;
 const LG_FAN_SPEED_MAX = FanSpeed.HIGH;
@@ -255,13 +256,13 @@ function readWindStrength(data: any): number {
   const num = Number(raw);
   if (!isNaN(num)) {
     if (num === FAN_SPEED_AUTO) {
-      return HOMEKIT_FAN_SPEED_AUTO;
+      return HOMEKIT_FAN_SPEED_DEFAULT;
     }
     if (num >= LG_FAN_SPEED_MIN && num <= LG_FAN_SPEED_MAX) {
       return Math.round(((num - LG_FAN_SPEED_MIN) / (LG_FAN_SPEED_MAX - LG_FAN_SPEED_MIN)) * HOMEKIT_FAN_SPEED_MAX) || 1;
     }
   }
-  return HOMEKIT_FAN_SPEED_AUTO;
+  return HOMEKIT_FAN_SPEED_DEFAULT;
 }
 
 export function readAirConditionerState(data: any, device: Device, config: Config, logger: Logger): AirConditionerState {
@@ -685,6 +686,7 @@ export default class AirConditioner extends BaseDevice {
   protected currentTargetState = 2; // default target: COOL
 
   private temperatureKeepAliveInterval: ReturnType<typeof setInterval> | undefined;
+  private temperatureKeepAliveFailureCount = 0;
 
   protected serviceLabelButtons: Service | undefined;
 
@@ -759,13 +761,13 @@ export default class AirConditioner extends BaseDevice {
         keepAliveCommand.ctrlKey,
         keepAliveCommand.ctrlPath,
       ).then(success => {
-        if (!success) {
-          this.logger.debug(`[${device.name}] AC temperature keep-alive command was rejected; disabling keep-alive for this device.`);
-          this.stopTemperatureKeepAlive();
+        if (success) {
+          this.temperatureKeepAliveFailureCount = 0;
+          return;
         }
+        this.handleTemperatureKeepAliveFailure(device);
       }).catch(error => {
-        this.logger.debug(`[${device.name}] AC temperature keep-alive command failed; disabling keep-alive for this device.`, error);
-        this.stopTemperatureKeepAlive();
+        this.handleTemperatureKeepAliveFailure(device, error);
       });
     }, AIR_CONDITIONER_TEMPERATURE_KEEP_ALIVE_INTERVAL_MS);
 
@@ -779,6 +781,25 @@ export default class AirConditioner extends BaseDevice {
       clearInterval(this.temperatureKeepAliveInterval);
       this.temperatureKeepAliveInterval = undefined;
     }
+  }
+
+  private handleTemperatureKeepAliveFailure(device: Device, error?: unknown) {
+    this.temperatureKeepAliveFailureCount += 1;
+    if (this.temperatureKeepAliveFailureCount >= AIR_CONDITIONER_TEMPERATURE_KEEP_ALIVE_MAX_FAILURES) {
+      const message = `[${device.name}] AC temperature keep-alive command failed `
+        + `${this.temperatureKeepAliveFailureCount} consecutive times; disabling keep-alive for this device.`;
+      this.logger.debug(
+        message,
+        error,
+      );
+      this.stopTemperatureKeepAlive();
+      return;
+    }
+
+    this.logger.debug(
+      `[${device.name}] AC temperature keep-alive command failed; will retry.`,
+      error,
+    );
   }
 
   private setupTemperatureSensorService(accessory: PlatformAccessory<AccessoryContext>) {
