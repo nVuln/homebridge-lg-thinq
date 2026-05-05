@@ -1,4 +1,4 @@
-import { AccessoryContext, BaseDevice } from '../baseDevice.js';
+import { AccessoryContext, BaseDevice, isDeviceOnlineForHomeKit } from '../baseDevice.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
@@ -22,6 +22,11 @@ export enum FanSpeed {
   MEDIUM_HIGH = 5,
   HIGH = 6
 }
+
+const HOMEKIT_FAN_SPEED_AUTO = 50;
+const HOMEKIT_FAN_SPEED_MAX = 100;
+const LG_FAN_SPEED_MIN = FanSpeed.LOW;
+const LG_FAN_SPEED_MAX = FanSpeed.HIGH;
 
 enum OpMode {
   AUTO = 6,
@@ -250,15 +255,13 @@ function readWindStrength(data: any): number {
   const num = Number(raw);
   if (!isNaN(num)) {
     if (num === FAN_SPEED_AUTO) {
-      return Math.round(Object.keys(FanSpeed).length / 2);
+      return HOMEKIT_FAN_SPEED_AUTO;
     }
-    const min = 2;
-    const max = 6;
-    if (num >= min && num <= max) {
-      return Math.round(((num - min) / (max - min)) * 100) || 1;
+    if (num >= LG_FAN_SPEED_MIN && num <= LG_FAN_SPEED_MAX) {
+      return Math.round(((num - LG_FAN_SPEED_MIN) / (LG_FAN_SPEED_MAX - LG_FAN_SPEED_MIN)) * HOMEKIT_FAN_SPEED_MAX) || 1;
     }
   }
-  return Math.round(Object.keys(FanSpeed).length / 2);
+  return HOMEKIT_FAN_SPEED_AUTO;
 }
 
 export function readAirConditionerState(data: any, device: Device, config: Config, logger: Logger): AirConditionerState {
@@ -366,8 +369,8 @@ export function temperatureRangePropsFromRange(
 export function fanRotationSpeedProps(): AirConditionerFanRotationSpeedProps {
   return {
     minValue: 0,
-    maxValue: Object.keys(FanSpeed).length / 2,
-    minStep: 0.1,
+    maxValue: HOMEKIT_FAN_SPEED_MAX,
+    minStep: 1,
   };
 }
 
@@ -532,8 +535,8 @@ export function windStrengthFromRotationSpeed(value: CharacteristicValue): numbe
     return null;
   }
 
-  const speedValue = Math.max(1, Math.round(vNum));
-  return parseInt(Object.keys(FanSpeed)[speedValue - 1]) || FanSpeed.HIGH;
+  const speedPercent = Math.max(0, Math.min(HOMEKIT_FAN_SPEED_MAX, vNum));
+  return Math.round(LG_FAN_SPEED_MIN + (speedPercent / HOMEKIT_FAN_SPEED_MAX) * (LG_FAN_SPEED_MAX - LG_FAN_SPEED_MIN));
 }
 
 export function swingCommandsForMode(value: CharacteristicValue, swingMode: string): AirConditionerSwingCommand[] {
@@ -640,7 +643,7 @@ export function coolModeFeatureCommandFromState(
 export function temperatureKeepAliveCommandForDevice(
   device: Pick<Device, 'id' | 'online'>,
 ): AirConditionerKeepAliveCommand | null {
-  if (!device.online) {
+  if (!isDeviceOnlineForHomeKit(device)) {
     return null;
   }
 
@@ -755,8 +758,14 @@ export default class AirConditioner extends BaseDevice {
         keepAliveCommand.command,
         keepAliveCommand.ctrlKey,
         keepAliveCommand.ctrlPath,
-      ).then(() => {
-        // success
+      ).then(success => {
+        if (!success) {
+          this.logger.debug(`[${device.name}] AC temperature keep-alive command was rejected; disabling keep-alive for this device.`);
+          this.stopTemperatureKeepAlive();
+        }
+      }).catch(error => {
+        this.logger.debug(`[${device.name}] AC temperature keep-alive command failed; disabling keep-alive for this device.`, error);
+        this.stopTemperatureKeepAlive();
       });
     }, AIR_CONDITIONER_TEMPERATURE_KEEP_ALIVE_INTERVAL_MS);
 

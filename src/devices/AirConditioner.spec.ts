@@ -106,7 +106,7 @@ describe('readAirConditionerState', () => {
     expect(status.currentTemperature).toBe(0);
     expect(status.targetTemperature).toBe(0);
     expect(status.airQuality).toBeNull();
-    expect(status.windStrength).toBe(5);
+    expect(status.windStrength).toBe(50);
     expect(status.isWindStrengthAuto).toBe(false);
     expect(status.isSwingOn).toBe(false);
     expect(status.isLightOn).toBe(false);
@@ -118,7 +118,7 @@ describe('readAirConditionerState', () => {
       'airState.windStrength': FAN_SPEED_AUTO,
     }, createDevice(), baseConfig, logger);
 
-    expect(status.windStrength).toBe(5);
+    expect(status.windStrength).toBe(50);
     expect(status.isWindStrengthAuto).toBe(true);
   });
 
@@ -239,8 +239,8 @@ describe('AirConditioner command mapping', () => {
     expect(temperatureRangePropsFromRange(null, temperature => temperature)).toBeNull();
     expect(fanRotationSpeedProps()).toEqual({
       minValue: 0,
-      maxValue: 5,
-      minStep: 0.1,
+      maxValue: 100,
+      minStep: 1,
     });
   });
 
@@ -354,7 +354,11 @@ describe('AirConditioner command mapping', () => {
 
   test('maps HomeKit rotation speed to LG wind strength', () => {
     expect(windStrengthFromRotationSpeed(1)).toBe(2);
-    expect(windStrengthFromRotationSpeed(3)).toBe(4);
+    expect(windStrengthFromRotationSpeed(25)).toBe(3);
+    expect(windStrengthFromRotationSpeed(50)).toBe(4);
+    expect(windStrengthFromRotationSpeed(75)).toBe(5);
+    expect(windStrengthFromRotationSpeed(100)).toBe(6);
+    expect(windStrengthFromRotationSpeed(125)).toBe(6);
     expect(windStrengthFromRotationSpeed(0)).toBe(2);
     expect(windStrengthFromRotationSpeed('not-a-number')).toBeNull();
   });
@@ -457,10 +461,7 @@ describe('AirConditioner command mapping', () => {
   });
 
   test('builds temperature keepalive commands only for online devices', () => {
-    expect(temperatureKeepAliveCommandForDevice({
-      id: 'ac-id',
-      online: true,
-    } as Device)).toEqual({
+    const expectedCommand = {
       deviceId: 'ac-id',
       payload: {
         dataKey: 'airState.mon.timeout',
@@ -469,7 +470,16 @@ describe('AirConditioner command mapping', () => {
       command: 'Set',
       ctrlKey: 'allEventEnable',
       ctrlPath: 'control',
-    });
+    };
+
+    expect(temperatureKeepAliveCommandForDevice({
+      id: 'ac-id',
+      online: true,
+    } as Device)).toEqual(expectedCommand);
+
+    expect(temperatureKeepAliveCommandForDevice({
+      id: 'ac-id',
+    } as Device)).toEqual(expectedCommand);
 
     expect(temperatureKeepAliveCommandForDevice({
       id: 'ac-id',
