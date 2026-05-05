@@ -334,14 +334,103 @@
     homebridge.fixScrollHeight();
   }
 
-  function normalizeDevice(device, options = {}) {
-    const source = options.source || device?._source;
+  const DEVICE_SETTING_KEYS = [
+    'dishwasher_trigger',
+    'washer_tub_clean',
+    'washer_trigger',
+    'washer_door_lock',
+    'ac_air_quality',
+    'ac_mode',
+    'ac_swing_mode',
+    'ac_temperature_sensor',
+    'ac_humidity_sensor',
+    'ac_led_control',
+    'ac_fan_control',
+    'ac_jet_control',
+    'ac_buttons',
+    'ac_energy_save',
+    'ac_air_clean',
+    'ac_temperature_unit',
+    'ref_express_freezer',
+    'ref_express_fridge',
+    'ref_eco_friendly',
+    'air_fast_mode',
+  ];
+
+  const DEVICE_SETTINGS_BY_TYPE = {
+    AC: [
+      'ac_air_quality',
+      'ac_mode',
+      'ac_swing_mode',
+      'ac_temperature_sensor',
+      'ac_humidity_sensor',
+      'ac_led_control',
+      'ac_fan_control',
+      'ac_jet_control',
+      'ac_buttons',
+      'ac_energy_save',
+      'ac_air_clean',
+      'ac_temperature_unit',
+    ],
+    AIR_PURIFIER: ['air_fast_mode'],
+    DISHWASHER: ['dishwasher_trigger'],
+    DRYER: ['washer_tub_clean', 'washer_trigger', 'washer_door_lock'],
+    REFRIGERATOR: ['ref_express_freezer', 'ref_express_fridge', 'ref_eco_friendly'],
+    WASHER: ['washer_tub_clean', 'washer_trigger', 'washer_door_lock'],
+    WASHER_NEW: ['washer_tub_clean', 'washer_trigger', 'washer_door_lock'],
+    WASH_TOWER: ['washer_tub_clean', 'washer_trigger', 'washer_door_lock'],
+    WASH_TOWER_2: ['washer_tub_clean', 'washer_trigger', 'washer_door_lock'],
+    AERO_TOWER: ['air_fast_mode'],
+    DEHUMIDIFIER: [],
+    HOOD: [],
+    MICROWAVE: [],
+    OVEN: [],
+    STYLER: [],
+  };
+
+  function applyDeviceDefaults(device) {
+    if (device?.type !== 'AC') {
+      return device;
+    }
 
     return {
       ...device,
+      ac_energy_save: typeof device.ac_energy_save === 'boolean' ? device.ac_energy_save : true,
+      ac_air_clean: typeof device.ac_air_clean === 'boolean' ? device.ac_air_clean : true,
+    };
+  }
+
+  function pruneDeviceSettingsForType(device, options = {}) {
+    if (options.source !== 'lg') {
+      return applyDeviceDefaults(device);
+    }
+
+    const allowedSettings = DEVICE_SETTINGS_BY_TYPE[device?.type];
+
+    if (!Array.isArray(allowedSettings)) {
+      return applyDeviceDefaults(device);
+    }
+
+    const allowed = new Set(allowedSettings);
+    const next = {...device};
+
+    DEVICE_SETTING_KEYS.forEach(key => {
+      if (!allowed.has(key)) {
+        delete next[key];
+      }
+    });
+
+    return applyDeviceDefaults(next);
+  }
+
+  function normalizeDevice(device, options = {}) {
+    const source = options.source || device?._source;
+
+    return pruneDeviceSettingsForType({
+      ...device,
       ...(source ? {_source: source} : {}),
       serial_number: typeof device?.serial_number === 'string' ? device.serial_number : '',
-    };
+    }, {source});
   }
 
   function mergeDiscoveredDeviceMetadata(configuredDevices, discoveredDevices) {
@@ -372,7 +461,7 @@
         name: device.name || discovered.name,
         type: discovered.type || device.type,
         serial_number: typeof device.serial_number === 'string' ? device.serial_number : discovered.serial_number,
-      }, {source: device._source || 'lg'});
+      }, {source: device._source || 'manual'});
     });
     const newDiscoveredDevices = discoveredDevices
       .filter(device => device?.id && !configuredDeviceIds.has(device.id))
@@ -392,7 +481,7 @@
     return devices.map((device, index) => {
       const previous = previousDevices.find(item => item.id && item.id === device.id) || previousDevices[index] || {};
       const source = device._source || previous._source
-        || (!device.id || !device.type ? 'manual' : undefined);
+        || 'manual';
 
       return normalizeDevice({
         ...previous,

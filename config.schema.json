@@ -201,13 +201,11 @@
           },
           "ac_energy_save": {
             "title": "Energy save as switch",
-            "type": "boolean",
-            "default": true
+            "type": "boolean"
           },
           "ac_air_clean": {
             "title": "Air purify as switch",
-            "type": "boolean",
-            "default": true
+            "type": "boolean"
           },
           "ac_temperature_unit": {
             "title": "Temperature Unit",
