@@ -1,9 +1,11 @@
-﻿import { AccessoryContext, BaseDevice } from '../baseDevice.js';
+import { AccessoryContext, BaseDevice } from '../baseDevice.js';
 import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory, Service } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { EnumValue, RangeValue, ValueType } from '../lib/DeviceModel.js';
-import { cToF, fToC, normalizeBoolean, normalizeNumber } from '../helper.js';
+import { normalizeBoolean, normalizeNumber } from '../utils/normalize.js';
+import { cToF, fToC } from '../utils/temperature.js';
+import { hasSnapshotKey, snapshotBoolean, snapshotNumber } from './helpers.js';
 
 export enum ACModelType {
   AWHP = 'AWHP',
@@ -11,6 +13,7 @@ export enum ACModelType {
 }
 
 export const FAN_SPEED_AUTO = 8;
+export const AIR_CONDITIONER_TEMPERATURE_KEEP_ALIVE_INTERVAL_MS = 60000;
 
 export enum FanSpeed {
   LOW = 2,
@@ -44,6 +47,615 @@ export type Config = {
   ac_energy_save: boolean,
 }
 
+export type AirConditionerAirQualityState = {
+  isOn: boolean;
+  overall: number;
+  PM2: number;
+  PM10: number;
+};
+
+export type AirConditionerState = {
+  opMode: number;
+  isPowerOn: boolean;
+  currentRelativeHumidity: number;
+  currentTemperature: number;
+  targetTemperature: number;
+  airQuality: AirConditionerAirQualityState | null;
+  windStrength: number;
+  isWindStrengthAuto: boolean;
+  isSwingOn: boolean;
+  isLightOn: boolean;
+  currentConsumption: number;
+  type: ACModelType | string;
+};
+
+export type AirConditionerTargetHeaterCoolerStateValues = {
+  AUTO: number;
+  HEAT: number;
+  COOL: number;
+};
+
+export type AirConditionerCurrentHeaterCoolerStateValues = {
+  INACTIVE: number;
+  HEATING: number;
+  COOLING: number;
+};
+
+export type AirConditionerTargetFanStateValues = {
+  AUTO: number;
+  MANUAL?: number;
+};
+
+export type AirConditionerActiveValues = {
+  ACTIVE: number;
+  INACTIVE: number;
+};
+
+export type AirConditionerSwingModeValues = {
+  SWING_ENABLED: number;
+  SWING_DISABLED: number;
+};
+
+export type AirConditionerCommandPayload = {
+  dataKey: string | null;
+  dataValue: CharacteristicValue | null;
+  dataSetList?: Record<string, unknown> | null;
+  dataGetList?: unknown;
+};
+
+export type AirConditionerSwingCommand = {
+  payload: AirConditionerCommandPayload;
+  command?: 'Set' | 'Operation';
+  ctrlKey?: string;
+  snapshotUpdates: Record<string, string>;
+};
+
+export type AirConditionerFeatureCommand = {
+  payload: {
+    dataKey: string;
+    dataValue: number;
+  };
+  snapshotUpdates: Record<string, number>;
+};
+
+export type AirConditionerKeepAliveCommand = {
+  deviceId: string;
+  payload: AirConditionerCommandPayload;
+  command: 'Set';
+  ctrlKey: string;
+  ctrlPath: string;
+};
+
+export type AirConditionerHeaterCoolerCharacteristicUpdate = {
+  currentState: number;
+  targetState?: number;
+};
+
+export type AirConditionerFanCharacteristicUpdate = {
+  rotationSpeed: number;
+  swingMode: number;
+};
+
+export type AirConditionerFanV2CharacteristicUpdate = {
+  active: number;
+  targetFanState: number;
+  rotationSpeed?: number;
+  swingMode: number;
+};
+
+export type AirConditionerAirQualityCharacteristicUpdate = {
+  airQuality: number;
+  PM2?: number;
+  PM10?: number;
+};
+
+export type AirConditionerSensorCharacteristicUpdate = {
+  value: number;
+  statusActive: boolean;
+};
+
+export type AirConditionerThresholdTemperatureUpdate = {
+  heatingThresholdTemperature?: number;
+  coolingThresholdTemperature?: number;
+};
+
+export type AirConditionerTargetHeaterCoolerSetup = {
+  validValues: number[];
+  initialValue: number;
+};
+
+export type AirConditionerTemperatureRangeProps = {
+  minValue: number;
+  maxValue: number;
+  minStep: number;
+};
+
+export type AirConditionerFanRotationSpeedProps = {
+  minValue: number;
+  maxValue: number;
+  minStep: number;
+};
+
+function isFahrenheitAirConditioner(config: Config): boolean {
+  return (config.ac_temperature_unit || '').toLowerCase() === 'f';
+}
+
+function convertTemperatureCelsiusFromLGToHomekit(
+  temperature: number,
+  device: Device,
+  config: Config,
+  logger: Logger,
+): number {
+  const tempNum = Number(temperature);
+  if (!isFahrenheitAirConditioner(config)) {
+    return tempNum;
+  }
+  try {
+    const mapped = device.deviceModel.lookupMonitorValue && device.deviceModel.lookupMonitorValue('TempCelToFah', String(tempNum));
+    if (typeof mapped !== 'undefined' && mapped !== null) {
+      const n = Number(mapped);
+      if (!isNaN(n)) {
+        return Math.round(fToC(n) * 100) / 100;
+      }
+    }
+  } catch (e) {
+    logger.warn('Temperature mapping lookup failed, falling back to direct conversion.', e);
+  }
+  const c = Math.round(fToC(tempNum) * 100) / 100;
+  return c;
+}
+
+function convertTemperatureCelsiusFromHomekitToLG(
+  temperatureInCelsius: CharacteristicValue,
+  device: Device,
+  config: Config,
+  logger: Logger,
+): number {
+  const tempNum = Number(temperatureInCelsius);
+  if (!isFahrenheitAirConditioner(config)) {
+    return tempNum;
+  }
+  const temperatureInFahrenheit = Math.round(cToF(tempNum));
+  try {
+    const mapped = device.deviceModel.lookupMonitorValue && device.deviceModel.lookupMonitorValue('TempFahToCel', String(temperatureInFahrenheit));
+    if (typeof mapped !== 'undefined' && mapped !== null) {
+      const n = Number(mapped);
+      if (!isNaN(n)) {
+        return n;
+      }
+    }
+  } catch (e) {
+    logger.warn('Temperature mapping lookup failed, falling back to direct conversion.', e);
+  }
+  return temperatureInFahrenheit;
+}
+
+function readAirQualityState(data: any, isPowerOn: boolean): AirConditionerAirQualityState | null {
+  if (!hasSnapshotKey(data, 'airState.quality.overall') &&
+    !hasSnapshotKey(data, 'airState.quality.PM2') &&
+    !hasSnapshotKey(data, 'airState.quality.PM10')) {
+    return null;
+  }
+
+  return {
+    isOn: isPowerOn || snapshotBoolean(data, 'airState.quality.sensorMon'),
+    overall: snapshotNumber(data, 'airState.quality.overall'),
+    PM2: snapshotNumber(data, 'airState.quality.PM2'),
+    PM10: snapshotNumber(data, 'airState.quality.PM10'),
+  };
+}
+
+function readWindStrength(data: any): number {
+  const raw = data && data['airState.windStrength'];
+  const num = Number(raw);
+  if (!isNaN(num)) {
+    if (num === FAN_SPEED_AUTO) {
+      return Math.round(Object.keys(FanSpeed).length / 2);
+    }
+    const min = 2;
+    const max = 6;
+    if (num >= min && num <= max) {
+      return Math.round(((num - min) / (max - min)) * 100) || 1;
+    }
+  }
+  return Math.round(Object.keys(FanSpeed).length / 2);
+}
+
+export function readAirConditionerState(data: any, device: Device, config: Config, logger: Logger): AirConditionerState {
+  const snapshot = data ?? {};
+  const isPowerOn = snapshotBoolean(snapshot, 'airState.operation');
+  const humidity = snapshotNumber(snapshot, 'airState.humidity.current');
+  const consumption = snapshotNumber(snapshot, 'airState.energy.onCurrent', NaN);
+  const vStep = Math.floor(snapshotNumber(snapshot, 'airState.wDir.vStep') / 100),
+    hStep = Math.floor(snapshotNumber(snapshot, 'airState.wDir.hStep') / 100);
+
+  return {
+    opMode: snapshotNumber(snapshot, 'airState.opMode', OpMode.COOL),
+    isPowerOn,
+    currentRelativeHumidity: humidity > 100 ? humidity / 10 : humidity,
+    currentTemperature: convertTemperatureCelsiusFromLGToHomekit(
+      snapshotNumber(snapshot, 'airState.tempState.current'),
+      device,
+      config,
+      logger,
+    ),
+    targetTemperature: convertTemperatureCelsiusFromLGToHomekit(
+      snapshotNumber(snapshot, 'airState.tempState.target'),
+      device,
+      config,
+      logger,
+    ),
+    airQuality: readAirQualityState(snapshot, isPowerOn),
+    windStrength: readWindStrength(snapshot),
+    isWindStrengthAuto: Number(snapshot['airState.windStrength']) === FAN_SPEED_AUTO,
+    isSwingOn: !!(vStep + hStep),
+    isLightOn: snapshotBoolean(snapshot, 'airState.lightingState.displayControl'),
+    currentConsumption: Number.isNaN(consumption) ? 0 : consumption / 100,
+    type: device.deviceModel.data.Info?.modelType || ACModelType.RAC,
+  };
+}
+
+export function targetOpModeFromHomeKit(
+  value: CharacteristicValue,
+  currentOpMode: number,
+  targetState: AirConditionerTargetHeaterCoolerStateValues,
+): number {
+  switch (value) {
+  case targetState.AUTO:
+    return OpMode.AUTO;
+  case targetState.HEAT:
+    return OpMode.HEAT;
+  case targetState.COOL:
+    return OpMode.COOL;
+  default:
+    return currentOpMode;
+  }
+}
+
+export function targetHeaterCoolerSetupForConfig(
+  acMode: string,
+  targetState: AirConditionerTargetHeaterCoolerStateValues,
+): AirConditionerTargetHeaterCoolerSetup | null {
+  if (acMode === 'BOTH') {
+    return {
+      validValues: [
+        targetState.AUTO,
+        targetState.COOL,
+        targetState.HEAT,
+      ],
+      initialValue: targetState.COOL,
+    };
+  }
+
+  if (acMode === 'COOLING') {
+    return {
+      validValues: [
+        targetState.COOL,
+      ],
+      initialValue: targetState.COOL,
+    };
+  }
+
+  if (acMode === 'HEATING') {
+    return {
+      validValues: [
+        targetState.HEAT,
+      ],
+      initialValue: targetState.HEAT,
+    };
+  }
+
+  return null;
+}
+
+export function temperatureRangePropsFromRange(
+  range: RangeValue | null | undefined,
+  convertTemperature: (temperature: number) => number,
+): AirConditionerTemperatureRangeProps | null {
+  if (!range) {
+    return null;
+  }
+
+  return {
+    minValue: convertTemperature(range.min),
+    maxValue: convertTemperature(range.max),
+    minStep: range.step || 0.01,
+  };
+}
+
+export function fanRotationSpeedProps(): AirConditionerFanRotationSpeedProps {
+  return {
+    minValue: 0,
+    maxValue: Object.keys(FanSpeed).length / 2,
+    minStep: 0.1,
+  };
+}
+
+export function heaterCoolerCharacteristicUpdateFromState(
+  state: Pick<AirConditionerState, 'isPowerOn' | 'opMode' | 'currentTemperature' | 'targetTemperature'>,
+  currentState: AirConditionerCurrentHeaterCoolerStateValues,
+  targetState: AirConditionerTargetHeaterCoolerStateValues,
+): AirConditionerHeaterCoolerCharacteristicUpdate | null {
+  if (!state.isPowerOn) {
+    return {
+      currentState: currentState.INACTIVE,
+    };
+  }
+
+  if (state.opMode === OpMode.COOL) {
+    return {
+      currentState: currentState.COOLING,
+      targetState: targetState.COOL,
+    };
+  }
+
+  if (state.opMode === OpMode.HEAT) {
+    return {
+      currentState: currentState.HEATING,
+      targetState: targetState.HEAT,
+    };
+  }
+
+  if ([OpMode.AUTO, -1].includes(state.opMode)) {
+    if (state.currentTemperature < state.targetTemperature) {
+      return {
+        currentState: currentState.HEATING,
+        targetState: targetState.HEAT,
+      };
+    }
+
+    return {
+      currentState: currentState.COOLING,
+      targetState: targetState.COOL,
+    };
+  }
+
+  return null;
+}
+
+export function windStrengthFromTargetFanState(
+  value: CharacteristicValue,
+  targetFanState: AirConditionerTargetFanStateValues,
+): number {
+  const vNum = normalizeNumber(value);
+  const isAuto = (vNum !== null) ? (vNum === targetFanState.AUTO) : normalizeBoolean(value);
+  return isAuto ? FAN_SPEED_AUTO : FanSpeed.HIGH;
+}
+
+export function fanCharacteristicUpdateFromState(
+  state: Pick<AirConditionerState, 'windStrength' | 'isSwingOn'>,
+  swingMode: AirConditionerSwingModeValues,
+): AirConditionerFanCharacteristicUpdate {
+  return {
+    rotationSpeed: state.windStrength,
+    swingMode: state.isSwingOn ? swingMode.SWING_ENABLED : swingMode.SWING_DISABLED,
+  };
+}
+
+export function fanV2CharacteristicUpdateFromState(
+  state: Pick<AirConditionerState, 'isPowerOn' | 'isSwingOn' | 'windStrength' | 'isWindStrengthAuto'>,
+  active: AirConditionerActiveValues,
+  targetFanState: Required<AirConditionerTargetFanStateValues>,
+  swingMode: AirConditionerSwingModeValues,
+): AirConditionerFanV2CharacteristicUpdate {
+  const update: AirConditionerFanV2CharacteristicUpdate = {
+    active: state.isPowerOn ? active.ACTIVE : active.INACTIVE,
+    targetFanState: state.isWindStrengthAuto ? targetFanState.AUTO : targetFanState.MANUAL,
+    swingMode: state.isSwingOn ? swingMode.SWING_ENABLED : swingMode.SWING_DISABLED,
+  };
+
+  if (!state.isWindStrengthAuto) {
+    update.rotationSpeed = state.windStrength;
+  }
+
+  return update;
+}
+
+export function isSwingModeEnabled(swingMode: string): boolean {
+  return swingMode !== 'NONE';
+}
+
+export function airQualityCharacteristicUpdateFromState(
+  state: Pick<AirConditionerState, 'airQuality'>,
+  enabled = true,
+): AirConditionerAirQualityCharacteristicUpdate | null {
+  if (!enabled || !state.airQuality || !state.airQuality.isOn) {
+    return null;
+  }
+
+  const update: AirConditionerAirQualityCharacteristicUpdate = {
+    airQuality: state.airQuality.overall,
+  };
+
+  if (state.airQuality.PM2) {
+    update.PM2 = state.airQuality.PM2;
+  }
+
+  if (state.airQuality.PM10) {
+    update.PM10 = state.airQuality.PM10;
+  }
+
+  return update;
+}
+
+export function temperatureSensorCharacteristicUpdateFromState(
+  state: Pick<AirConditionerState, 'currentTemperature' | 'isPowerOn'>,
+  enabled = true,
+): AirConditionerSensorCharacteristicUpdate | null {
+  if (!enabled) {
+    return null;
+  }
+
+  return {
+    value: state.currentTemperature,
+    statusActive: state.isPowerOn,
+  };
+}
+
+export function humiditySensorCharacteristicUpdateFromState(
+  state: Pick<AirConditionerState, 'currentRelativeHumidity' | 'isPowerOn'>,
+  enabled = true,
+): AirConditionerSensorCharacteristicUpdate | null {
+  if (!enabled) {
+    return null;
+  }
+
+  return {
+    value: state.currentRelativeHumidity,
+    statusActive: state.isPowerOn,
+  };
+}
+
+export function thresholdTemperatureUpdateFromState(
+  targetTemperature: number,
+  currentStateValue: CharacteristicValue | null | undefined,
+  currentState: AirConditionerCurrentHeaterCoolerStateValues,
+): AirConditionerThresholdTemperatureUpdate | null {
+  if (currentStateValue === currentState.HEATING) {
+    return {
+      heatingThresholdTemperature: targetTemperature,
+    };
+  }
+
+  if (currentStateValue === currentState.COOLING) {
+    return {
+      coolingThresholdTemperature: targetTemperature,
+    };
+  }
+
+  return null;
+}
+
+export function windStrengthFromRotationSpeed(value: CharacteristicValue): number | null {
+  const vNum = normalizeNumber(value);
+  if (vNum === null) {
+    return null;
+  }
+
+  const speedValue = Math.max(1, Math.round(vNum));
+  return parseInt(Object.keys(FanSpeed)[speedValue - 1]) || FanSpeed.HIGH;
+}
+
+export function swingCommandsForMode(value: CharacteristicValue, swingMode: string): AirConditionerSwingCommand[] {
+  if (!isSwingModeEnabled(swingMode)) {
+    return [];
+  }
+
+  const swingValue = value ? '100' : '0';
+
+  if (swingMode === 'BOTH') {
+    return [{
+      payload: {
+        dataKey: null,
+        dataValue: null,
+        dataSetList: {
+          'airState.wDir.vStep': swingValue,
+          'airState.wDir.hStep': swingValue,
+        },
+        dataGetList: null,
+      },
+      command: 'Set',
+      ctrlKey: 'favoriteCtrl',
+      snapshotUpdates: {
+        'airState.wDir.vStep': swingValue,
+        'airState.wDir.hStep': swingValue,
+      },
+    }];
+  }
+
+  if (swingMode === 'VERTICAL') {
+    return [{
+      payload: {
+        dataKey: 'airState.wDir.vStep',
+        dataValue: swingValue,
+      },
+      snapshotUpdates: {
+        'airState.wDir.vStep': swingValue,
+      },
+    }];
+  }
+
+  if (swingMode === 'HORIZONTAL') {
+    return [{
+      payload: {
+        dataKey: 'airState.wDir.hStep',
+        dataValue: swingValue,
+      },
+      snapshotUpdates: {
+        'airState.wDir.hStep': swingValue,
+      },
+    }];
+  }
+
+  return [];
+}
+
+export function featureToggleValue(
+  snapshot: Record<string, unknown> | undefined,
+  snapshotKey: string,
+  enabled = true,
+): boolean | undefined {
+  if (!enabled) {
+    return undefined;
+  }
+
+  return Boolean(snapshot?.[snapshotKey]);
+}
+
+export function modelFeatureToggleValue(
+  snapshot: Record<string, unknown> | undefined,
+  snapshotKey: string,
+  model: string,
+  enabledModels: readonly string[],
+  enabled = true,
+): boolean | undefined {
+  if (!enabled || !enabledModels.includes(model)) {
+    return undefined;
+  }
+
+  return featureToggleValue(snapshot, snapshotKey);
+}
+
+export function coolModeFeatureCommandFromState(
+  state: Pick<AirConditionerState, 'isPowerOn' | 'opMode'>,
+  value: CharacteristicValue,
+  dataKey: string,
+): AirConditionerFeatureCommand | null {
+  if (!(state.isPowerOn && state.opMode === OpMode.COOL)) {
+    return null;
+  }
+
+  const dataValue = normalizeBoolean(value) ? 1 : 0;
+  return {
+    payload: {
+      dataKey,
+      dataValue,
+    },
+    snapshotUpdates: {
+      [dataKey]: dataValue,
+    },
+  };
+}
+
+export function temperatureKeepAliveCommandForDevice(
+  device: Pick<Device, 'id' | 'online'>,
+): AirConditionerKeepAliveCommand | null {
+  if (!device.online) {
+    return null;
+  }
+
+  return {
+    deviceId: device.id,
+    payload: {
+      dataKey: 'airState.mon.timeout',
+      dataValue: '70',
+    },
+    command: 'Set',
+    ctrlKey: 'allEventEnable',
+    ctrlPath: 'control',
+  };
+}
+
 
 /**
  * Represents an LG ThinQ Air Conditioner device.
@@ -69,6 +681,8 @@ export default class AirConditioner extends BaseDevice {
   protected airCleanModels = ['RAC_056905'];
   protected currentTargetState = 2; // default target: COOL
 
+  private temperatureKeepAliveInterval: ReturnType<typeof setInterval> | undefined;
+
   protected serviceLabelButtons: Service | undefined;
 
   constructor(
@@ -82,10 +696,6 @@ export default class AirConditioner extends BaseDevice {
 
     const {
       Service: {
-        TemperatureSensor,
-        HumiditySensor,
-        Switch,
-        Lightbulb,
         HeaterCooler,
       },
     } = this.platform;
@@ -100,30 +710,118 @@ export default class AirConditioner extends BaseDevice {
       accessory.removeService(this.serviceAirQuality);
     }
 
+    this.setupTemperatureSensorService(accessory);
+    this.setupHumiditySensorService(accessory);
+    this.setupLedControlService(accessory);
+    this.setupFanControlService(accessory);
+    this.setupFeatureSwitchServices(device, accessory);
+
+    this.setupButton(device);
+
+    this.startTemperatureKeepAlive(device);
+  }
+
+  private configureSwingModeCharacteristic(service: Service | undefined) {
+    if (!service) {
+      return;
+    }
+
+    const { SwingMode } = this.platform.Characteristic;
+
+    if (!isSwingModeEnabled(this.config.ac_swing_mode)) {
+      if (service.testCharacteristic(SwingMode)) {
+        service.removeCharacteristic(service.getCharacteristic(SwingMode));
+      }
+      return;
+    }
+
+    service.getCharacteristic(SwingMode)
+      .onGet(this.onlineGet(() => this.Status.isSwingOn ? SwingMode.SWING_ENABLED : SwingMode.SWING_DISABLED))
+      .onSet(this.setSwingMode.bind(this))
+      .updateValue(this.Status.isSwingOn ? SwingMode.SWING_ENABLED : SwingMode.SWING_DISABLED);
+  }
+
+  private startTemperatureKeepAlive(device: Device) {
+    this.stopTemperatureKeepAlive();
+    this.temperatureKeepAliveInterval = setInterval(() => {
+      const keepAliveCommand = temperatureKeepAliveCommandForDevice(device);
+      if (!keepAliveCommand) {
+        return;
+      }
+
+      this.platform.ThinQ?.deviceControl(
+        keepAliveCommand.deviceId,
+        keepAliveCommand.payload,
+        keepAliveCommand.command,
+        keepAliveCommand.ctrlKey,
+        keepAliveCommand.ctrlPath,
+      ).then(() => {
+        // success
+      });
+    }, AIR_CONDITIONER_TEMPERATURE_KEEP_ALIVE_INTERVAL_MS);
+
+    this.platform.api.on('shutdown', () => {
+      this.stopTemperatureKeepAlive();
+    });
+  }
+
+  private stopTemperatureKeepAlive() {
+    if (this.temperatureKeepAliveInterval) {
+      clearInterval(this.temperatureKeepAliveInterval);
+      this.temperatureKeepAliveInterval = undefined;
+    }
+  }
+
+  private setupTemperatureSensorService(accessory: PlatformAccessory<AccessoryContext>) {
+    const {
+      Service: {
+        TemperatureSensor,
+      },
+      Characteristic,
+    } = this.platform;
+
     this.serviceSensor = accessory.getService(TemperatureSensor);
     if (this.config.ac_temperature_sensor as boolean) {
       this.serviceSensor = this.serviceSensor || accessory.addService(TemperatureSensor);
-      this.serviceSensor.updateCharacteristic(platform.Characteristic.StatusActive, false);
+      this.serviceSensor.updateCharacteristic(Characteristic.StatusActive, false);
       this.serviceSensor.addLinkedService(this.service);
     } else if (this.serviceSensor) {
       accessory.removeService(this.serviceSensor);
       this.serviceSensor = undefined;
     }
+  }
+
+  private setupHumiditySensorService(accessory: PlatformAccessory<AccessoryContext>) {
+    const {
+      Service: {
+        HumiditySensor,
+      },
+      Characteristic,
+    } = this.platform;
 
     this.serviceHumiditySensor = accessory.getService(HumiditySensor);
     if (this.config.ac_humidity_sensor as boolean) {
       this.serviceHumiditySensor = this.serviceHumiditySensor || accessory.addService(HumiditySensor);
-      this.serviceHumiditySensor.updateCharacteristic(platform.Characteristic.StatusActive, false);
-      this.serviceSensor?.addLinkedService(this.service);
+      this.serviceHumiditySensor.updateCharacteristic(Characteristic.StatusActive, false);
+      this.serviceHumiditySensor.addLinkedService(this.service);
     } else if (this.serviceHumiditySensor) {
       accessory.removeService(this.serviceHumiditySensor);
       this.serviceHumiditySensor = undefined;
     }
+  }
+
+  private setupLedControlService(accessory: PlatformAccessory<AccessoryContext>) {
+    const {
+      Service: {
+        Lightbulb,
+      },
+      Characteristic,
+    } = this.platform;
 
     this.serviceLight = accessory.getService(Lightbulb);
     if (this.config.ac_led_control as boolean) {
       this.serviceLight = this.serviceLight || accessory.addService(Lightbulb);
-      this.serviceLight.getCharacteristic(platform.Characteristic.On)
+      this.serviceLight.getCharacteristic(Characteristic.On)
         .onSet(this.setLight.bind(this))
         .updateValue(false); // off as default
       this.serviceLight.addLinkedService(this.service);
@@ -131,74 +829,112 @@ export default class AirConditioner extends BaseDevice {
       accessory.removeService(this.serviceLight);
       this.serviceLight = undefined;
     }
+  }
 
+  private setupFanControlService(accessory: PlatformAccessory<AccessoryContext>) {
+    const {
+      Service: {
+        Fanv2,
+      },
+    } = this.platform;
+
+    this.serviceFanV2 = accessory.getService(Fanv2);
     if (this.config.ac_fan_control as boolean) {
       this.createFanService();
     } else if (this.serviceFanV2) {
       accessory.removeService(this.serviceFanV2);
+      this.serviceFanV2 = undefined;
     }
+  }
 
-    // more feature
+  private setupFeatureSwitchServices(device: Device, accessory: PlatformAccessory<AccessoryContext>) {
+    this.setupJetModeService(device, accessory);
+    this.setupQuietModeService(device, accessory);
+    this.setupEnergySaveService(device, accessory);
+    this.setupAirCleanService(device, accessory);
+  }
+
+  private setupJetModeService(device: Device, accessory: PlatformAccessory<AccessoryContext>) {
+    const {
+      Service: {
+        Switch,
+      },
+      Characteristic,
+    } = this.platform;
+
+    this.serviceJetMode = accessory.getService('Jet Mode');
     if (this.config.ac_jet_control as boolean && this.isJetModeEnabled(device.model)) {
-      this.serviceJetMode = accessory.getService('Jet Mode') || accessory.addService(Switch, 'Jet Mode', 'Jet Mode');
-      this.serviceJetMode.addOptionalCharacteristic(platform.Characteristic.ConfiguredName);
-      this.serviceJetMode.setCharacteristic(platform.Characteristic.ConfiguredName, device.name + ' Jet Mode');
-      this.serviceJetMode.getCharacteristic(platform.Characteristic.On)
+      this.serviceJetMode = this.serviceJetMode || accessory.addService(Switch, 'Jet Mode', 'Jet Mode');
+      this.serviceJetMode.addOptionalCharacteristic(Characteristic.ConfiguredName);
+      this.serviceJetMode.setCharacteristic(Characteristic.ConfiguredName, device.name + ' Jet Mode');
+      this.serviceJetMode.getCharacteristic(Characteristic.On)
         .onSet(this.setJetModeActive.bind(this));
     } else if (this.serviceJetMode) {
       accessory.removeService(this.serviceJetMode);
       this.serviceJetMode = undefined;
     }
+  }
 
+  private setupQuietModeService(device: Device, accessory: PlatformAccessory<AccessoryContext>) {
+    const {
+      Service: {
+        Switch,
+      },
+      Characteristic,
+    } = this.platform;
+
+    this.serviceQuietMode = accessory.getService('Quiet mode');
     if (this.quietModeModels.includes(device.model)) {
-      this.serviceQuietMode = accessory.getService('Quiet mode') || accessory.addService(Switch, 'Quiet mode', 'Quiet mode');
-      this.serviceQuietMode.updateCharacteristic(platform.Characteristic.Name, 'Quiet mode');
-      this.serviceQuietMode.getCharacteristic(platform.Characteristic.On)
+      this.serviceQuietMode = this.serviceQuietMode || accessory.addService(Switch, 'Quiet mode', 'Quiet mode');
+      this.serviceQuietMode.updateCharacteristic(Characteristic.Name, 'Quiet mode');
+      this.serviceQuietMode.getCharacteristic(Characteristic.On)
         .onSet(this.setQuietModeActive.bind(this));
+    } else if (this.serviceQuietMode) {
+      accessory.removeService(this.serviceQuietMode);
+      this.serviceQuietMode = undefined;
     }
+  }
+
+  private setupEnergySaveService(device: Device, accessory: PlatformAccessory<AccessoryContext>) {
+    const {
+      Service: {
+        Switch,
+      },
+      Characteristic,
+    } = this.platform;
 
     this.serviceEnergySaveMode = accessory.getService('Energy save');
     if (this.energySaveModeModels.includes(device.model) && this.config.ac_energy_save as boolean) {
-      if (!this.serviceEnergySaveMode) {
-        this.serviceEnergySaveMode = accessory.addService(Switch, 'Energy save', 'Energy save');
-        this.serviceEnergySaveMode.addOptionalCharacteristic(platform.Characteristic.ConfiguredName);
-        this.serviceEnergySaveMode.setCharacteristic(platform.Characteristic.ConfiguredName, device.name + ' Energy save');
-      }
-      this.serviceEnergySaveMode.getCharacteristic(platform.Characteristic.On)
+      this.serviceEnergySaveMode = this.serviceEnergySaveMode || accessory.addService(Switch, 'Energy save', 'Energy save');
+      this.serviceEnergySaveMode.addOptionalCharacteristic(Characteristic.ConfiguredName);
+      this.serviceEnergySaveMode.setCharacteristic(Characteristic.ConfiguredName, device.name + ' Energy save');
+      this.serviceEnergySaveMode.getCharacteristic(Characteristic.On)
         .onSet(this.setEnergySaveActive.bind(this));
     } else if (this.serviceEnergySaveMode) {
       accessory.removeService(this.serviceEnergySaveMode);
       this.serviceEnergySaveMode = undefined;
     }
+  }
+
+  private setupAirCleanService(device: Device, accessory: PlatformAccessory<AccessoryContext>) {
+    const {
+      Service: {
+        Switch,
+      },
+      Characteristic,
+    } = this.platform;
 
     this.serviceAirClean = accessory.getService('Air Purify');
     if (this.airCleanModels.includes(device.model) && this.config.ac_air_clean as boolean) {
-      if (!this.serviceAirClean) {
-        this.serviceAirClean = accessory.addService(Switch, 'Air Purify', 'Air Purify');
-        this.serviceAirClean.addOptionalCharacteristic(platform.Characteristic.ConfiguredName);
-        this.serviceAirClean.setCharacteristic(platform.Characteristic.ConfiguredName, device.name + ' Air Purify');
-      }
-      this.serviceAirClean.getCharacteristic(platform.Characteristic.On)
+      this.serviceAirClean = this.serviceAirClean || accessory.addService(Switch, 'Air Purify', 'Air Purify');
+      this.serviceAirClean.addOptionalCharacteristic(Characteristic.ConfiguredName);
+      this.serviceAirClean.setCharacteristic(Characteristic.ConfiguredName, device.name + ' Air Purify');
+      this.serviceAirClean.getCharacteristic(Characteristic.On)
         .onSet(this.setAirCleanActive.bind(this));
     } else if (this.serviceAirClean) {
       accessory.removeService(this.serviceAirClean);
       this.serviceAirClean = undefined;
     }
-
-    this.setupButton(device);
-
-    // send request every minute to update temperature
-    // https://github.com/nVuln/homebridge-lg-thinq/issues/177
-    setInterval(() => {
-      if (device.online) {
-        this.platform.ThinQ?.deviceControl(device.id, {
-          dataKey: 'airState.mon.timeout',
-          dataValue: '70',
-        }, 'Set', 'allEventEnable', 'control').then(() => {
-          // success
-        });
-      }
-    }, 60000);
   }
 
   protected createFanService() {
@@ -216,9 +952,7 @@ export default class AirConditioner extends BaseDevice {
     this.serviceFanV2.addLinkedService(this.service);
 
     this.serviceFanV2.getCharacteristic(Characteristic.Active)
-      .onGet(() => {
-        return this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE;
-      })
+      .onGet(this.onlineGet(() => this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE))
       .onSet((value: CharacteristicValue) => {
         const isOn = value as boolean;
         if ((this.Status.isPowerOn && isOn) || (!this.Status.isPowerOn && !isOn)) {
@@ -237,9 +971,7 @@ export default class AirConditioner extends BaseDevice {
     this.serviceFanV2.addOptionalCharacteristic(Characteristic.ConfiguredName);
     this.serviceFanV2.setCharacteristic(Characteristic.ConfiguredName, device.name + ' Fan');
     this.serviceFanV2.getCharacteristic(Characteristic.CurrentFanState)
-      .onGet(() => {
-        return this.Status.isPowerOn ? Characteristic.CurrentFanState.BLOWING_AIR : Characteristic.CurrentFanState.INACTIVE;
-      })
+      .onGet(this.onlineGet(() => this.Status.isPowerOn ? Characteristic.CurrentFanState.BLOWING_AIR : Characteristic.CurrentFanState.INACTIVE))
       .setProps({
         validValues: [Characteristic.CurrentFanState.INACTIVE, Characteristic.CurrentFanState.BLOWING_AIR],
       })
@@ -247,15 +979,9 @@ export default class AirConditioner extends BaseDevice {
     this.serviceFanV2.getCharacteristic(Characteristic.TargetFanState)
       .onSet(this.setFanState.bind(this));
     this.serviceFanV2.getCharacteristic(Characteristic.RotationSpeed)
-      .setProps({
-        minValue: 0,
-        maxValue: Object.keys(FanSpeed).length / 2,
-        minStep: 0.1,
-      })
+      .setProps(fanRotationSpeedProps())
       .onSet(this.setFanSpeed.bind(this));
-    this.serviceFanV2.getCharacteristic(Characteristic.SwingMode)
-      .onSet(this.setSwingMode.bind(this))
-      .updateValue(this.Status.isSwingOn ? Characteristic.SwingMode.SWING_ENABLED : Characteristic.SwingMode.SWING_DISABLED);
+    this.configureSwingModeCharacteristic(this.serviceFanV2);
   }
 
   protected createAirQualityService() {
@@ -273,38 +999,29 @@ export default class AirConditioner extends BaseDevice {
     const { Characteristic } = this.platform;
     this.service.setCharacteristic(Characteristic.Name, device.name);
     this.service.getCharacteristic(Characteristic.Active)
+      .onGet(this.onlineGet(() => this.Status.isPowerOn ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE))
       .onSet(this.setActive.bind(this));
-    this.service.getCharacteristic(Characteristic.CurrentHeaterCoolerState);
+    this.service.getCharacteristic(Characteristic.CurrentHeaterCoolerState)
+      .onGet(this.onlineGet(() => {
+        const update = heaterCoolerCharacteristicUpdateFromState(
+          this.Status,
+          Characteristic.CurrentHeaterCoolerState,
+          Characteristic.TargetHeaterCoolerState,
+        );
+        return update?.currentState ?? Characteristic.CurrentHeaterCoolerState.INACTIVE;
+      }));
 
-    if (this.config.ac_mode === 'BOTH') {
+    const targetSetup = targetHeaterCoolerSetupForConfig(this.config.ac_mode, Characteristic.TargetHeaterCoolerState);
+    if (targetSetup) {
       this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
         .setProps({
-          validValues: [
-            Characteristic.TargetHeaterCoolerState.AUTO,
-            Characteristic.TargetHeaterCoolerState.COOL,
-            Characteristic.TargetHeaterCoolerState.HEAT,
-          ],
+          validValues: targetSetup.validValues,
         })
-        .updateValue(Characteristic.TargetHeaterCoolerState.COOL);
-    } else if (this.config.ac_mode === 'COOLING') {
-      this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
-        .setProps({
-          validValues: [
-            Characteristic.TargetHeaterCoolerState.COOL,
-          ],
-        })
-        .updateValue(Characteristic.TargetHeaterCoolerState.COOL);
-    } else if (this.config.ac_mode === 'HEATING') {
-      this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
-        .setProps({
-          validValues: [
-            Characteristic.TargetHeaterCoolerState.HEAT,
-          ],
-        })
-        .updateValue(Characteristic.TargetHeaterCoolerState.HEAT);
+        .updateValue(targetSetup.initialValue);
     }
 
     this.service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
+      .onGet(this.onlineGet(() => this.currentTargetState))
       .onSet(this.setTargetState.bind(this));
 
     const status = this.Status;
@@ -312,47 +1029,45 @@ export default class AirConditioner extends BaseDevice {
       this.service.updateCharacteristic(Characteristic.CurrentTemperature, status.currentTemperature);
     }
 
-    this.service.getCharacteristic(Characteristic.CurrentTemperature);
+    this.service.getCharacteristic(Characteristic.CurrentTemperature)
+      .onGet(this.onlineGet(() => this.Status.currentTemperature));
 
 
-    const targetHeatTemperature = status.getTemperatureRange(status.getTemperatureRangeForHeating());
+    const convertTemperature = status.convertTemperatureCelsiusFromLGToHomekit.bind(status);
+    const heatingTemperatureProps = temperatureRangePropsFromRange(
+      status.getTemperatureRange(status.getTemperatureRangeForHeating()),
+      convertTemperature,
+    );
 
-    if (targetHeatTemperature) {
+    if (heatingTemperatureProps) {
       this.service.getCharacteristic(Characteristic.HeatingThresholdTemperature)
-        .setProps({
-          minValue: status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.min),
-          maxValue: status.convertTemperatureCelsiusFromLGToHomekit(targetHeatTemperature.max),
-          minStep: targetHeatTemperature.step || 0.01,
-        });
+        .setProps(heatingTemperatureProps);
     }
 
-    const targetCoolTemperature = status.getTemperatureRange(status.getTemperatureRangeForCooling());
+    const coolingTemperatureProps = temperatureRangePropsFromRange(
+      status.getTemperatureRange(status.getTemperatureRangeForCooling()),
+      convertTemperature,
+    );
 
-    if (targetCoolTemperature) {
+    if (coolingTemperatureProps) {
       this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
-        .setProps({
-          minValue: status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.min),
-          maxValue: status.convertTemperatureCelsiusFromLGToHomekit(targetCoolTemperature.max),
-          minStep: targetCoolTemperature.step || 0.01,
-        });
+        .setProps(coolingTemperatureProps);
     }
 
     this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
+      .onGet(this.onlineGet(() => this.Status.targetTemperature))
       .onSet(this.setTargetTemperature.bind(this));
     this.service.getCharacteristic(Characteristic.HeatingThresholdTemperature)
+      .onGet(this.onlineGet(() => this.Status.targetTemperature))
       .onSet(this.setTargetTemperature.bind(this));
 
     if (!this.config.ac_fan_control) {
       this.service.getCharacteristic(Characteristic.RotationSpeed)
-        .setProps({
-          minValue: 0,
-          maxValue: Object.keys(FanSpeed).length / 2,
-          minStep: 0.1,
-        })
+        .setProps(fanRotationSpeedProps())
+        .onGet(this.onlineGet(() => this.Status.windStrength))
         .onSet(this.setFanSpeed.bind(this));
     }
-    this.service.getCharacteristic(Characteristic.SwingMode)
-      .onSet(this.setSwingMode.bind(this));
+    this.configureSwingModeCharacteristic(this.service);
   }
 
 
@@ -378,29 +1093,46 @@ export default class AirConditioner extends BaseDevice {
     return new ACStatus(this.accessory.context.device.snapshot, this.accessory.context.device, this.config, this.logger);
   }
 
+  private async setCoolModeFeatureActive(
+    value: CharacteristicValue,
+    featureName: string,
+    errorMessage: string,
+    dataKey: string,
+    updateAccessoryCharacteristic: () => void,
+  ) {
+    this.requireDeviceOnline();
+    const status = this.Status;
+    const command = coolModeFeatureCommandFromState(status, value, dataKey);
+    if (!command) {
+      this.logger.debug(`${featureName} mode is not supported in the current state. Power: ${status.isPowerOn}, Mode: ${status.opMode}`);
+      return;
+    }
+
+    const device: Device = this.accessory.context.device;
+    try {
+      await this.platform.ThinQ?.deviceControl(device.id, command.payload);
+      for (const [key, snapshotValue] of Object.entries(command.snapshotUpdates)) {
+        this.accessory.context.device.data.snapshot[key] = snapshotValue;
+      }
+      updateAccessoryCharacteristic();
+    } catch (error) {
+      this.logger.error(errorMessage, error);
+    }
+  }
+
   /**
    * Sets the energy-saving mode for the air conditioner.
    *
    * @param value - A boolean indicating whether to enable or disable energy-saving mode.
    */
   async setEnergySaveActive(value: CharacteristicValue) {
-    const device: Device = this.accessory.context.device;
-    const enabled = normalizeBoolean(value);
-    const status = this.Status;
-    if (!(status.isPowerOn && status.opMode === 0)) {
-      this.logger.debug(`Energy save mode is not supported in the current state. Power: ${status.isPowerOn}, Mode: ${status.opMode}`);
-      return;
-    }
-    try {
-      await this.platform.ThinQ?.deviceControl(device.id, {
-        dataKey: 'airState.powerSave.basic',
-        dataValue: enabled ? 1 : 0,
-      });
-      this.accessory.context.device.data.snapshot['airState.powerSave.basic'] = enabled ? 1 : 0;
-      this.updateAccessoryenergySaveModeModelsCharacteristic();
-    } catch (error) {
-      this.logger.error('Error setting energy save mode:', error);
-    }
+    await this.setCoolModeFeatureActive(
+      value,
+      'Energy save',
+      'Error setting energy save mode:',
+      'airState.powerSave.basic',
+      this.updateAccessoryenergySaveModeModelsCharacteristic.bind(this),
+    );
   }
 
   /**
@@ -409,23 +1141,13 @@ export default class AirConditioner extends BaseDevice {
    * @param value - A boolean indicating whether to enable or disable air purification mode.
    */
   async setAirCleanActive(value: CharacteristicValue) {
-    const device: Device = this.accessory.context.device;
-    const status = this.Status;
-    const enabled = normalizeBoolean(value);
-    if (!(status.isPowerOn && status.opMode === 0)) {
-      this.logger.debug(`Air clean mode is not supported in the current state. Power: ${status.isPowerOn}, Mode: ${status.opMode}`);
-      return;
-    }
-    try {
-      await this.platform.ThinQ?.deviceControl(device.id, {
-        dataKey: 'airState.wMode.airClean',
-        dataValue: enabled ? 1 : 0,
-      });
-      this.accessory.context.device.data.snapshot['airState.wMode.airClean'] = enabled ? 1 : 0;
-      this.updateAccessoryairCleanModelsCharacteristic();
-    } catch (error) {
-      this.logger.error('Error setting air clean mode:', error);
-    }
+    await this.setCoolModeFeatureActive(
+      value,
+      'Air clean',
+      'Error setting air clean mode:',
+      'airState.wMode.airClean',
+      this.updateAccessoryairCleanModelsCharacteristic.bind(this),
+    );
   }
 
   /**
@@ -434,23 +1156,13 @@ export default class AirConditioner extends BaseDevice {
    * @param value - A boolean indicating whether to enable or disable quiet mode.
    */
   async setQuietModeActive(value: CharacteristicValue) {
-    const device: Device = this.accessory.context.device;
-    const enabled = normalizeBoolean(value);
-    const status = this.Status;
-    if (!(status.isPowerOn && status.opMode === 0)) {
-      this.logger.debug(`Quiet mode is not supported in the current state. Power: ${status.isPowerOn}, Mode: ${status.opMode}`);
-      return;
-    }
-    try {
-      await this.platform.ThinQ?.deviceControl(device.id, {
-        dataKey: 'airState.miscFuncState.silentAWHP',
-        dataValue: enabled ? 1 : 0,
-      });
-      this.accessory.context.device.data.snapshot['airState.miscFuncState.silentAWHP'] = enabled ? 1 : 0;
-      this.updateAccessoryquietModeModelsCharacteristic();
-    } catch (error) {
-      this.logger.error('Error setting quiet mode:', error);
-    }
+    await this.setCoolModeFeatureActive(
+      value,
+      'Quiet',
+      'Error setting quiet mode:',
+      'airState.miscFuncState.silentAWHP',
+      this.updateAccessoryquietModeModelsCharacteristic.bind(this),
+    );
   }
 
   /**
@@ -467,23 +1179,13 @@ export default class AirConditioner extends BaseDevice {
    * @throws Logs an error if there is an issue with the device control operation.
    */
   async setJetModeActive(value: CharacteristicValue) {
-    const device: Device = this.accessory.context.device;
-    const enabled = normalizeBoolean(value);
-    const status = this.Status;
-    if (!(status.isPowerOn && status.opMode === 0)) {
-      this.logger.debug(`Jet mode is not supported in the current state. Power: ${status.isPowerOn}, Mode: ${status.opMode}`);
-      return;
-    }
-    try {
-      await this.platform.ThinQ?.deviceControl(device.id, {
-        dataKey: 'airState.wMode.jet',
-        dataValue: enabled ? 1 : 0,
-      });
-      this.accessory.context.device.data.snapshot['airState.wMode.jet'] = enabled ? 1 : 0;
-      this.updateAccessoryJetModeCharacteristic();
-    } catch (error) {
-      this.logger.error('Error setting jet mode:', error);
-    }
+    await this.setCoolModeFeatureActive(
+      value,
+      'Jet',
+      'Error setting jet mode:',
+      'airState.wMode.jet',
+      this.updateAccessoryJetModeCharacteristic.bind(this),
+    );
   }
 
   /**
@@ -506,6 +1208,7 @@ export default class AirConditioner extends BaseDevice {
    * @throws This method does not throw errors directly but logs them if the ThinQ API call fails.
    */
   async setFanState(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const status = this.Status;
     if (!status.isPowerOn) {
       this.logger.debug('Power is off, cannot set fan state');
@@ -514,9 +1217,7 @@ export default class AirConditioner extends BaseDevice {
     const device: Device = this.accessory.context.device;
     const { TargetFanState } = this.platform.Characteristic;
     try {
-      const vNum = normalizeNumber(value);
-      const isAuto = (vNum !== null) ? (vNum === TargetFanState.AUTO) : normalizeBoolean(value);
-      const windStrength = isAuto ? FAN_SPEED_AUTO : FanSpeed.HIGH;
+      const windStrength = windStrengthFromTargetFanState(value, TargetFanState);
       await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.windStrength',
         dataValue: windStrength,
@@ -597,34 +1298,18 @@ export default class AirConditioner extends BaseDevice {
    * and `targetTemperature`) and that the `service` object provides the `updateCharacteristic` method.
    */
   public updateAccessoryStateCharacteristics() {
-    if (!this.Status.isPowerOn) {
-      this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState,
-        this.platform.Characteristic.CurrentHeaterCoolerState.INACTIVE);
-    } else if (this.Status.opMode === OpMode.COOL) {
-      this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState,
-        this.platform.Characteristic.CurrentHeaterCoolerState.COOLING);
-      this.service.updateCharacteristic(this.platform.Characteristic.TargetHeaterCoolerState,
-        this.platform.Characteristic.TargetHeaterCoolerState.COOL);
-    } else if (this.Status.opMode === OpMode.HEAT) {
-      this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState,
-        this.platform.Characteristic.CurrentHeaterCoolerState.HEATING);
-      this.service.updateCharacteristic(this.platform.Characteristic.TargetHeaterCoolerState,
-        this.platform.Characteristic.TargetHeaterCoolerState.HEAT);
-    } else if ([OpMode.AUTO, -1].includes(this.Status.opMode)) {
-      // auto mode, detect based on current & target temperature
-      if (this.Status.currentTemperature < this.Status.targetTemperature) {
-        this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState,
-          this.platform.Characteristic.CurrentHeaterCoolerState.HEATING);
-        this.service.updateCharacteristic(this.platform.Characteristic.TargetHeaterCoolerState,
-          this.platform.Characteristic.TargetHeaterCoolerState.HEAT);
-      } else {
-        this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState,
-          this.platform.Characteristic.CurrentHeaterCoolerState.COOLING);
-        this.service.updateCharacteristic(this.platform.Characteristic.TargetHeaterCoolerState,
-          this.platform.Characteristic.TargetHeaterCoolerState.COOL);
-      }
-    } else {
-      // another mode
+    const update = heaterCoolerCharacteristicUpdateFromState(
+      this.Status,
+      this.platform.Characteristic.CurrentHeaterCoolerState,
+      this.platform.Characteristic.TargetHeaterCoolerState,
+    );
+    if (!update) {
+      return;
+    }
+
+    this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState, update.currentState);
+    if (update.targetState !== undefined) {
+      this.service.updateCharacteristic(this.platform.Characteristic.TargetHeaterCoolerState, update.targetState);
     }
   }
 
@@ -644,17 +1329,22 @@ export default class AirConditioner extends BaseDevice {
    * the current operating mode of the device.
    */
   public updateAccessoryTemperatureCharacteristics() {
-    this.logger.warn(`updateAccessoryTemperatureCharacteristics: ${this.accessory.context.device.snapshot['airState.tempState.target']}`);
-    this.logger.warn(`updateAccessoryTemperatureCharacteristics: ${this.Status.targetTemperature}`);
-    const temperature = this.Status.targetTemperature;
-    const currentState = this.service.getCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState).value;
-    if (currentState === this.platform.Characteristic.CurrentHeaterCoolerState.HEATING) {
-      this.service.updateCharacteristic(this.platform.Characteristic.HeatingThresholdTemperature, temperature);
+    const update = thresholdTemperatureUpdateFromState(
+      this.Status.targetTemperature,
+      this.service.getCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState).value,
+      this.platform.Characteristic.CurrentHeaterCoolerState,
+    );
+    if (!update) {
+      return;
     }
 
-    if (currentState === this.platform.Characteristic.CurrentHeaterCoolerState.COOLING) {
-      this.logger.debug('Setting cooling target temperature = ', temperature);
-      this.service.updateCharacteristic(this.platform.Characteristic.CoolingThresholdTemperature, temperature);
+    if (update.heatingThresholdTemperature !== undefined) {
+      this.service.updateCharacteristic(this.platform.Characteristic.HeatingThresholdTemperature, update.heatingThresholdTemperature);
+    }
+
+    if (update.coolingThresholdTemperature !== undefined) {
+      this.logger.debug('Setting cooling target temperature = ', update.coolingThresholdTemperature);
+      this.service.updateCharacteristic(this.platform.Characteristic.CoolingThresholdTemperature, update.coolingThresholdTemperature);
     }
   }
 
@@ -672,11 +1362,11 @@ export default class AirConditioner extends BaseDevice {
    * otherwise it is set to `SWING_DISABLED`.
    */
   public updateAccessoryFanStateCharacteristics() {
-    const windStrength = this.Status.windStrength;
-    const isSwingOn = this.Status.isSwingOn;
-    this.service.updateCharacteristic(this.platform.Characteristic.RotationSpeed, windStrength);
-    // eslint-disable-next-line max-len
-    this.service.updateCharacteristic(this.platform.Characteristic.SwingMode, isSwingOn ? this.platform.Characteristic.SwingMode.SWING_ENABLED : this.platform.Characteristic.SwingMode.SWING_DISABLED);
+    const update = fanCharacteristicUpdateFromState(this.Status, this.platform.Characteristic.SwingMode);
+    this.service.updateCharacteristic(this.platform.Characteristic.RotationSpeed, update.rotationSpeed);
+    if (isSwingModeEnabled(this.config.ac_swing_mode)) {
+      this.service.updateCharacteristic(this.platform.Characteristic.SwingMode, update.swingMode);
+    }
   }
 
   /**
@@ -703,14 +1393,15 @@ export default class AirConditioner extends BaseDevice {
    */
   public updateAccessoryAirQualityCharacteristic() {
     // air quality
-    if (this.config.ac_air_quality && this.serviceAirQuality && this.Status.airQuality && this.Status.airQuality.isOn) {
-      this.serviceAirQuality.updateCharacteristic(this.platform.Characteristic.AirQuality, this.Status.airQuality.overall);
-      if (this.Status.airQuality.PM2) {
-        this.serviceAirQuality.updateCharacteristic(this.platform.Characteristic.PM2_5Density, this.Status.airQuality.PM2);
+    const update = airQualityCharacteristicUpdateFromState(this.Status, this.config.ac_air_quality);
+    if (update && this.serviceAirQuality) {
+      this.serviceAirQuality.updateCharacteristic(this.platform.Characteristic.AirQuality, update.airQuality);
+      if (update.PM2 !== undefined) {
+        this.serviceAirQuality.updateCharacteristic(this.platform.Characteristic.PM2_5Density, update.PM2);
       }
 
-      if (this.Status.airQuality.PM10) {
-        this.serviceAirQuality.updateCharacteristic(this.platform.Characteristic.PM10Density, this.Status.airQuality.PM10);
+      if (update.PM10 !== undefined) {
+        this.serviceAirQuality.updateCharacteristic(this.platform.Characteristic.PM10Density, update.PM10);
       }
     }
   }
@@ -730,9 +1421,10 @@ export default class AirConditioner extends BaseDevice {
    * before calling this method to avoid runtime errors.
    */
   public updateAccessoryTemperatureSensorCharacteristic() {
-    if (this.config.ac_temperature_sensor as boolean && this.serviceSensor) {
-      this.serviceSensor.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.Status.currentTemperature);
-      this.serviceSensor.updateCharacteristic(this.platform.Characteristic.StatusActive, this.Status.isPowerOn);
+    const update = temperatureSensorCharacteristicUpdateFromState(this.Status, this.config.ac_temperature_sensor);
+    if (update && this.serviceSensor) {
+      this.serviceSensor.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, update.value);
+      this.serviceSensor.updateCharacteristic(this.platform.Characteristic.StatusActive, update.statusActive);
     }
   }
 
@@ -748,9 +1440,10 @@ export default class AirConditioner extends BaseDevice {
    */
   public updateAccessoryHumiditySensorCharacteristic() {
     // humidity sensor
-    if (this.config.ac_humidity_sensor as boolean && this.serviceHumiditySensor) {
-      this.serviceHumiditySensor.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.Status.currentRelativeHumidity);
-      this.serviceHumiditySensor.updateCharacteristic(this.platform.Characteristic.StatusActive, this.Status.isPowerOn);
+    const update = humiditySensorCharacteristicUpdateFromState(this.Status, this.config.ac_humidity_sensor);
+    if (update && this.serviceHumiditySensor) {
+      this.serviceHumiditySensor.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, update.value);
+      this.serviceHumiditySensor.updateCharacteristic(this.platform.Characteristic.StatusActive, update.statusActive);
     }
   }
 
@@ -771,22 +1464,22 @@ export default class AirConditioner extends BaseDevice {
    * the `serviceFanV2` is defined.
    */
   public updateAccessoryFanV2Characteristic() {
-    const status = this.Status;
-    const isPowerOn = status.isPowerOn;
-    const isSwingOn = status.isSwingOn;
-    const windStrength = status.windStrength;
     // handle fan service
     if (this.config.ac_fan_control && this.serviceFanV2) {
-      this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.Active,
-        isPowerOn ? this.platform.Characteristic.Active.ACTIVE : this.platform.Characteristic.Active.INACTIVE);
-      if (status.isWindStrengthAuto) {
-        this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.TargetFanState, this.platform.Characteristic.TargetFanState.AUTO);
-      } else {
-        this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.TargetFanState, this.platform.Characteristic.TargetFanState.MANUAL);
-        this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.RotationSpeed, windStrength);
+      const update = fanV2CharacteristicUpdateFromState(
+        this.Status,
+        this.platform.Characteristic.Active,
+        this.platform.Characteristic.TargetFanState,
+        this.platform.Characteristic.SwingMode,
+      );
+      this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.Active, update.active);
+      this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.TargetFanState, update.targetFanState);
+      if (update.rotationSpeed !== undefined) {
+        this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.RotationSpeed, update.rotationSpeed);
       }
-      // eslint-disable-next-line max-len
-      this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.SwingMode, isSwingOn ? this.platform.Characteristic.SwingMode.SWING_ENABLED : this.platform.Characteristic.SwingMode.SWING_DISABLED);
+      if (isSwingModeEnabled(this.config.ac_swing_mode)) {
+        this.serviceFanV2.updateCharacteristic(this.platform.Characteristic.SwingMode, update.swingMode);
+      }
     }
   }
 
@@ -803,41 +1496,55 @@ export default class AirConditioner extends BaseDevice {
    * - The `serviceLight` represents the Homebridge service responsible for the light characteristic.
    */
   public updateAccessoryLedControlCharacteristic() {
-    const isLightOn = this.Status.isLightOn;
-    if (this.config.ac_led_control && this.serviceLight) {
-      this.serviceLight.updateCharacteristic(this.platform.Characteristic.On, isLightOn);
+    const value = this.config.ac_led_control ? this.Status.isLightOn : undefined;
+    if (value !== undefined && this.serviceLight) {
+      this.serviceLight.updateCharacteristic(this.platform.Characteristic.On, value);
     }
   }
   public updateAccessoryJetModeCharacteristic() {
     // more feature
-    const model = this.accessory.context.device.model;
-    if (this.isJetModeEnabled(model) && this.serviceJetMode) {
-      this.serviceJetMode.updateCharacteristic(this.platform.Characteristic.On, !!this.accessory.context.device.snapshot['airState.wMode.jet']);
+    const device = this.accessory.context.device;
+    const value = modelFeatureToggleValue(device.snapshot, 'airState.wMode.jet', device.model, this.jetModeModels);
+    if (value !== undefined && this.serviceJetMode) {
+      this.serviceJetMode.updateCharacteristic(this.platform.Characteristic.On, value);
     }
   }
   public updateAccessoryquietModeModelsCharacteristic() {
     const device = this.accessory.context.device;
-    const model = device.model;
-    if (this.quietModeModels.includes(model) && this.serviceQuietMode) {
-      this.serviceQuietMode.updateCharacteristic(this.platform.Characteristic.On, !!device.snapshot['airState.miscFuncState.silentAWHP']);
+    const value = modelFeatureToggleValue(device.snapshot, 'airState.miscFuncState.silentAWHP', device.model, this.quietModeModels);
+    if (value !== undefined && this.serviceQuietMode) {
+      this.serviceQuietMode.updateCharacteristic(this.platform.Characteristic.On, value);
     }
   }
   public updateAccessoryenergySaveModeModelsCharacteristic() {
     const device = this.accessory.context.device;
-    const model = device.model;
-    if (this.energySaveModeModels.includes(model) && this.config.ac_energy_save as boolean) {
-      this.serviceEnergySaveMode?.updateCharacteristic(this.platform.Characteristic.On, !!device.snapshot['airState.powerSave.basic']);
+    const value = modelFeatureToggleValue(
+      device.snapshot,
+      'airState.powerSave.basic',
+      device.model,
+      this.energySaveModeModels,
+      this.config.ac_energy_save,
+    );
+    if (value !== undefined) {
+      this.serviceEnergySaveMode?.updateCharacteristic(this.platform.Characteristic.On, value);
     }
   }
   public updateAccessoryairCleanModelsCharacteristic() {
     const device = this.accessory.context.device;
-    const model = device.model;
-    if (this.airCleanModels.includes(model) && this.config.ac_air_clean as boolean) {
-      this.serviceAirClean?.updateCharacteristic(this.platform.Characteristic.On, !!device.snapshot['airState.wMode.airClean']);
+    const value = modelFeatureToggleValue(
+      device.snapshot,
+      'airState.wMode.airClean',
+      device.model,
+      this.airCleanModels,
+      this.config.ac_air_clean,
+    );
+    if (value !== undefined) {
+      this.serviceAirClean?.updateCharacteristic(this.platform.Characteristic.On, value);
     }
   }
 
   async setLight(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const status = this.Status;
     if (!status.isPowerOn) {
       this.logger.debug('Power is off, cannot set light state');
@@ -868,6 +1575,7 @@ export default class AirConditioner extends BaseDevice {
    * @throws Logs an error if the operation mode cannot be updated on the device.
    */
   async setTargetState(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     this.logger.debug('Set target AC mode = ', value);
     this.currentTargetState = value as number;
     const {
@@ -876,21 +1584,7 @@ export default class AirConditioner extends BaseDevice {
       },
     } = this.platform;
 
-    // Map HomeKit states to LG opModes
-    let opMode;
-    switch (value) {
-    case TargetHeaterCoolerState.AUTO:
-      opMode = OpMode.AUTO; // LG’s AUTO mode = 6
-      break;
-    case TargetHeaterCoolerState.HEAT:
-      opMode = OpMode.HEAT; // LG’s HEAT mode = 4
-      break;
-    case TargetHeaterCoolerState.COOL:
-      opMode = OpMode.COOL; // LG’s COOL mode = 0
-      break;
-    default:
-      opMode = this.Status.opMode; // Keep current mode
-    }
+    const opMode = targetOpModeFromHomeKit(value, this.Status.opMode, TargetHeaterCoolerState);
 
     if (opMode === this.Status.opMode) {
       return;
@@ -903,6 +1597,7 @@ export default class AirConditioner extends BaseDevice {
   }
 
   async setActive(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const device: Device = this.accessory.context.device;
     const isOn = normalizeBoolean(value);
     const isOnNumeric = isOn ? 1 : 0;
@@ -944,6 +1639,7 @@ export default class AirConditioner extends BaseDevice {
    * @throws This method does not throw exceptions but logs errors instead.
    */
   async setTargetTemperature(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     const status = this.Status;
     if (!status.isPowerOn) {
       this.logger.error('Power is off, cannot set target temperature');
@@ -998,6 +1694,7 @@ export default class AirConditioner extends BaseDevice {
    * @throws This method does not throw exceptions directly but logs errors internally if the operation fails.
    */
   async setFanSpeed(value: CharacteristicValue) {
+    this.requireDeviceOnline();
     if (!this.Status.isPowerOn) {
       return;
     }
@@ -1005,11 +1702,13 @@ export default class AirConditioner extends BaseDevice {
     if (vNum === null) {
       return;
     }
-    const speedValue = Math.max(1, Math.round(vNum));
+    const windStrength = windStrengthFromRotationSpeed(vNum);
+    if (windStrength === null) {
+      return;
+    }
 
-    this.logger.debug('Set fan speed = ', speedValue);
+    this.logger.debug('Set fan speed = ', Math.max(1, Math.round(vNum)));
     const device: Device = this.accessory.context.device;
-    const windStrength = parseInt(Object.keys(FanSpeed)[speedValue - 1]) || FanSpeed.HIGH;
     try {
       await this.platform.ThinQ?.deviceControl(device.id, {
         dataKey: 'airState.windStrength',
@@ -1022,39 +1721,24 @@ export default class AirConditioner extends BaseDevice {
   }
 
   async setSwingMode(value: CharacteristicValue) {
+    this.requireDeviceOnline();
+    if (!isSwingModeEnabled(this.config.ac_swing_mode)) {
+      this.logger.debug('Swing mode is disabled in config.');
+      return;
+    }
+
     if (!this.Status.isPowerOn) {
       this.logger.debug('Power is off, cannot set swing mode');
       return;
     }
 
-    const swingValue = !!value as boolean ? '100' : '0';
-
     const device: Device = this.accessory.context.device;
     try {
-      if (this.config.ac_swing_mode === 'BOTH') {
-        await this.platform.ThinQ?.deviceControl(device.id, {
-          dataKey: null,
-          dataValue: null,
-          dataSetList: {
-            'airState.wDir.vStep': swingValue,
-            'airState.wDir.hStep': swingValue,
-          },
-          dataGetList: null,
-        }, 'Set', 'favoriteCtrl');
-        this.accessory.context.device.data.snapshot['airState.wDir.vStep'] = swingValue;
-        this.accessory.context.device.data.snapshot['airState.wDir.hStep'] = swingValue;
-      } else if (this.config.ac_swing_mode === 'VERTICAL') {
-        await this.platform.ThinQ?.deviceControl(device.id, {
-          dataKey: 'airState.wDir.vStep',
-          dataValue: swingValue,
-        });
-        this.accessory.context.device.data.snapshot['airState.wDir.vStep'] = swingValue;
-      } else if (this.config.ac_swing_mode === 'HORIZONTAL') {
-        await this.platform.ThinQ?.deviceControl(device.id, {
-          dataKey: 'airState.wDir.hStep',
-          dataValue: swingValue,
-        });
-        this.accessory.context.device.data.snapshot['airState.wDir.hStep'] = swingValue;
+      for (const swingCommand of swingCommandsForMode(value, this.config.ac_swing_mode)) {
+        await this.platform.ThinQ?.deviceControl(device.id, swingCommand.payload, swingCommand.command, swingCommand.ctrlKey);
+        for (const [key, snapshotValue] of Object.entries(swingCommand.snapshotUpdates)) {
+          this.accessory.context.device.data.snapshot[key] = snapshotValue;
+        }
       }
       this.updateAccessoryFanStateCharacteristics();
       this.updateAccessoryFanV2Characteristic();
@@ -1065,6 +1749,7 @@ export default class AirConditioner extends BaseDevice {
   }
 
   async setOpMode(deviceId: string, opMode: number): Promise<boolean> {
+    this.requireDeviceOnline();
     return await this.platform.ThinQ?.deviceControl(deviceId, {
       dataKey: 'airState.opMode',
       dataValue: opMode,
@@ -1110,9 +1795,9 @@ export default class AirConditioner extends BaseDevice {
     serviceButton.addOptionalCharacteristic(Characteristic.ConfiguredName);
     serviceButton.setCharacteristic(Characteristic.ConfiguredName, name);
     serviceButton.getCharacteristic(this.platform.Characteristic.On)
-      .onGet(() => {
+      .onGet(this.onlineGet(() => {
         return this.Status.opMode === opMode;
-      })
+      }))
       .onSet((value: CharacteristicValue) => {
         this.handleButtonOpmode(value, opMode);
       });
@@ -1135,6 +1820,7 @@ export default class AirConditioner extends BaseDevice {
    * @returns A promise that resolves when the operation mode and related states are successfully updated.
    */
   async handleButtonOpmode(value: CharacteristicValue, opMode: number) {
+    this.requireDeviceOnline();
     if (value as boolean) {
       if (this.Status.opMode !== opMode) {
         await this.setOpMode(this.accessory.context.device.id, opMode);
@@ -1149,7 +1835,11 @@ export default class AirConditioner extends BaseDevice {
 }
 
 export class ACStatus {
+  private readonly state: AirConditionerState;
+
   constructor(protected data: any, protected device: Device, protected config: Config, private logger: Logger) {
+    this.data = data ?? {};
+    this.state = readAirConditionerState(this.data, device, config, logger);
   }
 
   /**
@@ -1157,7 +1847,7 @@ export class ACStatus {
    * list: us
    */
   public get isFahrenheitUnit() {
-    return (this.config.ac_temperature_unit || '').toLowerCase() === 'f';
+    return isFahrenheitAirConditioner(this.config);
   }
 
   /**
@@ -1166,23 +1856,7 @@ export class ACStatus {
    * @returns The converted temperature in LG format.
    */
   public convertTemperatureCelsiusFromHomekitToLG(temperatureInCelsius: CharacteristicValue): number {
-    const tempNum = Number(temperatureInCelsius);
-    if (!this.isFahrenheitUnit) {
-      return tempNum;
-    }
-    const temperatureInFahrenheit = Math.round(cToF(tempNum));
-    try {
-      const mapped = this.device.deviceModel.lookupMonitorValue && this.device.deviceModel.lookupMonitorValue('TempFahToCel', String(temperatureInFahrenheit));
-      if (typeof mapped !== 'undefined' && mapped !== null) {
-        const n = Number(mapped);
-        if (!isNaN(n)) {
-          return n;
-        }
-      }
-    } catch (e) {
-      this.logger.warn('Temperature mapping lookup failed, falling back to direct conversion.', e);
-    }
-    return temperatureInFahrenheit;
+    return convertTemperatureCelsiusFromHomekitToLG(temperatureInCelsius, this.device, this.config, this.logger);
   }
 
   /**
@@ -1190,107 +1864,56 @@ export class ACStatus {
    * so we need to handle it before submit to homekit
    */
   public convertTemperatureCelsiusFromLGToHomekit(temperature: number): number {
-    const tempNum = Number(temperature);
-    if (!this.isFahrenheitUnit) {
-      return tempNum;
-    }
-    try {
-      const mapped = this.device.deviceModel.lookupMonitorValue && this.device.deviceModel.lookupMonitorValue('TempCelToFah', String(tempNum));
-      if (typeof mapped !== 'undefined' && mapped !== null) {
-        const n = Number(mapped);
-        if (!isNaN(n)) {
-          return Math.round(fToC(n) * 100) / 100;
-        }
-      }
-    } catch (e) {
-      this.logger.warn('Temperature mapping lookup failed, falling back to direct conversion.', e);
-    }
-    const c = Math.round(fToC(tempNum) * 100) / 100;
-    return c;
+    return convertTemperatureCelsiusFromLGToHomekit(temperature, this.device, this.config, this.logger);
   }
 
   public get opMode() {
-    return this.data['airState.opMode'] as number;
+    return this.state.opMode;
   }
 
   public get isPowerOn() {
-    return !!this.data['airState.operation'] as boolean;
+    return this.state.isPowerOn;
   }
 
   public get currentRelativeHumidity() {
-    const humidity = parseInt(this.data['airState.humidity.current']);
-    if (humidity > 100) {
-      return humidity / 10;
-    }
-
-    return humidity;
+    return this.state.currentRelativeHumidity;
   }
 
   public get currentTemperature() {
-    return this.convertTemperatureCelsiusFromLGToHomekit(this.data['airState.tempState.current'] as number);
+    return this.state.currentTemperature;
   }
 
   public get targetTemperature() {
-    return this.convertTemperatureCelsiusFromLGToHomekit(this.data['airState.tempState.target'] as number);
+    return this.state.targetTemperature;
   }
 
   public get airQuality() {
-    // air quality not available
-    if (!('airState.quality.overall' in this.data) && !('airState.quality.PM2' in this.data) && !('airState.quality.PM10' in this.data)) {
-      return null;
-    }
-
-    return {
-      isOn: this.isPowerOn || this.data['airState.quality.sensorMon'],
-      overall: parseInt(this.data['airState.quality.overall']),
-      PM2: parseInt(this.data['airState.quality.PM2'] || '0'),
-      PM10: parseInt(this.data['airState.quality.PM10'] || '0'),
-    };
+    return this.state.airQuality;
   }
 
   // Should return 0 - 100 int
   public get windStrength() {
-    const raw = this.data && this.data['airState.windStrength'];
-    const num = Number(raw);
-    if (!isNaN(num)) {
-      if (num === FAN_SPEED_AUTO) {
-        return Math.round(Object.keys(FanSpeed).length / 2);
-      }
-      const min = 2;
-      const max = 6;
-      if (num >= min && num <= max) {
-        return Math.round(((num - min) / (max - min)) * 100) || 1;
-      }
-    }
-    return Math.round(Object.keys(FanSpeed).length / 2);
+    return this.state.windStrength;
   }
 
   public get isWindStrengthAuto() {
-    const raw = this.data && this.data['airState.windStrength'];
-    return Number(raw) === FAN_SPEED_AUTO;
+    return this.state.isWindStrengthAuto;
   }
 
   public get isSwingOn() {
-    const vStep = Math.floor((this.data['airState.wDir.vStep'] || 0) / 100),
-      hStep = Math.floor((this.data['airState.wDir.hStep'] || 0) / 100);
-    return !!(vStep + hStep);
+    return this.state.isSwingOn;
   }
 
   public get isLightOn() {
-    return !!this.data['airState.lightingState.displayControl'];
+    return this.state.isLightOn;
   }
 
   public get currentConsumption() {
-    const consumption = this.data['airState.energy.onCurrent'];
-    if (isNaN(consumption)) {
-      return 0;
-    }
-
-    return consumption / 100;
+    return this.state.currentConsumption;
   }
 
   public get type() {
-    return this.device.deviceModel.data.Info.modelType || ACModelType.RAC;
+    return this.state.type;
   }
 
   /**

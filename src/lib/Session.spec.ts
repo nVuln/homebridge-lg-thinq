@@ -1,6 +1,6 @@
 /* eslint-disable dot-notation */
 import { describe, beforeEach, test, expect } from '@jest/globals';
-import { Session } from '../../src/lib/Session.js';
+import { Session } from './Session.js';
 
 describe('Session', () => {
   let session: Session;
@@ -34,6 +34,17 @@ describe('Session', () => {
     session.newToken(newAccessToken, newExpiresIn);
 
     expect(session.accessToken).toBe(newAccessToken);
+    expect(session.isTokenExpired()).toBe(false);
+    expect(session.hasValidToken()).toBe(true);
+  });
+
+  test('should convert expires_in durations to epoch timestamps', () => {
+    const currentEpoch = Session['getCurrentEpoch']();
+
+    expect(Session.expiryTimestampFromExpiresIn(3600)).toBeGreaterThanOrEqual(currentEpoch + 3600);
+
+    session.newTokenFromExpiresIn('durationAccessToken', 3600);
+    expect(session.accessToken).toBe('durationAccessToken');
     expect(session.isTokenExpired()).toBe(false);
     expect(session.hasValidToken()).toBe(true);
   });

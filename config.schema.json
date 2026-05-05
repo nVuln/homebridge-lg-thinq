@@ -72,7 +72,6 @@
     },
     "devices": {
       "title": "Devices",
-      "description": "leave it empty to enable all device in account",
       "type": "array",
       "items": {
         "type": "object",
@@ -85,28 +84,6 @@
           "name": {
             "title": "Device Name",
             "type": "string"
-          },
-          "type": {
-            "title": "Device Type",
-            "type": "string",
-            "enum": [
-              "AC",
-              "WASHER",
-              "WASHER_NEW",
-              "WASH_TOWER",
-              "DRYER",
-              "REFRIGERATOR",
-              "DISHWASHER",
-              "AIR_PURIFIER",
-              "DEHUMIDIFIER",
-              "AERO_TOWER",
-              "OVEN",
-              "RANGE",
-              "COOKTOP"
-            ],
-            "condition": {
-              "functionBody": "return false;"
-            }
           },
           "serial_number": {
             "title": "Serial Number (optional)",
@@ -161,6 +138,12 @@
             "title": "Swing Mode (vertical or horizontal)",
             "type": "string",
             "oneOf": [
+              {
+                "title": "No swing",
+                "enum": [
+                  "NONE"
+                ]
+              },
               {
                 "title": "Both vertical and horizontal swing",
                 "enum": [
@@ -286,8 +269,6 @@
         "language"
       ]
     },
-    "thinq1",
-    "refresh_interval",
     {
       "key": "devices",
       "type": "tabarray",
@@ -295,12 +276,11 @@
       "items": [
         "devices[].name",
         "devices[].id",
-        "devices[].type",
         "devices[].serial_number",
         {
           "key": "devices[]",
           "type": "fieldset",
-          "title": "{{ value.title }}",
+          "title": "Device Settings",
           "items": [
             {
               "type": "fieldset",

@@ -1,6 +1,8 @@
 import { DeviceType } from './constants.js';
 import { DeviceModel } from './DeviceModel.js';
 
+export const DEVICE_ID_PATTERN = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/;
+
 export interface DeviceData {
   deviceId: string;
   alias: string;
@@ -119,7 +121,7 @@ export class Device {
    * Gets the online status of the device.
    */
   public get online() {
-    return this.data.online !== undefined ? this.data.online : this.data.snapshot.online;
+    return this.data.online !== undefined ? this.data.online : this.data.snapshot?.online;
   }
 
   /**
@@ -128,4 +130,13 @@ export class Device {
   public toString() {
     return `${this.id}: ${this.name} (${this.type} ${this.model})`;
   }
+}
+
+export function isValidDeviceId(id: unknown): id is string {
+  return typeof id === 'string' && DEVICE_ID_PATTERN.test(id);
+}
+
+export function devicesFromList(listDevices: unknown[]): Device[] {
+  return listDevices.map(device => new Device(device as DeviceData))
+    .filter(device => isValidDeviceId(device.id));
 }

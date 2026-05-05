@@ -14,6 +14,7 @@ import RangeHood from './devices/RangeHood.js';
 import Oven from './devices/Oven.js';
 import Microwave from './devices/Microwave.js';
 import WasherDryer2 from './devices/WasherDryer2.js';
+import { fToC, cToF } from './utils/temperature.js';
 
 /**
  * Platform Accessory
@@ -63,11 +64,5 @@ export class Helper {
   }
 }
 
-export function fToC(fahrenheit: number) {
-  return parseFloat(((fahrenheit - 32) * 5 / 9).toFixed(1));
-}
-
-export function cToF(celsius: number) {
-  return Math.round(celsius * 9 / 5 + 32);
-}
+export { fToC, cToF };
 export { normalizeBoolean, normalizeNumber } from './utils/normalize.js';

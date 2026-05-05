@@ -1,5 +1,5 @@
 import { DeviceModel } from '../../lib/DeviceModel.js';
-import { lookupEnumIndex, loopupEnum } from '../helper.js';
+import { lookupEnum, lookupEnumIndex } from '../helper.js';
 
 export enum DoorOpenState {
   OPEN = 'OPEN',
@@ -12,7 +12,7 @@ export default function RefState(deviceModel: DeviceModel, decodedMonitor: any) 
       fridgeTemp: decodedMonitor.TempRefrigerator || deviceModel.default('TempRefrigerator') || '0',
       freezerTemp: decodedMonitor.TempFreezer || deviceModel.default('TempFreezer') || '0',
 
-      atLeastOneDoorOpen: lookupEnumIndex(DoorOpenState, loopupEnum(deviceModel, decodedMonitor, 'DoorOpenState') || deviceModel.default('DoorOpenState')),
+      atLeastOneDoorOpen: lookupEnumIndex(DoorOpenState, lookupEnum(deviceModel, decodedMonitor, 'DoorOpenState') || deviceModel.default('DoorOpenState')),
       tempUnit: parseInt(decodedMonitor.TempUnit || deviceModel.default('TempUnit')) ? 'CELSIUS' : 'FAHRENHEIT',
     },
   };

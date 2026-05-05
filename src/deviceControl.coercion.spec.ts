@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
-import { ThinQ } from '../lib/ThinQ.js';
-import { ValueType } from '../lib/DeviceModel.js';
+import { ThinQ } from './lib/ThinQ.js';
+import { ValueType } from './lib/DeviceModel.js';
 
 describe('ThinQ.deviceControl coercion', () => {
   let thinq: ThinQ;
@@ -67,5 +67,42 @@ describe('ThinQ.deviceControl coercion', () => {
 
     const sentValues3 = ((thinq as any).api.sendCommandToDevice as jest.Mock).mock.calls[0][1];
     expect((sentValues3 as any).dataSetList.mode).toBe('1');
+  });
+
+  test('coerces nested dataSetList command payloads', async () => {
+    const fakeModel: any = {
+      value: (k: string) => {
+        if (k === 'setTargetTemp') {
+          return { type: ValueType.Range };
+        }
+        if (k === 'cmdOptionSetCookName') {
+          return { type: ValueType.Enum };
+        }
+        if (k === 'cmdOptionSetRapidPreheat') {
+          return { type: ValueType.Bit };
+        }
+        return null;
+      },
+      enumValue: (k: string, name: string) => (k === 'cmdOptionSetCookName' && name === 'Bake' ? 'BAKE' : null),
+    };
+
+    (thinq as any).deviceModel.dev4 = fakeModel;
+
+    const values: any = {
+      dataSetList: {
+        ovenState: {
+          setTargetTemp: '350',
+          cmdOptionSetCookName: 'Bake',
+          cmdOptionSetRapidPreheat: true,
+        },
+      },
+    };
+
+    await thinq.deviceControl('dev4', values);
+
+    const sentValues4 = ((thinq as any).api.sendCommandToDevice as jest.Mock).mock.calls[0][1] as any;
+    expect(sentValues4.dataSetList.ovenState.setTargetTemp).toBe(350);
+    expect(sentValues4.dataSetList.ovenState.cmdOptionSetCookName).toBe('BAKE');
+    expect(sentValues4.dataSetList.ovenState.cmdOptionSetRapidPreheat).toBe(1);
   });
 });

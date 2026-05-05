@@ -1,5 +1,5 @@
 /* eslint-disable dot-notation */
-import Persist from './Persist.js';
+import Persist, { isPersistCacheMiss } from './Persist.js';
 import Fs from 'fs/promises';
 import Path from 'path';
 import { describe, test, beforeEach, afterEach, expect, jest } from '@jest/globals';
@@ -56,6 +56,28 @@ describe('Persist', () => {
     const retrievedValue = await persist.cacheForever(key, callable);
     expect(callable).toHaveBeenCalledTimes(1); // Callable should not be called again
     expect(retrievedValue).toBe(value);
+  });
+
+  test('should keep falsy cached values without recomputing', async () => {
+    const callable = jest.fn<() => Promise<any>>().mockResolvedValue('new-value');
+
+    jest.spyOn(persist['persist'], 'getItem').mockResolvedValue(false);
+    await expect(persist.cacheForever('falseKey', callable)).resolves.toBe(false);
+    expect(callable).not.toHaveBeenCalled();
+
+    jest.spyOn(persist['persist'], 'getItem').mockResolvedValue(
+      JSON.stringify({ value: 0, expiry: Date.now() + 1000 }),
+    );
+    await expect(persist.cache('zeroKey', 1000, callable)).resolves.toBe(0);
+    expect(callable).not.toHaveBeenCalled();
+  });
+
+  test('should classify only nullish persist values as cache misses', () => {
+    expect(isPersistCacheMiss(null)).toBe(true);
+    expect(isPersistCacheMiss(undefined)).toBe(true);
+    expect(isPersistCacheMiss(false)).toBe(false);
+    expect(isPersistCacheMiss(0)).toBe(false);
+    expect(isPersistCacheMiss('')).toBe(false);
   });
 
   test('should cache a value with TTL', async () => {

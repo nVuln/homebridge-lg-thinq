@@ -3,6 +3,10 @@ import Fs from 'fs/promises';
 import Path from 'path';
 import Crypto from 'crypto';
 
+export function isPersistCacheMiss(value: unknown): value is null | undefined {
+  return value === null || value === undefined;
+}
+
 /**
  * A utility class for managing persistent storage using `node-persist`.
  * This class provides methods for storing, retrieving, and caching data with optional expiration.
@@ -165,7 +169,7 @@ export default class Persist {
    */
   async cacheForever(key: string, callable: () => Promise<any>) {
     let value = await this.getItem(key);
-    if (!value) {
+    if (isPersistCacheMiss(value)) {
       value = await callable();
       await this.setItem(key, value);
     }
@@ -182,7 +186,7 @@ export default class Persist {
    */
   async cache(key: string, ttl: number, callable: () => Promise<any>) {
     let value = await this.getWithExpiry(key);
-    if (!value) {
+    if (isPersistCacheMiss(value)) {
       value = await callable();
       await this.setWithExpiry(key, value, ttl);
     }

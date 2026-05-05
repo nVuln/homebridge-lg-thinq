@@ -6,7 +6,31 @@ import { LGThinQHomebridgePlatform } from '../platform.js';
 import { Logger, Perms, PlatformAccessory, Service } from 'homebridge';
 import { DeviceModel } from '../lib/DeviceModel.js';
 import { Device } from '../lib/Device.js';
-import { normalizeBoolean, normalizeNumber } from '../helper.js';
+import { normalizeBoolean, normalizeNumber } from '../utils/normalize.js';
+import {
+  cooktopOperationDuration,
+  cookingAlarmServiceUpdate,
+  cookingStopCommand,
+  cookingTimerServiceUpdate,
+  durationFromSnapshot,
+  hasActiveCookingState,
+  hasCookingModeActive,
+  hasNonZeroSnapshotNumber,
+  homeKitTemperatureFromSnapshot,
+  isCooktopActive,
+  isEnabledStatus,
+  isFahrenheitUnit,
+  ovenRemoteStartCommand,
+  ovenTimerCommand,
+  prepareOvenCookCommand,
+  temperatureDisplayUnitsValue,
+} from './cooking.js';
+import {
+  snapshotNumber,
+  snapshotString,
+  updateCharacteristicIfChanged,
+  visibilityCharacteristicUpdate,
+} from './helpers.js';
 
 enum OvenState {
   INITIAL = '@OV_STATE_INITIAL_W',
@@ -160,152 +184,128 @@ export default class Oven extends BaseDevice {
     this.ovenService.setPrimaryService(true);
     this.ovenService.setCharacteristic(this.platform
       .Characteristic.SleepDiscoveryMode, this.platform.Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE);
-    this.ovenService.getCharacteristic(this.platform.Characteristic.Active)
-      .on('get', (callback) => {
-        const currentValue = this.ovenServiceActive();
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        const enabled = normalizeBoolean(value);
-        if (!enabled) {
-          this.stopOven();
-        } else {
-          this.sendOvenCommand();
-        }
-        callback(null);
-      });
+    this.ovenService.getCharacteristic(this.platform.Characteristic.Active).onGet(this.onlineGet(() => this.ovenServiceActive())).onSet((value) => {
+      const enabled = normalizeBoolean(value);
+      if (!enabled) {
+        this.stopOven();
+      } else {
+        this.sendOvenCommand();
+      }
+    });
     this.ovenService
       .setCharacteristic(this.platform.Characteristic.ActiveIdentifier, this.inputID);
-    this.ovenService.getCharacteristic(this.platform.Characteristic.ActiveIdentifier)
-      .on('set', (inputIdentifier, callback) => {
-        const vNum = normalizeNumber(inputIdentifier);
-        if (vNum === null) {
-          this.platform.log.error('ActiveIdentifier is not a number');
-          callback();
-          return;
-        }
-        if (vNum > 14 || vNum < 1) {
-          this.inputID = 1;
-        } else {
-          this.inputID = vNum;
-        }
-        callback();
-      })
-      .on('get', (callback) => {
-        const currentValue = this.inputID;
-        callback(null, currentValue);
-      });
+    this.ovenService.getCharacteristic(this.platform.Characteristic.ActiveIdentifier).onSet((inputIdentifier) => {
+      const vNum = normalizeNumber(inputIdentifier);
+      if (vNum === null) {
+        this.platform.log.error('ActiveIdentifier is not a number');
+        return;
+      }
+      if (vNum > 14 || vNum < 1) {
+        this.inputID = 1;
+      } else {
+        this.inputID = vNum;
+      }
+    }).onGet(() => {
+      const currentValue = this.inputID;
+      return currentValue;
+    });
 
     this.ovenState = this.createInputSourceService('Oven Status', 'NicoCataGaTa-Oven1003', 1, this.ovenStatus(), true);
-    this.ovenState.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.ovenStatus();
-        callback(null, currentValue);
-      });
+    this.ovenState.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.ovenStatus();
+      return currentValue;
+    });
     this.ovenService.addLinkedService(this.ovenState);
 
     this.ovenMode = this.createInputSourceService('Oven Mode', 'NicoCataGaTa-Oven1004', 2, this.ovenModeName(), this.ovenOnStatus());
-    this.ovenMode.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.ovenModeName();
-        callback(null, currentValue);
-      });
+    this.ovenMode.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.ovenModeName();
+      return currentValue;
+    });
     this.ovenService.addLinkedService(this.ovenMode);
 
     this.ovenTemp = this.createInputSourceService('Oven Temperature', 'NicoCataGaTa-Oven1004T', 3, this.ovenTemperature(), this.ovenOnStatus());
-    this.ovenTemp.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.ovenTemperature();
-        callback(null, currentValue);
-      });
+    this.ovenTemp.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.ovenTemperature();
+      return currentValue;
+    });
     this.ovenService.addLinkedService(this.ovenTemp);
 
     this.prove = this.createInputSourceService('Probe Status', 'NicoCata-Always15', 4, this.proveStatus(), this.showProbe);
-    this.prove.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.proveStatus();
-        callback(null, currentValue);
-      });
+    this.prove.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.proveStatus();
+      return currentValue;
+    });
     this.ovenService.addLinkedService(this.prove);
 
     this.ovenOptions = this.createInputSourceService('Oven Options', 'NicoCata-Always4', 5, this.oventOptions(), this.ovenOnStatus());
-    this.ovenOptions.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.oventOptions();
-        callback(null, currentValue);
-      });
+    this.ovenOptions.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.oventOptions();
+      return currentValue;
+    });
     this.ovenService.addLinkedService(this.ovenOptions);
 
     this.ovenStart = this.createInputSourceService('Oven Start Time', 'NicoCata-Always1', 6, this.courseStartString, this.showTime);
-    this.ovenStart.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.courseStartString;
-        callback(null, currentValue);
-      });
+    this.ovenStart.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.courseStartString;
+      return currentValue;
+    });
     this.ovenService.addLinkedService(this.ovenStart);
 
     this.ovenTimer = this.createInputSourceService('Oven Timer Status', 'NicoCata-Always2', 7, this.courseTimerString, this.showTimer);
-    this.ovenTimer.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.courseTimerString;
-        callback(null, currentValue);
-      });
+    this.ovenTimer.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.courseTimerString;
+      return currentValue;
+    });
     this.ovenService.addLinkedService(this.ovenTimer);
 
     this.ovenTime = this.createInputSourceService('Oven Cook Time Status', 'NicoCata-Always2T', 8, this.courseTimeString, this.showTime);
-    this.ovenTime.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.courseTimeString;
-        callback(null, currentValue);
-      });
+    this.ovenTime.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.courseTimeString;
+      return currentValue;
+    });
     this.ovenService.addLinkedService(this.ovenTime);
 
     this.ovenEndTime = this.createInputSourceService('Oven End Time', 'NicoCata-Always3', 9, this.courseTimeEndString, this.showTime);
-    this.ovenEndTime.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.courseTimeEndString;
-        callback(null, currentValue);
-      });
+    this.ovenEndTime.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.courseTimeEndString;
+      return currentValue;
+    });
     this.ovenService.addLinkedService(this.ovenEndTime);
 
     this.burner1 = this.createInputSourceService('Front Left Burner Status', 'NicoCataGaTa-Oven001', 10, this.burner1State(), this.showBurner1);
-    this.burner1.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.burner1State();
-        callback(null, currentValue);
-      });
+    this.burner1.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.burner1State();
+      return currentValue;
+    });
     this.ovenService.addLinkedService(this.burner1);
 
     this.burner2 = this.createInputSourceService('Back Left Burner Status', 'NicoCataGaTa-Oven002', 11, this.burner2State(), this.showBurner2);
-    this.burner2.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.burner2State();
-        callback(null, currentValue);
-      });
+    this.burner2.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.burner2State();
+      return currentValue;
+    });
     this.ovenService.addLinkedService(this.burner2);
 
     this.burner3 = this.createInputSourceService('Center Burner Status', 'NicoCataGaTa-Oven003', 12, this.burner3State(), this.showBurner3);
-    this.burner3.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.burner3State();
-        callback(null, currentValue);
-      });
+    this.burner3.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.burner3State();
+      return currentValue;
+    });
     this.ovenService.addLinkedService(this.burner3);
 
     this.burner4 = this.createInputSourceService('Front Right Burner Status', 'NicoCataGaTa-Oven004', 13, this.burner4State(), this.showBurner4);
-    this.burner4.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.burner4State();
-        callback(null, currentValue);
-      });
+    this.burner4.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.burner4State();
+      return currentValue;
+    });
     this.ovenService.addLinkedService(this.burner4);
 
     this.burner5 = this.createInputSourceService('Back Right Burner Status', 'NicoCataGaTa-Oven005', 14, this.burner5State(), this.showBurner5);
-    this.burner5.getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('get', (callback) => {
-        const currentValue = this.burner5State();
-        callback(null, currentValue);
-      });
+    this.burner5.getCharacteristic(this.platform.Characteristic.ConfiguredName).onGet(() => {
+      const currentValue = this.burner5State();
+      return currentValue;
+    });
     this.ovenService.addLinkedService(this.burner5);
 
     //////////Timers
@@ -315,55 +315,34 @@ export default class Oven extends BaseDevice {
     this.ovenTimerService.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.ovenTimerService.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Oven Cook Time');
     this.ovenTimerService.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.IRRIGATION);
-    this.ovenTimerService.getCharacteristic(Characteristic.Active)
-      .on('get', (callback) => {
-        let currentValue = 0;
-        if (this.remainTime() !== 0) {
-          currentValue = 1;
-        }
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        const enabled = normalizeBoolean(value);
-        if (!enabled) {
-          this.stopOven();
-          this.ovenTimerService.updateCharacteristic(Characteristic.Active, 0);
-          this.ovenTimerService.updateCharacteristic(Characteristic.RemainingDuration, 0);
-          this.ovenTimerService.updateCharacteristic(Characteristic.InUse, 0);
-        } else {
-          this.sendOvenCommand();
-        }
-        callback(null);
-      });
+    this.ovenTimerService.getCharacteristic(Characteristic.Active).onGet(this.onlineGet(() => this.remainTime() !== 0 ? 1 : 0)).onSet((value) => {
+      const enabled = normalizeBoolean(value);
+      if (!enabled) {
+        this.stopOven();
+        this.ovenTimerService.updateCharacteristic(Characteristic.Active, 0);
+        this.ovenTimerService.updateCharacteristic(Characteristic.RemainingDuration, 0);
+        this.ovenTimerService.updateCharacteristic(Characteristic.InUse, 0);
+      } else {
+        this.sendOvenCommand();
+      }
+    });
     this.ovenTimerService.setCharacteristic(Characteristic.InUse, this.remainTime() > 0 ? Characteristic.InUse.IN_USE : Characteristic.InUse.NOT_IN_USE);
     this.ovenTimerService.getCharacteristic(Characteristic.RemainingDuration)
       .setProps({
         maxValue: (86400 / 2) - 1, // 12hours
-      })
-      .on('get', (callback) => {
-        const currentValue = this.remainTime();
-        callback(null, currentValue);
-      });
+      }).onGet(this.onlineGet(() => this.remainTime()));
     this.ovenTimerService.getCharacteristic(this.platform.Characteristic.SetDuration)
       .setProps({
         maxValue: (86400 / 2) - 1, // 12hours
-      })
-      .on('get', (callback) => {
-        const currentValue = this.oventTargetTime();
-
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
+      }).onGet(this.onlineGet(() => this.oventTargetTime())).onSet((value) => {
         const vNum = normalizeNumber(value);
         if (vNum === null) {
           this.platform.log.error('SetDuration is not a number');
-          callback();
           return;
         }
         this.pauseUpdate = true;
         this.platform.log.debug('Cooking Duration set to to: ' + this.secondsToTime(vNum));
         this.ovenCommandList.ovenSetDuration = vNum;
-        callback(null);
       });
     this.ovenAlarmService = this.accessory.getService('Oven Timer') ||
       this.accessory.addService(this.platform.Service.Valve, 'Oven Timer', 'NicoCataGaTa-OvenT32');
@@ -371,263 +350,210 @@ export default class Oven extends BaseDevice {
     this.ovenAlarmService.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Oven Timer');
     this.ovenAlarmService.setCharacteristic(Characteristic.Name, 'Oven Timer');
     this.ovenAlarmService.setCharacteristic(Characteristic.ValveType, Characteristic.ValveType.IRRIGATION);
-    this.ovenAlarmService.getCharacteristic(Characteristic.Active)
-      .on('get', (callback) => {
-        let currentValue = 0;
-        if (this.ovenTimerTime() !== 0) {
-          currentValue = 1;
-        }
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        const enabled = normalizeBoolean(value);
-        if (!enabled) {
-          this.timerAlarmSec = 0;
-          this.sendTimerCommand(0);
-          this.ovenAlarmService.updateCharacteristic(Characteristic.Active, 0);
-          this.ovenAlarmService.updateCharacteristic(Characteristic.RemainingDuration, 0);
-          this.ovenAlarmService.updateCharacteristic(Characteristic.InUse, 0);
-        } else {
-          this.sendTimerCommand(this.timerAlarmSec);
-          this.ovenAlarmService.updateCharacteristic(Characteristic.Active, 1);
-          this.ovenAlarmService.updateCharacteristic(Characteristic.RemainingDuration, this.timerAlarmSec);
-          this.ovenAlarmService.updateCharacteristic(Characteristic.InUse, 1);
-        }
-        callback(null);
-      });
+    this.ovenAlarmService.getCharacteristic(Characteristic.Active).onGet(this.onlineGet(() => this.ovenTimerTime() !== 0 ? 1 : 0)).onSet((value) => {
+      const enabled = normalizeBoolean(value);
+      if (!enabled) {
+        this.timerAlarmSec = 0;
+        this.sendTimerCommand(0);
+        this.ovenAlarmService.updateCharacteristic(Characteristic.Active, 0);
+        this.ovenAlarmService.updateCharacteristic(Characteristic.RemainingDuration, 0);
+        this.ovenAlarmService.updateCharacteristic(Characteristic.InUse, 0);
+      } else {
+        this.sendTimerCommand(this.timerAlarmSec);
+        this.ovenAlarmService.updateCharacteristic(Characteristic.Active, 1);
+        this.ovenAlarmService.updateCharacteristic(Characteristic.RemainingDuration, this.timerAlarmSec);
+        this.ovenAlarmService.updateCharacteristic(Characteristic.InUse, 1);
+      }
+    });
     this.ovenAlarmService.setCharacteristic(Characteristic.InUse, this.ovenTimerTime() > 0 ? Characteristic.InUse.IN_USE : Characteristic.InUse.NOT_IN_USE);
     this.ovenAlarmService.getCharacteristic(Characteristic.RemainingDuration)
       .setProps({
         maxValue: (86400 / 2), // 12hours
-      })
-      .on('get', (callback) => {
-        const currentValue = this.ovenTimerTime();
-        callback(null, currentValue);
-      });
+      }).onGet(this.onlineGet(() => this.ovenTimerTime()));
     this.ovenAlarmService.getCharacteristic(this.platform.Characteristic.SetDuration)
       .setProps({
         maxValue: (86400 / 2), // 12hours
-      })
-      .on('get', (callback) => {
-        const currentValue = this.timerAlarmSec;
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
+      }).onGet(this.onlineGet(() => this.timerAlarmSec)).onSet((value) => {
         let vNum = normalizeNumber(value);
         if (vNum === null) {
           this.platform.log.error('SetDuration is not a number');
-          callback();
           return;
         }
         if (vNum >= (86400 / 2)) {
           vNum = (86400 / 2) - 1;
         }
         this.timerAlarmSec = vNum;
-        callback(null);
       });
     ////////////Buttons
     this.bakeSwitch = accessory.getService('Bake Mode') ||
       accessory.addService(this.platform.Service.Switch, 'Bake Mode', 'CataNicoGaTa-80');
     this.bakeSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.bakeSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Bake Mode');
-    this.bakeSwitch.getCharacteristic(this.platform.Characteristic.On)
-      .on('get', (callback) => {
-        this.platform.log.debug('Bake Switch Get state');
-        const currentValue = false;
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        if (value) {
-          this.ovenCommandList.ovenMode = 'BAKE';
-        }
-        this.updateOvenModeSwitch();
-        callback(null);
-      });
+    this.bakeSwitch.getCharacteristic(this.platform.Characteristic.On).onGet(() => {
+      this.platform.log.debug('Bake Switch Get state');
+      const currentValue = false;
+      return currentValue;
+    }).onSet((value) => {
+      if (value) {
+        this.ovenCommandList.ovenMode = 'BAKE';
+      }
+      this.updateOvenModeSwitch();
+    });
 
     this.convectionBakeSwitch = accessory.getService('Convection Bake Mode') ||
       accessory.addService(this.platform.Service.Switch, 'Convection Bake Mode', 'CataNicoGaTa-Control1');
     this.convectionBakeSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.convectionBakeSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Convection Bake Mode');
-    this.convectionBakeSwitch.getCharacteristic(this.platform.Characteristic.On)
-      .on('get', (callback) => {
-        const currentValue = false;
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        const enabled = normalizeBoolean(value);
-        if (enabled) {
-          this.ovenCommandList.ovenMode = 'CONVECTION_BAKE';
-        }
-        this.updateOvenModeSwitch();
-        callback(null);
-      });
+    this.convectionBakeSwitch.getCharacteristic(this.platform.Characteristic.On).onGet(() => {
+      const currentValue = false;
+      return currentValue;
+    }).onSet((value) => {
+      const enabled = normalizeBoolean(value);
+      if (enabled) {
+        this.ovenCommandList.ovenMode = 'CONVECTION_BAKE';
+      }
+      this.updateOvenModeSwitch();
+    });
 
     this.convectionRoastSwitch = accessory.getService('Convection Roast Mode') ||
       accessory.addService(this.platform.Service.Switch, 'Convection Roast Mode', 'CataNicoGaTa-Control2');
     this.convectionRoastSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.convectionRoastSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Convection Roast Mode');
-    this.convectionRoastSwitch.getCharacteristic(this.platform.Characteristic.On)
-      .on('get', (callback) => {
-        const currentValue = false;
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        const enabled = normalizeBoolean(value);
-        if (enabled) {
-          this.ovenCommandList.ovenMode = 'CONVECTION_ROST';
-        }
-        this.updateOvenModeSwitch();
-        callback(null);
-      });
+    this.convectionRoastSwitch.getCharacteristic(this.platform.Characteristic.On).onGet(() => {
+      const currentValue = false;
+      return currentValue;
+    }).onSet((value) => {
+      const enabled = normalizeBoolean(value);
+      if (enabled) {
+        this.ovenCommandList.ovenMode = 'CONVECTION_ROST';
+      }
+      this.updateOvenModeSwitch();
+    });
 
     this.frozenMealSwitch = accessory.getService('Frozen Meal Mode') ||
       accessory.addService(this.platform.Service.Switch, 'Frozen Meal Mode', 'CataNicoGaTa-Control3');
     this.frozenMealSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.frozenMealSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Frozen Meal Mode');
-    this.frozenMealSwitch.getCharacteristic(this.platform.Characteristic.On)
-      .on('get', (callback) => {
-        const currentValue = false;
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        const enabled = normalizeBoolean(value);
-        if (enabled) {
-          this.ovenCommandList.ovenMode = 'FROZEN_MEAL';
-        }
-        this.updateOvenModeSwitch();
-        callback(null);
-      });
+    this.frozenMealSwitch.getCharacteristic(this.platform.Characteristic.On).onGet(() => {
+      const currentValue = false;
+      return currentValue;
+    }).onSet((value) => {
+      const enabled = normalizeBoolean(value);
+      if (enabled) {
+        this.ovenCommandList.ovenMode = 'FROZEN_MEAL';
+      }
+      this.updateOvenModeSwitch();
+    });
     this.airFrySwitch = accessory.getService('Air Fry Mode') ||
       accessory.addService(this.platform.Service.Switch, 'Air Fry Mode', 'CataNicoGaTa-Control4');
     this.airFrySwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.airFrySwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Air Fry Mode');
-    this.airFrySwitch.getCharacteristic(this.platform.Characteristic.On)
-      .on('get', (callback) => {
-        const currentValue = false;
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        const enabled = normalizeBoolean(value);
-        if (enabled) {
-          this.ovenCommandList.ovenMode = 'AIR_FRY';
-        }
-        this.updateOvenModeSwitch();
-        callback(null);
-      });
+    this.airFrySwitch.getCharacteristic(this.platform.Characteristic.On).onGet(() => {
+      const currentValue = false;
+      return currentValue;
+    }).onSet((value) => {
+      const enabled = normalizeBoolean(value);
+      if (enabled) {
+        this.ovenCommandList.ovenMode = 'AIR_FRY';
+      }
+      this.updateOvenModeSwitch();
+    });
     this.airSousvideSwitch = accessory.getService('Air Sousvide Mode') ||
       accessory.addService(this.platform.Service.Switch, 'Air Sousvide Mode', 'CataNicoGaTa-Control5');
     this.airSousvideSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.airSousvideSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Air Sousvide Mode');
-    this.airSousvideSwitch.getCharacteristic(this.platform.Characteristic.On)
-      .on('get', (callback) => {
-        const currentValue = false;
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        const enabled = normalizeBoolean(value);
-        if (enabled) {
-          this.ovenCommandList.ovenMode = 'AIR_SOUSVIDE';
-        }
-        this.updateOvenModeSwitch();
-        callback(null);
-      });
+    this.airSousvideSwitch.getCharacteristic(this.platform.Characteristic.On).onGet(() => {
+      const currentValue = false;
+      return currentValue;
+    }).onSet((value) => {
+      const enabled = normalizeBoolean(value);
+      if (enabled) {
+        this.ovenCommandList.ovenMode = 'AIR_SOUSVIDE';
+      }
+      this.updateOvenModeSwitch();
+    });
 
     this.warmModeSwitch = accessory.getService('Proof-Warm Mode') ||
       accessory.addService(this.platform.Service.Switch, 'Proof-Warm Mode', 'CataNicoGaTa-Control5W');
     this.warmModeSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.warmModeSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Proof-Warm Mode');
-    this.warmModeSwitch.getCharacteristic(this.platform.Characteristic.On)
-      .on('get', (callback) => {
-        const currentValue = false;
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        const enabled = normalizeBoolean(value);
-        if (enabled) {
-          this.ovenCommandList.ovenMode = 'WARM';
-        }
-        this.updateOvenModeSwitch();
-        callback(null);
-      });
+    this.warmModeSwitch.getCharacteristic(this.platform.Characteristic.On).onGet(() => {
+      const currentValue = false;
+      return currentValue;
+    }).onSet((value) => {
+      const enabled = normalizeBoolean(value);
+      if (enabled) {
+        this.ovenCommandList.ovenMode = 'WARM';
+      }
+      this.updateOvenModeSwitch();
+    });
     this.cancelSwitch = accessory.getService('Stop Oven') ||
       accessory.addService(this.platform.Service.Switch, 'Stop Oven', 'CataNicoGaTa-Control6');
     this.cancelSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.cancelSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Stop Oven');
-    this.cancelSwitch.getCharacteristic(this.platform.Characteristic.On)
-      .on('get', (callback) => {
-        const currentValue = false;
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        const enabled = normalizeBoolean(value);
-        if (enabled) {
-          this.stopOven();
-        }
-        setTimeout(() => {
-          this.cancelSwitch.updateCharacteristic(this.platform.Characteristic.On, false);
-        }, 1000);
-        this.updateOvenModeSwitch();
-        callback(null);
-      });
+    this.cancelSwitch.getCharacteristic(this.platform.Characteristic.On).onGet(() => {
+      const currentValue = false;
+      return currentValue;
+    }).onSet((value) => {
+      const enabled = normalizeBoolean(value);
+      if (enabled) {
+        this.stopOven();
+      }
+      setTimeout(() => {
+        this.cancelSwitch.updateCharacteristic(this.platform.Characteristic.On, false);
+      }, 1000);
+      this.updateOvenModeSwitch();
+    });
 
     this.monitorOnlySwitch = accessory.getService('Monitor Only Mode') ||
       accessory.addService(this.platform.Service.Switch, 'Monitor Only Mode', 'CataNicoGaTa-Control7');
     this.monitorOnlySwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.monitorOnlySwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Monitor Only Mode');
-    this.monitorOnlySwitch.getCharacteristic(this.platform.Characteristic.On)
-      .on('get', (callback) => {
-        if (this.Status.data?.upperRemoteStart.includes('DIS')) {
-          this.monitorOnly = true;
-        }
-        const currentValue = this.monitorOnly;
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        const b = normalizeBoolean(value);
-        this.homekitMonitorOnly = b;
-        this.monitorOnly = b;
-        callback(null);
-      });
+    this.monitorOnlySwitch.getCharacteristic(this.platform.Characteristic.On).onGet(() => {
+      if (!isEnabledStatus(this.Status.data, 'upperRemoteStart')) {
+        this.monitorOnly = true;
+      }
+      const currentValue = this.monitorOnly;
+      return currentValue;
+    }).onSet((value) => {
+      const b = normalizeBoolean(value);
+      this.homekitMonitorOnly = b;
+      this.monitorOnly = b;
+    });
 
     this.startOvenSwitch = accessory.getService('Start Oven') ||
       accessory.addService(this.platform.Service.Switch, 'Start Oven', 'CataNicoGaTa-Control8');
     this.startOvenSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.startOvenSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Start Oven');
-    this.startOvenSwitch.getCharacteristic(this.platform.Characteristic.On)
-      .on('get', (callback) => {
-        const currentValue = false;
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
-        const enabled = normalizeBoolean(value);
-        if (enabled) {
-          this.sendOvenCommand();
-          setTimeout(() => {
-            this.startOvenSwitch.updateCharacteristic(this.platform.Characteristic.On, false);
-          }, 1000);
-        }
-        callback(null);
-      });
+    this.startOvenSwitch.getCharacteristic(this.platform.Characteristic.On).onGet(() => {
+      const currentValue = false;
+      return currentValue;
+    }).onSet((value) => {
+      const enabled = normalizeBoolean(value);
+      if (enabled) {
+        this.sendOvenCommand();
+        setTimeout(() => {
+          this.startOvenSwitch.updateCharacteristic(this.platform.Characteristic.On, false);
+        }, 1000);
+      }
+    });
 
-    if ('upperCookAndWarmStatus' in this.Status.data) {
+    if (snapshotString(this.Status.data, 'upperCookAndWarmStatus') !== '') {
       this.keepWarmSwitch = accessory.getService('Keep Warm') ||
         accessory.addService(this.platform.Service.Switch, 'Keep Warm', 'CataNicoGaTa-Control9');
       this.keepWarmSwitch.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
       this.keepWarmSwitch.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Keep Warm');
-      this.keepWarmSwitch.getCharacteristic(this.platform.Characteristic.On)
-        .on('get', (callback) => {
-          const currentValue = !this.Status.data?.upperCookAndWarmStatus?.includes('DIS');
-          callback(null, currentValue);
-        })
-        .on('set', (value, callback) => {
-          const enabled = normalizeBoolean(value);
-          if (enabled) {
-            this.ovenCommandList.ovenKeepWarm = 'ENABLE';
-          } else {
-            this.ovenCommandList.ovenKeepWarm = 'DISABLE';
-          }
-          callback(null);
-        });
+      this.keepWarmSwitch.getCharacteristic(this.platform.Characteristic.On).onGet(() => {
+        const currentValue = isEnabledStatus(this.Status.data, 'upperCookAndWarmStatus');
+        return currentValue;
+      }).onSet((value) => {
+        const enabled = normalizeBoolean(value);
+        if (enabled) {
+          this.ovenCommandList.ovenKeepWarm = 'ENABLE';
+        } else {
+          this.ovenCommandList.ovenKeepWarm = 'DISABLE';
+        }
+      });
     }
 
     ////////Door sensor
@@ -642,7 +568,7 @@ export default class Oven extends BaseDevice {
     this.ovenDoorOpened.setCharacteristic(this.platform.Characteristic.StatusActive, this.onStatus());
     this.ovenDoorOpened.setCharacteristic(
       this.platform.Characteristic.ContactSensorState,
-      this.Status.data?.upperDoorOpen.includes('DIS') ? 0 : 1,
+      isEnabledStatus(this.Status.data, 'upperDoorOpen') ? 1 : 0,
     );
 
     ///Range Cooking
@@ -669,7 +595,7 @@ export default class Oven extends BaseDevice {
     this.remoteEnabled.setCharacteristic(this.platform.Characteristic.StatusActive, this.onStatus());
     this.remoteEnabled.setCharacteristic(
       this.platform.Characteristic.ContactSensorState,
-      this.Status.data?.upperRemoteStart.includes('DIS') ? 0 : 1,
+      isEnabledStatus(this.Status.data, 'upperRemoteStart') ? 1 : 0,
     );
     /////////Burners On
 
@@ -677,11 +603,12 @@ export default class Oven extends BaseDevice {
       this.accessory.addService(this.platform.Service.LightSensor, 'Number of Burners in Use', 'NicoCataGaTa-OvenTCB');
     this.burnersOnNumber.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.burnersOnNumber.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Number of Burners in Use');
+    const burnerOnCounter = snapshotNumber(this.Status.data, 'burnerOnCounter');
     this.burnersOnNumber.setCharacteristic(
       this.platform.Characteristic.CurrentAmbientLightLevel,
-      this.Status.data?.burnerOnCounter < 1 ? 0.0001 : this.Status.data?.burnerOnCounter,
+      burnerOnCounter < 1 ? 0.0001 : burnerOnCounter,
     );
-    this.burnersOnNumber.setCharacteristic(this.platform.Characteristic.StatusActive, this.Status.data?.burnerOnCounter > 0 ? true : false);
+    this.burnersOnNumber.setCharacteristic(this.platform.Characteristic.StatusActive, burnerOnCounter > 0 ? true : false);
 
 
     ///////Oven Temperature Control
@@ -692,60 +619,49 @@ export default class Oven extends BaseDevice {
         .setCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits, 1);
     this.ovenTempControl.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.ovenTempControl.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Oven Temperature Control');
+    this.ovenTempControl.getCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState)
+      .onGet(this.onlineGet(() => this.currentHeatingState()));
+    this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits)
+      .onGet(this.onlineGet(() => temperatureDisplayUnitsValue(this.Status.data, 'upperCurrentTemperatureUnit')));
     this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState)
-      .setProps({ validValues: [this.platform.Characteristic.TargetHeatingCoolingState.OFF, this.platform.Characteristic.TargetHeatingCoolingState.HEAT] })
-      .on('get', (callback) => {
-        const currentValue = this.targetHeatingState();
-        callback(null, currentValue);
+      .setProps({
+        validValues: [
+          this.platform.Characteristic.TargetHeatingCoolingState.OFF,
+          this.platform.Characteristic.TargetHeatingCoolingState.HEAT,
+        ],
       })
-      .on('set', (value, callback) => {
+      .onGet(this.onlineGet(() => this.targetHeatingState()))
+      .onSet((value) => {
         const enabled = normalizeBoolean(value);
         if (!enabled) {
           this.stopOven();
         } else {
           this.pauseUpdate = true;
         }
-        callback(null);
       });
     this.ovenTempControl.getCharacteristic(this.platform.Characteristic.CurrentTemperature)
       .setProps({
         minValue: 0,
         maxValue: 218,
         minStep: 0.5,
-      })
-      .on('get', (callback) => {
-        const currentValue = this.ovenCurrentTemperature();
-        callback(null, currentValue);
-      });
-    this.ovenTempControl.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
-      .on('get', (callback) => {
-        const currentValue = this.localHumidity;
-        callback(null, currentValue);
-      });
+      }).onGet(this.onlineGet(() => this.ovenCurrentTemperature()));
+    this.ovenTempControl.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity).onGet(this.onlineGet(() => this.localHumidity));
     this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TargetTemperature)
       .setProps({
         minValue: 38,
         maxValue: 218,
         minStep: 0.5,
-      })
-      .on('get', (callback) => {
-        const currentValue = this.ovenTargetTemperature();
-        // this.platform.log('Get Target Temp' + this.ovenTargetTemperature())
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
+      }).onGet(this.onlineGet(() => this.ovenTargetTemperature())).onSet((value) => {
         const vNum = normalizeNumber(value);
         if (vNum === null) {
           this.platform.log.error('TargetTemperature is not a number');
-          callback();
           return;
         }
-        if (this.Status.data?.upperCurrentTemperatureUnit.includes('FAH')) {
+        if (isFahrenheitUnit(this.Status.data, 'upperCurrentTemperatureUnit')) {
           this.ovenCommandList.ovenSetTemperature = this.tempCtoF(vNum);
         } else {
           this.ovenCommandList.ovenSetTemperature = Math.round(vNum);
         }
-        callback(null);
       });
 
     this.probeTempControl = this.accessory.getService('Probe Temperature Control') ||
@@ -755,54 +671,44 @@ export default class Oven extends BaseDevice {
         .setCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits, 1);
     this.probeTempControl.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
     this.probeTempControl.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Probe Temperature Control');
+    this.probeTempControl.getCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState)
+      .onGet(this.onlineGet(() => this.probeCurrentState()));
+    this.probeTempControl.getCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits)
+      .onGet(this.onlineGet(() => temperatureDisplayUnitsValue(this.Status.data, 'upperCurrentTemperatureUnit')));
     this.probeTempControl.getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState)
-      .setProps({ validValues: [this.platform.Characteristic.TargetHeatingCoolingState.OFF, this.platform.Characteristic.TargetHeatingCoolingState.HEAT] })
-      .on('get', (callback) => {
-        const currentValue = this.probeTargetState();
-        callback(null, currentValue);
+      .setProps({
+        validValues: [
+          this.platform.Characteristic.TargetHeatingCoolingState.OFF,
+          this.platform.Characteristic.TargetHeatingCoolingState.HEAT,
+        ],
       })
-      .on('set', (value, callback) => {
+      .onGet(this.onlineGet(() => this.probeTargetState()))
+      .onSet(() => {
         this.pauseUpdate = true;
-        callback(null);
       });
     this.probeTempControl.getCharacteristic(this.platform.Characteristic.CurrentTemperature)
       .setProps({
         minValue: 0,
         maxValue: 285,
         minStep: 0.1,
-      })
-      .on('get', (callback) => {
-        const currentValue = this.probeCurrentTemperature();
-        callback(null, currentValue);
-      });
-    this.probeTempControl.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
-      .on('get', (callback) => {
-        const currentValue = this.localHumidity;
-        callback(null, currentValue);
-      });
+      }).onGet(this.onlineGet(() => this.probeCurrentTemperature()));
+    this.probeTempControl.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity).onGet(this.onlineGet(() => this.localHumidity));
     this.probeTempControl.getCharacteristic(this.platform.Characteristic.TargetTemperature)
       .setProps({
         minValue: 38,
         maxValue: 285,
         minStep: 0.1,
-      })
-      .on('get', (callback) => {
-        const currentValue = this.probeTargetTemperature();
-        callback(null, currentValue);
-      })
-      .on('set', (value, callback) => {
+      }).onGet(this.onlineGet(() => this.probeTargetTemperature())).onSet((value) => {
         const v = normalizeNumber(value);
         if (v === null) {
           this.platform.log.error('TargetTemperature is not a valid number');
-          callback(null);
           return;
         }
-        if (this.Status.data?.upperCurrentTemperatureUnit.includes('FAH')) {
+        if (isFahrenheitUnit(this.Status.data, 'upperCurrentTemperatureUnit')) {
           this.ovenCommandList.probeTemperature = this.tempCtoF(v);
         } else {
           this.ovenCommandList.probeTemperature = Math.round(v);
         }
-        callback(null);
       });
   }
 
@@ -824,27 +730,15 @@ export default class Oven extends BaseDevice {
   }
 
   async sendTimerCommand(time: number) {
+    if (!this.isOnlineForHomeKit) {
+      return;
+    }
+
     if (!this.waitingForCommand) {
       this.platform.log.debug('Alarm Set to: ' + this.secondsToTime(time));
-      const ctrlKey = 'SetTimer';
       const device = this.accessory.context.device;
-      this.platform.ThinQ?.deviceControl(device.id, {
-        dataKey: null,
-        dataValue: null,
-        dataSetList: {
-          ovenState: {
-            'cmdOptionContentsType': 'TIMER',
-            'cmdOptionDataLength': 'TIMER',
-            'lowerTimerHour': 128,
-            'lowerTimerMinute': 128,
-            'lowerTimerSecond': 128,
-            'upperTimerHour': Math.floor(time / 3600),
-            'upperTimerMinute': Math.floor(time % 3600 / 60),
-            'upperTimerSecond': Math.floor(time % 60),
-          },
-        },
-        dataGetList: null,
-      }, 'Set', ctrlKey);
+      const timerCommand = ovenTimerCommand(time);
+      await this.platform.ThinQ?.deviceControl(device.id, timerCommand.payload, timerCommand.command, timerCommand.ctrlKey);
       this.waitingForCommand = true;
       setTimeout(() => {
         this.pauseUpdate = false;
@@ -857,119 +751,19 @@ export default class Oven extends BaseDevice {
   }
 
   async sendOvenCommand() {
+    if (!this.isOnlineForHomeKit) {
+      return;
+    }
+
     if (!this.monitorOnly) {
       if (!this.waitingForCommand) {
         this.pauseUpdate = true;
-        this.ovenCommandList.tempUnits = this.Status.data?.upperCurrentTemperatureUnit;
-        if (this.ovenCommandList.ovenSetDuration === 0) {
-          this.ovenCommandList.ovenSetDuration = 1800;
-        }
-        if (this.ovenCommandList.ovenMode === 'NONE') {
-          this.ovenCommandList.ovenMode = 'BAKE';
-        }
-        if (this.ovenCommandList.ovenMode.includes('CONVECTION_BAKE') ||
-          this.ovenCommandList.ovenMode.includes('CONVECTION_ROST') ||
-          this.ovenCommandList.ovenMode.includes('FROZEN_MEAL') ||
-          this.ovenCommandList.ovenMode.includes('AIR_FRY')
-        ) {
-          if (this.ovenCommandList.tempUnits.includes('FAH')) {
-            if (this.ovenCommandList.ovenSetTemperature < 300) {
-              this.ovenCommandList.ovenSetTemperature = 300;
-            }
-            if (this.ovenCommandList.ovenSetTemperature > 550) {
-              this.ovenCommandList.ovenSetTemperature = 550;
-            }
-          } else {
-            if (this.ovenCommandList.ovenSetTemperature < 150) {
-              this.ovenCommandList.ovenSetTemperature = 150;
-            }
-
-            if (this.ovenCommandList.ovenSetTemperature > 285) {
-              this.ovenCommandList.ovenSetTemperature = 285;
-            }
-          }
-        } else if (this.ovenCommandList.ovenMode.includes('BAKE')) {
-          if (this.ovenCommandList.tempUnits.includes('FAH')) {
-            if (this.ovenCommandList.ovenSetTemperature < 170) {
-              this.ovenCommandList.ovenSetTemperature = 170;
-            }
-            if (this.ovenCommandList.ovenSetTemperature > 550) {
-              this.ovenCommandList.ovenSetTemperature = 550;
-            }
-          } else {
-            if (this.ovenCommandList.ovenSetTemperature < 80) {
-              this.ovenCommandList.ovenSetTemperature = 80;
-            }
-            if (this.ovenCommandList.ovenSetTemperature > 285) {
-              this.ovenCommandList.ovenSetTemperature = 285;
-            }
-          }
-
-        } else if (this.ovenCommandList.ovenMode.includes('AIR_SOUSVIDE')) {
-          if (this.ovenCommandList.tempUnits.includes('FAH')) {
-            if (this.ovenCommandList.ovenSetTemperature < 100) {
-              this.ovenCommandList.ovenSetTemperature = 100;
-            }
-            if (this.ovenCommandList.ovenSetTemperature > 205) {
-              this.ovenCommandList.ovenSetTemperature = 205;
-            }
-
-          } else {
-            if (this.ovenCommandList.ovenSetTemperature < 380) {
-              this.ovenCommandList.ovenSetTemperature = 38;
-            }
-
-            if (this.ovenCommandList.ovenSetTemperature > 96) {
-              this.ovenCommandList.ovenSetTemperature = 96;
-            }
-          }
-
-        } else if (this.ovenCommandList.ovenMode.includes('WARM')) {
-          if (this.ovenCommandList.tempUnits.includes('FAH')) {
-            this.ovenCommandList = {
-              ovenMode: 'WARM',
-              ovenSetTemperature: 0,
-              tempUnits: 'FAHRENHEIT',
-              ovenSetDuration: 0,
-              probeTemperature: 0,
-              ovenKeepWarm: 'DISABLE',
-            };
-          } else {
-            this.ovenCommandList = {
-              ovenMode: 'WARM',
-              ovenSetTemperature: 0,
-              tempUnits: 'CELSIUS',
-              ovenSetDuration: 0,
-              probeTemperature: 0,
-              ovenKeepWarm: 'DISABLE',
-            };
-          }
-        }
+        this.ovenCommandList.tempUnits = snapshotString(this.Status.data, 'upperCurrentTemperatureUnit', 'FAHRENHEIT');
+        this.ovenCommandList = prepareOvenCookCommand(this.ovenCommandList);
         this.platform.log.debug('Sending the Folowing Commands: ' + JSON.stringify(this.ovenCommandList));
-        const ctrlKey = 'SetCookStart';
         const device = this.accessory.context.device;
-        this.platform.ThinQ?.deviceControl(device.id, {
-          dataKey: null,
-          dataValue: null,
-          dataSetList: {
-            ovenState: {
-              'cmdOptionContentsType': 'REMOTE_COOK_START',
-              'cmdOptionDataLength': 'REMOTE_COOK_START',
-              'cmdOptionSetCookAndWarm': this.ovenCommandList.ovenKeepWarm,
-              'cmdOptionSetCookName': this.ovenCommandList.ovenMode,
-              'cmdOptionSetMyRecipeCookNumber': 0,
-              'cmdOptionSetSteamLevel': '',
-              'cmdOptionSetSubCookNumber': 0,
-              'cmdOptionSetTargetTemperatureUnit': this.ovenCommandList.tempUnits,
-              'cmdOptionSetTargetTimeHour': Math.floor(this.ovenCommandList.ovenSetDuration / 3600),
-              'cmdOptionSetTargetTimeMinute': Math.floor(this.ovenCommandList.ovenSetDuration % 3600 / 60),
-              'cmdOptionSetRapidPreheat': 'OFF',
-              'setTargetProveTemperature': this.ovenCommandList.probeTemperature,
-              'setTargetTemperature': this.ovenCommandList.ovenSetTemperature,
-            },
-          },
-          dataGetList: null,
-        }, 'Set', ctrlKey);
+        const ovenCommand = ovenRemoteStartCommand(this.ovenCommandList);
+        await this.platform.ThinQ?.deviceControl(device.id, ovenCommand.payload, ovenCommand.command, ovenCommand.ctrlKey);
 
         this.waitingForCommand = true;
         setTimeout(() => {
@@ -985,22 +779,17 @@ export default class Oven extends BaseDevice {
   }
 
   async stopOven() {
+    if (!this.isOnlineForHomeKit) {
+      return;
+    }
+
     if (!this.monitorOnly) {
       if (!this.waitingForCommand) {
         this.pauseUpdate = true;
         this.platform.log.debug('Stop Command Sent to Oven');
-        const ctrlKey = 'SetCookStop';
         const device = this.accessory.context.device;
-        this.platform.ThinQ?.deviceControl(device.id, {
-          dataKey: null,
-          dataValue: null,
-          dataSetList: {
-            ovenState: {
-              'cmdOptionCookStop': 'UPPER',
-            },
-          },
-          dataGetList: null,
-        }, 'Set', ctrlKey);
+        const stopCommand = cookingStopCommand();
+        await this.platform.ThinQ?.deviceControl(device.id, stopCommand.payload, stopCommand.command, stopCommand.ctrlKey);
 
         setTimeout(() => {
           this.pauseUpdate = false;
@@ -1015,7 +804,7 @@ export default class Oven extends BaseDevice {
   }
 
   getMonitorState() {
-    if (this.Status.data?.upperRemoteStart.includes('DIS')) {
+    if (!isEnabledStatus(this.Status.data, 'upperRemoteStart')) {
       this.monitorOnly = true;
     } else {
       this.monitorOnly = this.homekitMonitorOnly as boolean;
@@ -1038,11 +827,11 @@ export default class Oven extends BaseDevice {
   }
 
   ovenOnStatus() {
-    return !this.Status.data?.upperState.includes('INITIAL');
+    return hasActiveCookingState(this.Status.data, 'upperState');
   }
 
   onStatus() {
-    return !this.Status.data?.upperState.includes('INITIAL') || this.Status.data?.burnerOnCounter > 0;
+    return this.ovenOnStatus() || hasNonZeroSnapshotNumber(this.Status.data, 'burnerOnCounter');
   }
 
   nameLengthCheck(newName: string) {
@@ -1053,18 +842,12 @@ export default class Oven extends BaseDevice {
   }
 
   remainTime() {
-    let remainingDuration = 0;
-    if (typeof this.Status.data?.upperRemainTimeHour !== 'undefined') {
-      remainingDuration += this.Status.data?.upperRemainTimeHour * 3600;
-    }
-    if (typeof this.Status.data?.upperRemainTimeMinute !== 'undefined') {
-      remainingDuration += this.Status.data?.upperRemainTimeMinute * 60;
-    }
-
-    if (typeof this.Status.data?.upperRemainTimeSecond !== 'undefined') {
-      remainingDuration += this.Status.data?.upperRemainTimeSecond;
-    }
-    return remainingDuration;
+    return durationFromSnapshot(
+      this.Status.data,
+      'upperRemainTimeHour',
+      'upperRemainTimeMinute',
+      'upperRemainTimeSecond',
+    );
   }
 
   ovenModeName() {
@@ -1132,7 +915,7 @@ export default class Oven extends BaseDevice {
       break;
     default:
       // eslint-disable-next-line no-case-declarations
-      let cookName = this.Status.data?.upperManualCookName;
+      let cookName = snapshotString(this.Status.data, 'upperManualCookName', 'unknown');
       cookName = cookName.toLocaleLowerCase();
       // eslint-disable-next-line no-case-declarations
       const cookNameCap =
@@ -1146,10 +929,8 @@ export default class Oven extends BaseDevice {
       this.inputNameMode = this.OvenSubCookMenu(this.inputNameMode);
     }
 
-    if ('upperCookAndWarmStatus' in this.Status.data) {
-      if (!this.Status.data?.upperCookAndWarmStatus.includes('DIS')) {
-        this.inputNameMode += ' (Keep Warm On)';
-      }
+    if (isEnabledStatus(this.Status.data, 'upperCookAndWarmStatus')) {
+      this.inputNameMode += ' (Keep Warm On)';
     }
     return this.nameLengthCheck(this.inputNameMode);
   }
@@ -1159,7 +940,7 @@ export default class Oven extends BaseDevice {
     switch (this.Status.data?.upperState) {
     case 'INITIAL':
       this.inputNameStatus += 'in Standby';
-      if (this.Status.data?.upperRemoteStart.includes('DIS')) {
+      if (!isEnabledStatus(this.Status.data, 'upperRemoteStart')) {
         this.inputNameStatus += ' (Remote Start Disabled)';
       } else if (this.homekitMonitorOnly) {
         this.inputNameStatus += ' (Homekit Monitor Only Mode)';
@@ -1185,7 +966,7 @@ export default class Oven extends BaseDevice {
       break;
     default:
       // eslint-disable-next-line no-case-declarations
-      let stateName = this.Status.data?.upperState;
+      let stateName = snapshotString(this.Status.data, 'upperState', 'unknown');
       stateName = stateName.toLocaleLowerCase();
       // eslint-disable-next-line no-case-declarations
       const stateNameCap =
@@ -1195,10 +976,8 @@ export default class Oven extends BaseDevice {
 
     }
 
-    if ('commonControlLock' in this.Status.data) {
-      if (!this.Status.data?.commonControlLock.includes('DIS')) {
-        this.inputNameStatus += ' - Controls Locked';
-      }
+    if (isEnabledStatus(this.Status.data, 'commonControlLock')) {
+      this.inputNameStatus += ' - Controls Locked';
     }
     return this.nameLengthCheck(this.inputNameStatus);
   }
@@ -1206,53 +985,33 @@ export default class Oven extends BaseDevice {
   ovenTemperature() {
     /////Current Temp
     let temperature = 'Oven Temperature Information';
-    if (this.Status.data?.upperCurrentTemperatureValue !== 0) {
-      temperature = 'Current Temp is ' + this.Status.data?.upperCurrentTemperatureValue + '°';
+    const currentTemperature = snapshotNumber(this.Status.data, 'upperCurrentTemperatureValue');
+    if (currentTemperature !== 0) {
+      temperature = 'Current Temp is ' + currentTemperature + '°';
     }
 
     ////Set temperature
-    if (this.Status.data?.upperTargetTemperatureValue !== 0) {
-      temperature += ' With Set Temp ' + this.Status.data?.upperTargetTemperatureValue + '°';
+    const targetTemperature = snapshotNumber(this.Status.data, 'upperTargetTemperatureValue');
+    if (targetTemperature !== 0) {
+      temperature += ' With Set Temp ' + targetTemperature + '°';
     }
     return this.nameLengthCheck(temperature);
   }
 
   ovenCurrentTemperature() {
-    /////Current Temp
-    if (this.Status.data?.upperCurrentTemperatureValue !== 0) {
-      if (this.Status.data?.upperCurrentTemperatureUnit.includes('FAH')) {
-        return this.tempFtoC(this.Status.data?.upperCurrentTemperatureValue);
-      } else {
-        return 0.5 * Math.round(2 * this.Status.data?.upperCurrentTemperatureValue);
-      }
-    } else if (this.Status.data?.upperCurrentTemperatureValue === 0 && this.Status.data?.upperTargetTemperatureValue !== 0) {
-      if (this.Status.data?.upperCurrentTemperatureUnit.includes('FAH')) {
-        return this.tempFtoC(this.Status.data?.upperTargetTemperatureValue);
-      } else {
-        return 0.5 * Math.round(2 * this.Status.data?.upperTargetTemperatureValue);
-      }
-    } else {
-      return this.localTemperature;
-    }
+    return homeKitTemperatureFromSnapshot(this.Status.data, 'upperCurrentTemperatureValue', 'upperCurrentTemperatureUnit')
+      ?? homeKitTemperatureFromSnapshot(this.Status.data, 'upperTargetTemperatureValue', 'upperCurrentTemperatureUnit')
+      ?? this.localTemperature;
   }
 
   ovenTargetTemperature() {
-    ////Set temperature
-    if (this.Status.data?.upperTargetTemperatureValue !== 0) {
-      if (this.Status.data?.upperCurrentTemperatureUnit.includes('FAH')) {
-        return this.tempFtoC(this.Status.data?.upperTargetTemperatureValue);
-      } else {
-        return 0.5 * Math.round(2 * this.Status.data?.upperTargetTemperatureValue);
-      }
-    } else {
-      return 38;
-    }
+    return homeKitTemperatureFromSnapshot(this.Status.data, 'upperTargetTemperatureValue', 'upperCurrentTemperatureUnit') ?? 38;
   }
 
   probeCurrentTemperature() {
     /////Current Temp
-    if (this.Status.data?.upperCurrentProveTemperatureF !== 0 && typeof this.Status.data?.upperCurrentProveTemperatureF !== 'undefined') {
-      return this.tempFtoC(this.Status.data?.upperCurrentProveTemperatureF);
+    if (hasNonZeroSnapshotNumber(this.Status.data, 'upperCurrentProveTemperatureF')) {
+      return this.tempFtoC(snapshotNumber(this.Status.data, 'upperCurrentProveTemperatureF'));
     } else {
       return this.localTemperature;
     }
@@ -1260,16 +1019,17 @@ export default class Oven extends BaseDevice {
 
   probeTargetTemperature() {
     ////Set temperature
-    if (this.Status.data?.upperTargetProveTemperatureF !== 0) {
-      return this.tempFtoC(this.Status.data?.upperTargetProveTemperatureF);
+    if (hasNonZeroSnapshotNumber(this.Status.data, 'upperTargetProveTemperatureF')) {
+      return this.tempFtoC(snapshotNumber(this.Status.data, 'upperTargetProveTemperatureF'));
     } else {
       return 38;
     }
   }
 
   OvenSubCookMenu(name: string) {
-    if (this.Status.data?.upperSubCookMenu !== 'NONE' && typeof this.Status.data?.upperSubCookMenu !== 'undefined') {
-      let subCook = this.Status.data?.upperSubCookMenu;
+    const subCookMenu = snapshotString(this.Status.data, 'upperSubCookMenu');
+    if (subCookMenu !== '' && subCookMenu !== 'NONE') {
+      let subCook = subCookMenu;
       subCook = subCook.toLocaleLowerCase();
       const subCookCap =
         subCook.charAt(0).toUpperCase()
@@ -1280,33 +1040,21 @@ export default class Oven extends BaseDevice {
   }
 
   oventTargetTime() {
-    let setDuration = 0;
-    if (typeof this.Status.data?.upperTargetTimeHour !== 'undefined') {
-      setDuration += this.Status.data?.upperTargetTimeHour * 3600;
-    }
-    if (typeof this.Status.data?.upperTargetTimeMinute !== 'undefined') {
-      setDuration += this.Status.data?.upperTargetTimeMinute * 60;
-    }
-
-    if (typeof this.Status.data?.upperTargetTimeSecond !== 'undefined') {
-      setDuration += this.Status.data?.upperTargetTimeSecond;
-    }
-    return setDuration;
+    return durationFromSnapshot(
+      this.Status.data,
+      'upperTargetTimeHour',
+      'upperTargetTimeMinute',
+      'upperTargetTimeSecond',
+    );
   }
 
   ovenTimerTime() {
-    let remainTimer = 0;
-    if (typeof this.Status.data?.upperTimerHour !== 'undefined') {
-      remainTimer += this.Status.data?.upperTimerHour * 3600;
-    }
-    if (typeof this.Status.data?.upperTimerMinute !== 'undefined') {
-      remainTimer += this.Status.data?.upperTimerMinute * 60;
-    }
-
-    if (typeof this.Status.data?.upperTimerSecond !== 'undefined') {
-      remainTimer += this.Status.data?.upperTimerSecond;
-    }
-    return remainTimer;
+    return durationFromSnapshot(
+      this.Status.data,
+      'upperTimerHour',
+      'upperTimerMinute',
+      'upperTimerSecond',
+    );
   }
 
   tempCtoF(temp: number) {
@@ -1394,18 +1142,18 @@ export default class Oven extends BaseDevice {
 
   oventOptions() {
     this.inputNameOptions = 'Settings: ';
-    if (this.Status.data?.upperCurrentTemperatureUnit.includes('FAH')) {
+    if (isFahrenheitUnit(this.Status.data, 'upperCurrentTemperatureUnit')) {
       this.inputNameOptions += 'Temp in °F';
     } else {
       this.inputNameOptions += 'Temp in °C';
     }
-    if (!this.Status.data?.upperSabbath.includes('DIS')) {
+    if (isEnabledStatus(this.Status.data, 'upperSabbath')) {
       this.inputNameOptions += ', Sabbath On';
     }
-    if (this.Status.data?.settingConvAutoConversion?.includes('ENA')) {
+    if (snapshotString(this.Status.data, 'settingConvAutoConversion').includes('ENA')) {
       this.inputNameOptions += ', Auto Conversion';
     }
-    if (this.Status.data?.settingPreheatAlarm?.includes('ON')) {
+    if (snapshotString(this.Status.data, 'settingPreheatAlarm').includes('ON')) {
       this.inputNameOptions += ', Preheat Alarm°';
     }
     return this.nameLengthCheck(this.inputNameOptions);
@@ -1413,22 +1161,24 @@ export default class Oven extends BaseDevice {
 
   ///////////
   proveStatus() {
-    if (this.Status.data.upperCurrentProveTemperatureF !== 0 && typeof this.Status.data.upperCurrentProveTemperatureF !== 'undefined') {
+    const currentProbeTemperature = snapshotNumber(this.Status.data, 'upperCurrentProveTemperatureF');
+    const targetProbeTemperature = snapshotNumber(this.Status.data, 'upperTargetProveTemperatureF');
+    if (currentProbeTemperature !== 0) {
       this.probeName = '';
       this.showProbe = true;
-      if (this.Status.data.upperTargetProveTemperatureF !== 0 && typeof this.Status.data.upperTargetProveTemperatureF !== 'undefined') {
-        const donePercent = Math.round(100 * this.Status.data.upperCurrentProveTemperatureF / this.Status.data.upperTargetProveTemperatureF);
+      if (targetProbeTemperature !== 0) {
+        const donePercent = Math.round(100 * currentProbeTemperature / targetProbeTemperature);
         this.probeName += 'Food is ' + donePercent + '% Done, ';
       }
-      if (this.Status.data.upperCurrentTemperatureUnit.includes('FAH')) {
-        this.probeName += 'Current Probe Temp ' + this.Status.data.upperCurrentProveTemperatureF + '°';
-        if (this.Status.data.upperTargetProveTemperatureF !== 0 && typeof this.Status.data.upperTargetProveTemperatureF !== 'undefined') {
-          this.probeName += ' With Set Temp ' + this.Status.data.upperTargetProveTemperatureF + '°';
+      if (isFahrenheitUnit(this.Status.data, 'upperCurrentTemperatureUnit')) {
+        this.probeName += 'Current Probe Temp ' + currentProbeTemperature + '°';
+        if (targetProbeTemperature !== 0) {
+          this.probeName += ' With Set Temp ' + targetProbeTemperature + '°';
         }
       } else {
-        this.probeName += 'Current Probe Temp ' + this.tempFtoC(this.Status.data.upperCurrentProveTemperatureF) + '°';
-        if (this.Status.data.upperTargetProveTemperatureF !== 0 && typeof this.Status.data.upperTargetProveTemperatureF !== 'undefined') {
-          this.probeName += ' With Set Temp ' + this.tempFtoC(this.Status.data.upperTargetProveTemperatureF) + '°';
+        this.probeName += 'Current Probe Temp ' + this.tempFtoC(currentProbeTemperature) + '°';
+        if (targetProbeTemperature !== 0) {
+          this.probeName += ' With Set Temp ' + this.tempFtoC(targetProbeTemperature) + '°';
         }
 
       }
@@ -1442,7 +1192,7 @@ export default class Oven extends BaseDevice {
   ///////////Temperature Control
   probeCurrentState() {
     /////Current Temp
-    if (this.Status.data?.upperCurrentProveTemperatureF !== 0 && typeof this.Status.data?.upperCurrentProveTemperatureF !== 'undefined') {
+    if (hasNonZeroSnapshotNumber(this.Status.data, 'upperCurrentProveTemperatureF')) {
       return 1;
     } else {
       return 0;
@@ -1451,7 +1201,7 @@ export default class Oven extends BaseDevice {
 
   probeTargetState() {
     ////Set temperature
-    if (this.Status.data?.upperTargetProveTemperatureF !== 0) {
+    if (hasNonZeroSnapshotNumber(this.Status.data, 'upperTargetProveTemperatureF')) {
       return 1;
     } else {
       return 0;
@@ -1459,7 +1209,7 @@ export default class Oven extends BaseDevice {
   }
 
   currentHeatingState() {
-    if (this.Status.data?.upperCurrentTemperatureValue !== 0) {
+    if (hasNonZeroSnapshotNumber(this.Status.data, 'upperCurrentTemperatureValue')) {
       return 1;
     } else {
       return 0;
@@ -1470,7 +1220,7 @@ export default class Oven extends BaseDevice {
     // if (this.Status.data?.upperState.includes('INITIAL') ||
     // this.Status.data?.upperState.includes('DONE') ||
     // this.Status.data?.upperState.includes('COOLING')) {
-    if (this.Status.data?.upperTargetTemperatureValue === 0) {
+    if (!hasNonZeroSnapshotNumber(this.Status.data, 'upperTargetTemperatureValue')) {
 
       return 0;
 
@@ -1485,7 +1235,7 @@ export default class Oven extends BaseDevice {
     const device = this.accessory.context.device;
     const service = this.accessory.getService(HeaterCooler) || this.accessory.addService(HeaterCooler, device.name);
     service.getCharacteristic(Characteristic.CurrentHeaterCoolerState)
-      .onGet(() => {
+      .onGet(this.onlineGet(() => {
         const currentState = device.deviceModel.lookupMonitorValue('UpperOvenState', this.Status.getState(key));
         if (currentState === null) {
           this.platform.log.error('Current Oven State is null');
@@ -1498,7 +1248,7 @@ export default class Oven extends BaseDevice {
         } else {
           return Characteristic.CurrentHeaterCoolerState.IDLE;
         }
-      });
+      }));
     service.getCharacteristic(Characteristic.TargetHeaterCoolerState)
       .setProps({
         validValues: [Characteristic.TargetHeaterCoolerState.HEAT],
@@ -1506,141 +1256,51 @@ export default class Oven extends BaseDevice {
       });
   }
 
-  burner1State() {
-    if (this.Status.data?.cooktop1CooktopState !== 'INIT' && typeof this.Status.data?.cooktop1CooktopState !== 'undefined') {
-
-      let burnerOperationTime = 0;
-      if (typeof this.Status.data?.cooktop1OperationTimeHour !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop1OperationTimeHour * 3600;
-      }
-      if (typeof this.Status.data?.cooktop1OperationTimeMinute !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop1OperationTimeMinute * 60;
-      }
-
-      if (typeof this.Status.data?.cooktop1OperationTimeSecond !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop1OperationTimeSecond;
-      }
-      if (burnerOperationTime !== 0) {
-        this.inputNameBurner1 = 'Front Left Burner is On. Cooking for ' + this.getOperationTime(burnerOperationTime);
-      } else {
-        this.inputNameBurner1 = 'Front Left Burner is On';
-
-      }
-      this.showBurner1 = true;
-    } else {
-      this.inputNameBurner1 = 'Front Left Burner Not in Use';
-      this.showBurner1 = false;
+  private cooktopBurnerState(cooktopNumber: number, label: string): { active: boolean; name: string } {
+    if (!isCooktopActive(this.Status.data, cooktopNumber)) {
+      return { active: false, name: label + ' Not in Use' };
     }
+
+    const burnerOperationTime = cooktopOperationDuration(this.Status.data, cooktopNumber);
+    if (burnerOperationTime !== 0) {
+      return { active: true, name: label + ' is On. Cooking for ' + this.getOperationTime(burnerOperationTime) };
+    }
+
+    return { active: true, name: label + ' is On' };
+  }
+
+  burner1State() {
+    const burnerState = this.cooktopBurnerState(1, 'Front Left Burner');
+    this.inputNameBurner1 = burnerState.name;
+    this.showBurner1 = burnerState.active;
     return this.nameLengthCheck(this.inputNameBurner1);
   }
 
   burner2State() {
-
-    if (this.Status.data?.cooktop2CooktopState !== 'INIT' && typeof this.Status.data?.cooktop2CooktopState !== 'undefined') {
-
-      let burnerOperationTime = 0;
-      if (typeof this.Status.data?.cooktop2OperationTimeHour !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop2OperationTimeHour * 3600;
-      }
-      if (typeof this.Status.data?.cooktop1OperationTimeMinute !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop2OperationTimeMinute * 60;
-      }
-
-      if (typeof this.Status.data?.cooktop1OperationTimeSecond !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop2OperationTimeSecond;
-      }
-      if (burnerOperationTime !== 0) {
-        this.inputNameBurner2 = 'Back Left Burner is On. Cooking for ' + this.getOperationTime(burnerOperationTime);
-      } else {
-        this.inputNameBurner2 = 'Back Left Burner is On';
-
-      }
-      this.showBurner2 = true;
-    } else {
-      this.inputNameBurner2 = 'Back Left Burner Not in Use';
-      this.showBurner2 = false;
-    }
+    const burnerState = this.cooktopBurnerState(2, 'Back Left Burner');
+    this.inputNameBurner2 = burnerState.name;
+    this.showBurner2 = burnerState.active;
     return this.nameLengthCheck(this.inputNameBurner2);
   }
 
   burner3State() {
-    if (this.Status.data?.cooktop3CooktopState !== 'INIT' && typeof this.Status.data?.cooktop3CooktopState !== 'undefined') {
-
-      let burnerOperationTime = 0;
-      if (typeof this.Status.data?.cooktop3OperationTimeHour !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop3OperationTimeHour * 3600;
-      }
-      if (typeof this.Status.data?.cooktop3OperationTimeMinute !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop3OperationTimeMinute * 60;
-      }
-
-      if (typeof this.Status.data?.cooktop3OperationTimeSecond !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop3OperationTimeSecond;
-      }
-      if (burnerOperationTime !== 0) {
-        this.inputNameBurner3 = 'Center Burner is On. Cooking for ' + this.getOperationTime(burnerOperationTime);
-      } else {
-        this.inputNameBurner3 = 'Center Burner is On';
-      }
-      this.showBurner3 = true;
-    } else {
-      this.inputNameBurner3 = 'Center Burner Not in Use';
-      this.showBurner3 = false;
-    }
+    const burnerState = this.cooktopBurnerState(3, 'Center Burner');
+    this.inputNameBurner3 = burnerState.name;
+    this.showBurner3 = burnerState.active;
     return this.nameLengthCheck(this.inputNameBurner3);
   }
 
   burner4State() {
-    if (this.Status.data?.cooktop4CooktopState !== 'INIT' && typeof this.Status.data?.cooktop4CooktopState !== 'undefined') {
-
-      let burnerOperationTime = 0;
-      if (typeof this.Status.data?.cooktop4OperationTimeHour !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop4OperationTimeHour * 3600;
-      }
-      if (typeof this.Status.data?.cooktop4OperationTimeMinute !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop4OperationTimeMinute * 60;
-      }
-
-      if (typeof this.Status.data?.cooktop4OperationTimeSecond !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop4OperationTimeSecond;
-      }
-      if (burnerOperationTime !== 0) {
-        this.inputNameBurner4 = 'Front Right Burner is On. Cooking for ' + this.getOperationTime(burnerOperationTime);
-      } else {
-        this.inputNameBurner4 = 'Front Right Burner is On';
-      }
-      this.showBurner4 = true;
-    } else {
-      this.inputNameBurner4 = 'Front Right Burner Not in Use';
-      this.showBurner4 = false;
-    }
+    const burnerState = this.cooktopBurnerState(4, 'Front Right Burner');
+    this.inputNameBurner4 = burnerState.name;
+    this.showBurner4 = burnerState.active;
     return this.nameLengthCheck(this.inputNameBurner4);
   }
 
   burner5State() {
-    if (this.Status.data?.cooktop5CooktopState !== 'INIT' && typeof this.Status.data?.cooktop5CooktopState !== 'undefined') {
-
-      let burnerOperationTime = 0;
-      if (typeof this.Status.data?.cooktop5OperationTimeHour !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop5OperationTimeHour * 3600;
-      }
-      if (typeof this.Status.data?.cooktop5OperationTimeMinute !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop5OperationTimeMinute * 60;
-      }
-
-      if (typeof this.Status.data?.cooktop5OperationTimeSecond !== 'undefined') {
-        burnerOperationTime += this.Status.data?.cooktop5OperationTimeSecond;
-      }
-      if (burnerOperationTime !== 0) {
-        this.inputNameBurner5 = 'Back Right Burner is On. Cooking for ' + this.getOperationTime(burnerOperationTime);
-      } else {
-        this.inputNameBurner5 = 'Back Right Burner is On';
-      }
-      this.showBurner5 = true;
-    } else {
-      this.inputNameBurner5 = 'Back Right Burner Not in Use';
-      this.showBurner5 = false;
-    }
+    const burnerState = this.cooktopBurnerState(5, 'Back Right Burner');
+    this.inputNameBurner5 = burnerState.name;
+    this.showBurner5 = burnerState.active;
     return this.nameLengthCheck(this.inputNameBurner5);
   }
 
@@ -1694,11 +1354,7 @@ export default class Oven extends BaseDevice {
   }
 
   ovenServiceActive() {
-    if (!this.Status.data?.upperState.includes('INITIAL') || this.Status.data?.burnerOnCounter !== 0) {
-      return 1;
-    } else {
-      return 0;
-    }
+    return this.onStatus() ? 1 : 0;
   }
 
   updateAccessoryCharacteristic(device: Device) {
@@ -1731,18 +1387,18 @@ export default class Oven extends BaseDevice {
         }
       } else {
         this.ovenCommandList = {
-          ovenMode: this.Status.data?.upperManualCookName,
-          ovenSetTemperature: this.Status.data?.upperTargetTemperatureValue,
-          tempUnits: this.Status.data?.upperCurrentTemperatureUnit,
+          ovenMode: snapshotString(this.Status.data, 'upperManualCookName', 'NONE'),
+          ovenSetTemperature: snapshotNumber(this.Status.data, 'upperTargetTemperatureValue'),
+          tempUnits: snapshotString(this.Status.data, 'upperCurrentTemperatureUnit', 'FAHRENHEIT'),
           ovenSetDuration: this.oventTargetTime(),
-          probeTemperature: this.Status.data?.upperTargetProveTemperatureF,
-          ovenKeepWarm: (this.Status.data?.upperCookAndWarmStatus?.includes('DIS')) ? 'DISABLE' : 'ENABLE',
+          probeTemperature: snapshotNumber(this.Status.data, 'upperTargetProveTemperatureF'),
+          ovenKeepWarm: isEnabledStatus(this.Status.data, 'upperCookAndWarmStatus') ? 'ENABLE' : 'DISABLE',
         };
         this.updateOvenModeSwitchNoPause();
       }
 
       ///// how to handle the time Here
-      if (!this.Status.data?.upperManualCookName.includes('NONE')) {
+      if (hasCookingModeActive(this.Status.data, 'upperManualCookName', 'NONE')) {
         if (this.firstStart) {
           this.courseStartString = this.ovenCookingStartTime();
         }
@@ -1828,8 +1484,9 @@ export default class Oven extends BaseDevice {
       const currentState = this.platform.Characteristic.CurrentVisibilityState;
 
       const updateVisibility = (service: Service, condition: boolean) => {
-        service.updateCharacteristic(visibilityState, condition ? visibilityState.SHOWN : visibilityState.HIDDEN);
-        service.updateCharacteristic(currentState, condition ? currentState.SHOWN : currentState.HIDDEN);
+        const visibility = visibilityCharacteristicUpdate(condition, visibilityState, currentState);
+        updateCharacteristicIfChanged(service, visibilityState, visibility.targetVisibilityState);
+        updateCharacteristicIfChanged(service, currentState, visibility.currentVisibilityState);
       };
 
       updateVisibility(this.ovenMode, this.ovenOnStatus());
@@ -1847,19 +1504,19 @@ export default class Oven extends BaseDevice {
       updateVisibility(this.burner5, this.showBurner5);
 
       /////////Temperature Monitor
-      if (this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits).value !==
-        this.Status.data?.upperCurrentTemperatureUnit.includes('FAH') ? 1 : 0) {
+      const temperatureDisplayUnits = temperatureDisplayUnitsValue(this.Status.data, 'upperCurrentTemperatureUnit');
+      if (this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits).value !== temperatureDisplayUnits) {
         this.ovenTempControl.updateCharacteristic(
           this.platform.Characteristic.TemperatureDisplayUnits,
-          this.Status.data?.upperCurrentTemperatureUnit.includes('FAH') ? 1 : 0);
+          temperatureDisplayUnits);
         this.probeTempControl.updateCharacteristic(
           this.platform.Characteristic.TemperatureDisplayUnits,
-          this.Status.data?.upperCurrentTemperatureUnit.includes('FAH') ? 1 : 0);
+          temperatureDisplayUnits);
       }
       if (this.ovenTempControl.getCharacteristic(this.platform.Characteristic.CurrentTemperature).value !== this.ovenCurrentTemperature()) {
         this.ovenTempControl.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.ovenCurrentTemperature());
       }
-      if (this.Status.data?.upperTargetTemperatureValue !== 0) {
+      if (hasNonZeroSnapshotNumber(this.Status.data, 'upperTargetTemperatureValue')) {
         if (this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TargetTemperature).value !== this.ovenTargetTemperature()) {
           this.ovenTempControl.updateCharacteristic(this.platform.Characteristic.TargetTemperature, this.ovenTargetTemperature());
         }
@@ -1874,12 +1531,12 @@ export default class Oven extends BaseDevice {
         this.probeTempControl.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.localHumidity);
         this.ovenTempControl.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.localHumidity);
       }
-      if (this.Status.data?.upperCurrentProveTemperatureF !== 0 && typeof this.Status.data?.upperCurrentProveTemperatureF !== 'undefined') {
+      if (hasNonZeroSnapshotNumber(this.Status.data, 'upperCurrentProveTemperatureF')) {
         if (this.probeTempControl.getCharacteristic(this.platform.Characteristic.CurrentTemperature).value !== this.probeCurrentTemperature()) {
           this.probeTempControl.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.probeCurrentTemperature());
         }
       }
-      if (this.Status.data?.upperTargetProveTemperatureF !== 0) {
+      if (hasNonZeroSnapshotNumber(this.Status.data, 'upperTargetProveTemperatureF')) {
         if (this.probeTempControl.getCharacteristic(this.platform.Characteristic.TargetTemperature).value !== this.probeTargetTemperature()) {
           this.probeTempControl.updateCharacteristic(this.platform.Characteristic.TargetTemperature, this.probeTargetTemperature());
         }
@@ -1892,22 +1549,19 @@ export default class Oven extends BaseDevice {
       }
       ///////Timer Monitor
 
-      this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.Active, this.remainTime() > 0 ? 1 : 0);
-      if (this.oventTargetTime() === 0) {
-        this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.InUse, Characteristic.InUse.NOT_IN_USE);
-      } else if (this.ovenOnStatus() && this.oventTargetTime() !== 0) {
-        this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.InUse, Characteristic.InUse.IN_USE);
-      }
-
-      if (this.ovenTimerService.getCharacteristic(this.platform.Characteristic.RemainingDuration).value !== this.remainTime()) {
-        this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.RemainingDuration, this.ovenCurrentTemperature());
-      }
-      if (this.ovenTimerService.getCharacteristic(this.platform.Characteristic.SetDuration).value !== this.oventTargetTime()) {
-        this.ovenTimerService.updateCharacteristic(this.platform.Characteristic.SetDuration, this.oventTargetTime());
-      }
+      const timerServiceUpdate = cookingTimerServiceUpdate(
+        this.remainTime(),
+        this.oventTargetTime(),
+        this.ovenOnStatus(),
+        Characteristic.InUse,
+      );
+      updateCharacteristicIfChanged(this.ovenTimerService, this.platform.Characteristic.Active, timerServiceUpdate.active);
+      updateCharacteristicIfChanged(this.ovenTimerService, this.platform.Characteristic.InUse, timerServiceUpdate.inUse);
+      updateCharacteristicIfChanged(this.ovenTimerService, this.platform.Characteristic.RemainingDuration, timerServiceUpdate.remainingDuration);
+      updateCharacteristicIfChanged(this.ovenTimerService, this.platform.Characteristic.SetDuration, timerServiceUpdate.setDuration);
 
       ///Monitor Switch Status
-      if (this.Status.data?.upperRemoteStart.includes('DIS')) {
+      if (!isEnabledStatus(this.Status.data, 'upperRemoteStart')) {
         this.monitorOnly = true;
       }
       if (this.monitorOnlySwitch.getCharacteristic(this.platform.Characteristic.On).value !== this.monitorOnly) {
@@ -1916,7 +1570,7 @@ export default class Oven extends BaseDevice {
       ////////Door Status
 
       this.ovenDoorOpened.updateCharacteristic(this.platform.Characteristic.StatusActive, this.onStatus());
-      this.ovenDoorOpened.updateCharacteristic(this.platform.Characteristic.ContactSensorState, this.Status.data?.upperDoorOpen.includes('DIS') ? 0 : 1);
+      this.ovenDoorOpened.updateCharacteristic(this.platform.Characteristic.ContactSensorState, isEnabledStatus(this.Status.data, 'upperDoorOpen') ? 1 : 0);
       ///Range Status
       if (this.rangeOn.getCharacteristic(this.platform.Characteristic.StatusActive).value !== this.onStatus()) {
         this.rangeOn.updateCharacteristic(this.platform.Characteristic.StatusActive, this.onStatus());
@@ -1924,22 +1578,24 @@ export default class Oven extends BaseDevice {
       }
       ////Remote Control Status
       this.remoteEnabled.updateCharacteristic(this.platform.Characteristic.StatusActive, this.onStatus());
-      this.remoteEnabled.updateCharacteristic(this.platform.Characteristic.ContactSensorState, this.Status.data?.upperRemoteStart.includes('DIS') ? 0 : 1);
+      this.remoteEnabled.updateCharacteristic(this.platform.Characteristic.ContactSensorState, isEnabledStatus(this.Status.data, 'upperRemoteStart') ? 1 : 0);
       /////Burners on
+      const burnerOnCounter = snapshotNumber(this.Status.data, 'burnerOnCounter');
       this.burnersOnNumber.updateCharacteristic(
         this.platform.Characteristic.CurrentAmbientLightLevel,
-        this.Status.data?.burnerOnCounter < 1 ? 0.0001 : this.Status.data?.burnerOnCounter);
-      this.burnersOnNumber.updateCharacteristic(this.platform.Characteristic.StatusActive, this.Status.data?.burnerOnCounter > 0 ? true : false);
+        burnerOnCounter < 1 ? 0.0001 : burnerOnCounter);
+      this.burnersOnNumber.updateCharacteristic(this.platform.Characteristic.StatusActive, burnerOnCounter > 0 ? true : false);
       //////Alarm Timer
-      this.ovenAlarmService.updateCharacteristic(Characteristic.Active, this.ovenTimerTime() > 0 ? 1 : 0);
-      this.ovenAlarmService.updateCharacteristic(Characteristic.RemainingDuration, this.ovenTimerTime());
-      this.ovenAlarmService.updateCharacteristic(Characteristic.InUse, this.ovenTimerTime() > 0 ? 1 : 0);
-      if ('upperCookAndWarmStatus' in this.Status.data) {
+      const alarmServiceUpdate = cookingAlarmServiceUpdate(this.ovenTimerTime(), Characteristic.InUse);
+      updateCharacteristicIfChanged(this.ovenAlarmService, Characteristic.Active, alarmServiceUpdate.active);
+      updateCharacteristicIfChanged(this.ovenAlarmService, Characteristic.RemainingDuration, alarmServiceUpdate.remainingDuration);
+      updateCharacteristicIfChanged(this.ovenAlarmService, Characteristic.InUse, alarmServiceUpdate.inUse);
+      if (snapshotString(this.Status.data, 'upperCookAndWarmStatus') !== '') {
         ////Switch State
-        this.keepWarmSwitch?.updateCharacteristic(this.platform.Characteristic.On, !this.Status.data?.upperCookAndWarmStatus.includes('DIS'));
+        this.keepWarmSwitch?.updateCharacteristic(this.platform.Characteristic.On, isEnabledStatus(this.Status.data, 'upperCookAndWarmStatus'));
 
         //////////Warm Status
-        if (!this.Status.data?.upperCookAndWarmStatus.includes('DIS')) {
+        if (isEnabledStatus(this.Status.data, 'upperCookAndWarmStatus')) {
           this.ovenCommandList.ovenKeepWarm = 'ENABLE';
         } else {
           this.ovenCommandList.ovenKeepWarm = 'DISABLE';

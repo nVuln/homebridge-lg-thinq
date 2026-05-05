@@ -8,6 +8,24 @@ import { randomUUID } from 'crypto';
 import AirPurifierState from './transforms/AirPurifierState.js';
 import HoodState from './transforms/HoodState.js';
 
+export function thinq1SnapshotForDeviceType(deviceType: string, deviceModel: DeviceModel, decodedMonitor: any) {
+  switch (deviceType) {
+  case 'DRYER':
+  case 'WASHER':
+    return WasherDryer(deviceModel, decodedMonitor);
+  case 'AIR_PURIFIER':
+    return AirPurifierState(deviceModel, decodedMonitor);
+  case 'AC':
+    return AirState(deviceModel, decodedMonitor);
+  case 'REFRIGERATOR':
+    return RefState(deviceModel, decodedMonitor);
+  case 'HOOD':
+    return HoodState(deviceModel, decodedMonitor);
+  default:
+    return null;
+  }
+}
+
 export default class Helper {
   public static make(device: Device) {
     switch (device.type) {
@@ -27,28 +45,12 @@ export default class Helper {
    */
   public static transform(device: Device, monitorData: any) {
     const decodedMonitor = device.deviceModel.decodeMonitor(monitorData || {});
-
-    switch (device.type) {
-    case 'DRYER':
-    case 'WASHER':
-      device.data.snapshot = WasherDryer(device.deviceModel, decodedMonitor);
-      break;
-    case 'AIR_PURIFIER':
-      device.data.snapshot = AirPurifierState(device.deviceModel, decodedMonitor);
-      break;
-    case 'AC':
-      device.data.snapshot = AirState(device.deviceModel, decodedMonitor);
-      break;
-    case 'REFRIGERATOR':
-      device.data.snapshot = RefState(device.deviceModel, decodedMonitor);
-      break;
-    case 'HOOD':
-      device.data.snapshot = HoodState(device.deviceModel, decodedMonitor);
-      break;
-    default:
-      // return original device data if not supported
+    const snapshot = thinq1SnapshotForDeviceType(device.type, device.deviceModel, decodedMonitor);
+    if (!snapshot) {
       return device;
     }
+
+    device.data.snapshot = snapshot;
 
     if (device.data.snapshot) {
       if (monitorData) {
@@ -63,7 +65,7 @@ export default class Helper {
     return device;
   }
 
-  public static prepareControlData(device: Device, key: string, value: string) {
+  public static prepareControlData(device: Device, key: string, value: unknown) {
     const data: any = {
       cmd: 'Control',
       cmdOpt: 'Set',
@@ -73,7 +75,8 @@ export default class Helper {
 
     if (device.deviceModel.data.ControlWifi?.type === 'BINARY(BYTE)') {
       const sampleData = device.deviceModel.data.ControlWifi?.action?.SetControl?.data || '[]';
-      const decodedMonitor = device.snapshot.raw || {};
+      const rawSnapshot = device.snapshot?.raw;
+      const decodedMonitor = (rawSnapshot && typeof rawSnapshot === 'object') ? { ...rawSnapshot } : {};
       decodedMonitor[key] = value;
       // build data array of byte (coerce booleans and non-numeric values safely)
       let replaced = sampleData;
@@ -112,12 +115,14 @@ export function lookupEnumIndex(enumType: any, value: any) {
   return Object.keys(enumType)[Object.values(enumType).indexOf(<any> value)];
 }
 
-export function loopupEnum(deviceModel: DeviceModel, decodedMonitor: any, key: any) {
+export function lookupEnum(deviceModel: DeviceModel, decodedMonitor: any, key: any) {
   if (!(key in decodedMonitor)) {
     return null;
   }
 
   return deviceModel.enumName(key, decodedMonitor[key]);
 }
+
+export const loopupEnum = lookupEnum;
 
 export { normalizeBoolean, normalizeNumber } from '../utils/normalize.js';

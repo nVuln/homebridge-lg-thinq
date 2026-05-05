@@ -1,4 +1,4 @@
-name: CI — Build, Lint, Test
+name: CI - Build, Lint, Test
 
 on: [push, pull_request]
 
@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20.x, 22.x, 24.x]
+        node-version: [22.x, 24.x]
 
     steps:
       - name: Checkout repository

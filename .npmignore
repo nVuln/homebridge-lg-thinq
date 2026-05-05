@@ -1,5 +1,8 @@
 # Ignore source code
 src
+jest.config.ts
+dist/**/*.spec.*
+dist/**/__tests__
 
 # ------------- Defaults ------------- #
 

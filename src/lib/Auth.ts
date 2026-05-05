@@ -8,6 +8,63 @@ import { Gateway } from './Gateway.js';
 import { requestClient } from './request.js';
 import { Session } from './Session.js';
 import { Logger } from 'homebridge';
+import { createNoopLogger } from './noopLogger.js';
+
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === 'object' ? value as Record<string, unknown> : null;
+}
+
+function stringValue(value: unknown): string | null {
+  if (typeof value === 'string' && value.trim()) {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return value.toString();
+  }
+
+  return null;
+}
+
+function authResponseData(err: unknown): Record<string, unknown> | null {
+  const response = recordValue(err)?.response;
+  return recordValue(recordValue(response)?.data);
+}
+
+function errorCause(err: unknown): unknown {
+  return recordValue(err)?.cause;
+}
+
+export function authErrorCode(err: unknown): string | null {
+  const data = authResponseData(err);
+  const error = recordValue(data?.error);
+
+  return stringValue(error?.code)
+    || stringValue(data?.resultCode)
+    || stringValue(recordValue(err)?.code)
+    || (errorCause(err) ? authErrorCode(errorCause(err)) : null);
+}
+
+export function authErrorMessage(err: unknown, fallback: string): string {
+  const data = authResponseData(err);
+  const error = recordValue(data?.error);
+
+  return stringValue(error?.message)
+    || stringValue(data?.message)
+    || stringValue(data?.error_description)
+    || stringValue(data?.returnMsg)
+    || (err instanceof Error ? stringValue(err.message) : null)
+    || (errorCause(err) ? authErrorMessage(errorCause(err), fallback) : null)
+    || fallback;
+}
+
+function authError(context: string, err: unknown): AuthenticationError {
+  const message = authErrorMessage(err, 'Request failed.');
+  const error = new AuthenticationError(`${context}: ${message}`);
+  (error as Error & { cause?: unknown }).cause = err;
+
+  return error;
+}
 
 /**
  * Handles authentication with the LG ThinQ API.
@@ -27,7 +84,7 @@ export class Auth {
    */
   public constructor(
     protected gateway: Gateway,
-    public logger: Logger,
+    public logger: Logger = createNoopLogger(),
   ) {
     this.lgeapi_url = `https://${this.gateway.country_code.toLowerCase()}.lgeapi.com/`;
   }
@@ -62,7 +119,10 @@ export class Auth {
       'log_param': 'login request / user_id : ' + username + ' / third_party : null / svc_list : SVC202,SVC710 / 3rd_service : ',
     };
     const preLogin = await requestClient.post(this.gateway.login_base_url + 'preLogin', qs.stringify(preLoginData), { headers })
-      .then(res => res.data);
+      .then(res => res.data)
+      .catch(err => {
+        throw authError('LG pre-login failed', err);
+      });
 
     headers['X-Signature'] = preLogin.signature;
     headers['X-Timestamp'] = preLogin.tStamp;
@@ -77,11 +137,9 @@ export class Auth {
     // try login with username and hashed password
     const loginUrl = this.gateway.emp_base_url + 'emp/v2.0/account/session/' + encodeURIComponent(username);
     const account = await requestClient.post(loginUrl, qs.stringify(data), { headers }).then(res => res.data.account).catch(err => {
-      if (!err.response) {
-        throw err;
-      }
+      const code = authErrorCode(err);
+      const message = authErrorMessage(err, 'LG account login failed.');
 
-      const { code, message } = err.response.data.error;
       if (code === 'MS.001.03') {
         throw new AuthenticationError('Your account was already used to registered in ' + message + '.');
       }
@@ -91,7 +149,10 @@ export class Auth {
 
     // dynamic get secret key for emp signature
     const empSearchKeyUrl = this.gateway.login_base_url + 'searchKey?key_name=OAUTH_SECRETKEY&sever_type=OP';
-    const secretKey = await requestClient.get(empSearchKeyUrl).then(res => res.data).then(data => data.returnData);
+    const secretKey = await requestClient.get(empSearchKeyUrl).then(res => res.data).then(data => data.returnData)
+      .catch(err => {
+        throw authError('LG OAuth key lookup failed', err);
+      });
 
     const timestamp = DateTime.utc().toRFC2822();
     const empData = {
@@ -124,7 +185,7 @@ export class Auth {
     const authorize = await requestClient.get(empUrl.href, {
       headers: empHeaders,
     }).then(res => res.data).catch(err => {
-      throw new AuthenticationError(err.response.data.error.message);
+      throw authError('LG OAuth authorization failed', err);
     });
     if (authorize.status !== 1) {
       throw new TokenError(authorize.message || authorize);
@@ -140,7 +201,8 @@ export class Auth {
 
     const requestUrl = '/oauth/1.0/oauth2/token?' + qs.stringify(tokenData);
 
-    const res = await requestClient.post(redirect_uri.searchParams.get('oauth2_backend_url') + 'oauth/1.0/oauth2/token',
+    const res = await requestClient.post(
+      redirect_uri.searchParams.get('oauth2_backend_url') + 'oauth/1.0/oauth2/token',
       qs.stringify(tokenData),
       {
         headers: {
@@ -151,12 +213,19 @@ export class Auth {
           'Accept': 'application/json',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-      });
+      },
+    ).catch(err => {
+      throw authError('LG token exchange failed', err);
+    });
     const token = res.data;
 
     this.lgeapi_url = token.oauth2_backend_url || this.lgeapi_url;
 
-    return new Session(token.access_token, token.refresh_token, token.expires_in);
+    return new Session(
+      token.access_token,
+      token.refresh_token,
+      Session.expiryTimestampFromExpiresIn(parseInt(token.expires_in, 10)),
+    );
   }
 
   /**
@@ -316,7 +385,7 @@ export class Auth {
     };
     const resp = await requestClient.post(tokenUrl, qs.stringify(data), { headers }).then(resp => resp.data);
 
-    session.newToken(resp.access_token, parseInt(resp.expires_in));
+    session.newTokenFromExpiresIn(resp.access_token, parseInt(resp.expires_in, 10));
 
     return session;
   }

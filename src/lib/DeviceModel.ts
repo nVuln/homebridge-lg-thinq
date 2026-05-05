@@ -1,3 +1,5 @@
+import { DeviceType } from './constants.js';
+
 export enum ValueType {
   Bit = 'Bit',
   Enum = 'Enum',
@@ -67,6 +69,63 @@ export interface ReferenceValue {
 export interface StringCommentValue {
   type: ValueType.StringComment;
   comment: string;
+}
+
+export type DeviceModelDevice = {
+  id: string;
+  type: string;
+  data: {
+    modelJsonUri: string;
+  };
+  deviceModel?: DeviceModel;
+};
+
+export type DeviceModelPersist = {
+  getItem(key: string): Promise<any>;
+  setItem(key: string, value: any): Promise<any>;
+};
+
+export type DeviceModelHttpClient = {
+  get(uri: string): Promise<{ data: any }>;
+};
+
+export type DeviceModelLogger = {
+  debug(...args: any[]): void;
+};
+
+export function selectDeviceModelData(device: Pick<DeviceModelDevice, 'type'>, deviceModel: any): any {
+  const modelVersion = parseFloat(deviceModel.Info?.version);
+
+  if (device.type === DeviceType[DeviceType.WASH_TOWER_2]
+    && modelVersion && modelVersion >= 3
+    && deviceModel.Info?.defaultTargetDeviceRoot
+    && deviceModel[deviceModel.Info.defaultTargetDeviceRoot]
+  ) {
+    return deviceModel[deviceModel.Info.defaultTargetDeviceRoot];
+  }
+
+  return deviceModel;
+}
+
+export async function loadDeviceModelForDevice(options: {
+  device: DeviceModelDevice;
+  persist: DeviceModelPersist;
+  httpClient: DeviceModelHttpClient;
+  logger: DeviceModelLogger;
+}): Promise<DeviceModel> {
+  const { device, persist, httpClient, logger } = options;
+  let deviceModel = await persist.getItem(device.id);
+
+  if (!deviceModel) {
+    logger.debug('[' + device.id + '] Device model cache missed.');
+    deviceModel = await httpClient.get(device.data.modelJsonUri).then(res => res.data);
+    await persist.setItem(device.id, deviceModel);
+  }
+
+  const model = new DeviceModel(selectDeviceModelData(device, deviceModel));
+  device.deviceModel = model;
+
+  return model;
 }
 
 /**

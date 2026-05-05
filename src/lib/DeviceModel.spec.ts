@@ -1,9 +1,25 @@
-import { DeviceModel, RangeValue, ModelData } from './DeviceModel.js';
-import { describe, test, beforeEach, expect } from '@jest/globals';
+import {
+  DeviceModel,
+  RangeValue,
+  ModelData,
+  DeviceModelDevice,
+  loadDeviceModelForDevice,
+  selectDeviceModelData,
+} from './DeviceModel.js';
+import { describe, test, beforeEach, expect, jest } from '@jest/globals';
 import Fs from 'fs';
 import Path from 'path';
+import { DeviceType } from './constants.js';
 
 const mockModelDataJson = JSON.parse(Fs.readFileSync(Path.resolve(process.cwd(), 'sample/airconditioner-model.json'), 'utf8'));
+
+const minimalModelData = (value: Record<string, unknown> = {}) => ({
+  Info: {
+    version: '1',
+    ...value,
+  },
+  Value: {},
+});
 
 describe('DeviceModel', () => {
   let deviceModel: DeviceModel;
@@ -104,5 +120,113 @@ describe('DeviceModel', () => {
     const rawData = 'invalidJSON';
     const decodedData = deviceModel.decodeMonitor(rawData);
     expect(decodedData).toBe(rawData);
+  });
+
+  test('selects the WASH_TOWER_2 default target root for newer model data', () => {
+    const selectedModel = minimalModelData({ version: '3' });
+    const rootModel = {
+      ...minimalModelData({
+        version: '3',
+        defaultTargetDeviceRoot: 'washer',
+      }),
+      washer: selectedModel,
+    };
+
+    expect(selectDeviceModelData({
+      type: DeviceType[DeviceType.WASH_TOWER_2],
+    }, rootModel)).toBe(selectedModel);
+  });
+
+  test('keeps original model data when default target root is not applicable', () => {
+    const rootModel = {
+      ...minimalModelData({
+        version: '2',
+        defaultTargetDeviceRoot: 'washer',
+      }),
+      washer: minimalModelData({ version: '2' }),
+    };
+
+    expect(selectDeviceModelData({
+      type: DeviceType[DeviceType.WASH_TOWER_2],
+    }, rootModel)).toBe(rootModel);
+  });
+
+  test('loads device models from cache without fetching', async () => {
+    const cachedModel = minimalModelData();
+    const device: DeviceModelDevice = {
+      id: 'device-1',
+      type: 'AC',
+      data: {
+        modelJsonUri: 'https://example.com/model.json',
+      },
+    };
+    const persist = {
+      getItem: jest.fn(async () => cachedModel),
+      setItem: jest.fn(async (key: string, value: any) => {
+        void key;
+        void value;
+      }),
+    };
+    const httpClient = {
+      get: jest.fn(async (uri: string) => {
+        void uri;
+        return { data: null };
+      }),
+    };
+    const logger = {
+      debug: jest.fn(),
+    };
+
+    const model = await loadDeviceModelForDevice({
+      device,
+      persist,
+      httpClient,
+      logger,
+    });
+
+    expect(model).toBeInstanceOf(DeviceModel);
+    expect(model.data).toBe(cachedModel);
+    expect(device.deviceModel).toBe(model);
+    expect(httpClient.get).not.toHaveBeenCalled();
+    expect(persist.setItem).not.toHaveBeenCalled();
+  });
+
+  test('fetches and persists device models on cache miss', async () => {
+    const fetchedModel = minimalModelData();
+    const device: DeviceModelDevice = {
+      id: 'device-1',
+      type: 'AC',
+      data: {
+        modelJsonUri: 'https://example.com/model.json',
+      },
+    };
+    const persist = {
+      getItem: jest.fn(async () => null),
+      setItem: jest.fn(async (key: string, value: any) => {
+        void key;
+        void value;
+      }),
+    };
+    const httpClient = {
+      get: jest.fn(async (uri: string) => {
+        void uri;
+        return { data: fetchedModel };
+      }),
+    };
+    const logger = {
+      debug: jest.fn(),
+    };
+
+    const model = await loadDeviceModelForDevice({
+      device,
+      persist,
+      httpClient,
+      logger,
+    });
+
+    expect(model.data).toBe(fetchedModel);
+    expect(httpClient.get).toHaveBeenCalledWith('https://example.com/model.json');
+    expect(persist.setItem).toHaveBeenCalledWith('device-1', fetchedModel);
+    expect(logger.debug).toHaveBeenCalledWith('[device-1] Device model cache missed.');
   });
 });

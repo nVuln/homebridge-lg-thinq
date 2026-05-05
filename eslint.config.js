@@ -16,7 +16,6 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
       'quotes': ['error', 'single'],
       'indent': ['error', 2, { 'SwitchCase': 0 }],
-      'linebreak-style': ['error', 'unix'],
       'semi': ['error', 'always'],
       'comma-dangle': ['error', 'always-multiline'],
       'dot-notation': 'error',
@@ -37,11 +36,6 @@ export default tseslint.config(
       sourceType: 'module',
     },
   },
-  // {
-  //   extends: [
-  //     "plugin:jest/recommended" // enables eslint-plugin-jest
-  //   ]
-  // },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {

@@ -1,4 +1,4 @@
-import { BaseDevice, AccessoryContext } from './baseDevice.js';
+import { BaseDevice, AccessoryContext, isDeviceOnlineForHomeKit } from './baseDevice.js';
 import { LGThinQHomebridgePlatform } from './platform.js';
 import { Logger, PlatformAccessory } from 'homebridge';
 import { Device, DeviceData } from './lib/Device.js';
@@ -7,6 +7,12 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 // Mock dependencies
 jest.mock('./platform.js');
 jest.mock('./lib/Device');
+
+class TestBaseDevice extends BaseDevice {
+  public testOnlineGet<T extends number | string | boolean>(getter: () => T) {
+    return this.onlineGet(getter);
+  }
+}
 
 // Test suite for BaseDevice class
 describe('BaseDevice', () => {
@@ -57,6 +63,18 @@ describe('BaseDevice', () => {
         Manufacturer: 'Manufacturer',
         Model: 'Model',
         SerialNumber: 'SerialNumber',
+      },
+      api: {
+        hap: {
+          HAPStatus: {
+            SERVICE_COMMUNICATION_FAILURE: -70402,
+          },
+          HapStatusError: class HapStatusError extends Error {
+            constructor(public status: number) {
+              super(String(status));
+            }
+          },
+        },
       },
       config: {
         devices: [
@@ -118,5 +136,37 @@ describe('BaseDevice', () => {
 
   it('should return an empty string for the static model method', () => {
     expect(BaseDevice.model()).toBe('');
+  });
+
+  it('should treat only explicit offline devices as unavailable for HomeKit', () => {
+    expect(isDeviceOnlineForHomeKit({ online: true } as Device)).toBe(true);
+    expect(isDeviceOnlineForHomeKit({ online: undefined } as Device)).toBe(true);
+    expect(isDeviceOnlineForHomeKit({ online: false } as Device)).toBe(false);
+  });
+
+  it('should guard onGet handlers when the device is offline', () => {
+    baseDevice = new TestBaseDevice(platform, accessory, logger);
+    expect((baseDevice as TestBaseDevice).testOnlineGet(() => 1)()).toBe(1);
+
+    Object.defineProperty(accessory.context.device, 'online', { configurable: true, get: () => false });
+    expect(() => (baseDevice as TestBaseDevice).testOnlineGet(() => 1)()).toThrow('-70402');
+  });
+
+  it('should update top-level online status from explicit snapshot updates', () => {
+    baseDevice = new BaseDevice(platform, accessory, logger);
+    accessory.context.device.data = {
+      online: true,
+      snapshot: {
+        online: true,
+      },
+    } as DeviceData;
+    Object.defineProperty(accessory.context.device, 'snapshot', {
+      configurable: true,
+      get: () => accessory.context.device.data.snapshot,
+    });
+
+    baseDevice.update({ online: false });
+
+    expect(accessory.context.device.data.online).toBe(false);
   });
 });

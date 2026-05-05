@@ -1,5 +1,5 @@
 import { DeviceModel, RangeValue } from '../../lib/DeviceModel.js';
-import { loopupEnum } from '../helper.js';
+import { lookupEnum } from '../helper.js';
 
 export enum ACOperation {
   OFF = '@AC_MAIN_OPERATION_OFF_W',
@@ -12,7 +12,7 @@ export enum ACOperation {
 export default function AirState(deviceModel: DeviceModel, decodedMonitor: any) {
   const airState: Record<string, any> = {
     'airState.opMode': parseInt(decodedMonitor.OpMode || '0') as number,
-    'airState.operation': loopupEnum(deviceModel, decodedMonitor, 'Operation') !== ACOperation.OFF,
+    'airState.operation': lookupEnum(deviceModel, decodedMonitor, 'Operation') !== ACOperation.OFF,
     'airState.tempState.current': parseFloat(decodedMonitor.TempCur || '0') as number,
     'airState.tempState.target': parseFloat(decodedMonitor.TempCfg || '0') as number,
     'airState.windStrength': parseInt(decodedMonitor.WindStrength || '0') as number,
