@@ -3,6 +3,7 @@ import { LGThinQHomebridgePlatform } from '../platform.js';
 import { CharacteristicValue, Logger, PlatformAccessory } from 'homebridge';
 import { Device } from '../lib/Device.js';
 import { snapshotBoolean, snapshotNumber, updateCharacteristicIfChanged } from './helpers.js';
+import { normalizeBoolean } from '../utils/normalize.js';
 
 enum RotateSpeed {
   LOW = 2,
@@ -129,19 +130,26 @@ export default class Dehumidifier extends BaseDevice {
 
   async setActive(value: CharacteristicValue) {
     this.requireDeviceOnline();
-    this.platform.log.debug('Set Dehumidifier Active State ->', value);
     const device: Device = this.accessory.context.device;
-    const isOn = value as boolean;
-    if (this.Status.isPowerOn && isOn) {
+    const isOn = normalizeBoolean(value);
+    const isOnNumeric = isOn ? 1 : 0;
+    this.platform.log.debug('Set Dehumidifier Active State ->', isOnNumeric, ' current status = ', this.Status.isPowerOn);
+    if ((this.Status.isPowerOn && isOnNumeric === 1) || (!this.Status.isPowerOn && isOnNumeric === 0)) {
       return; // don't send same status
     }
 
-    await this.platform.ThinQ?.deviceControl(device.id, {
-      dataKey: 'airState.operation',
-      dataValue: isOn,
-    });
-    device.data.snapshot['airState.operation'] = isOn ? 1 : 0;
-    this.updateAccessoryCharacteristic(device);
+    try {
+      const success = await this.platform.ThinQ?.deviceControl(device.id, {
+        dataKey: 'airState.operation',
+        dataValue: isOnNumeric,
+      }, 'Operation');
+      if (success) {
+        device.data.snapshot['airState.operation'] = isOnNumeric;
+        this.updateAccessoryCharacteristic(device);
+      }
+    } catch (error) {
+      this.logger.error('Error setting active state:', error);
+    }
   }
 
   async setHumidityThreshold(value: CharacteristicValue) {
