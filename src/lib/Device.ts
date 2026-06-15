@@ -1,7 +1,12 @@
 import { DeviceType } from './constants.js';
 import { DeviceModel } from './DeviceModel.js';
 
-export const DEVICE_ID_PATTERN = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/;
+// A device id is a UUID, optionally followed by a `:subAddress` suffix used by
+// LG Cloud Gateway multi-zone systems (e.g. `593316ef-...-a7a:06`). Each indoor
+// unit behind a gateway is returned by the API as its own AC device using this
+// suffixed id, so we must let those through discovery as well.
+export const DEVICE_ID_PATTERN =
+  /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}(?::[0-9A-Za-z]+)?$/;
 
 export interface DeviceData {
   deviceId: string;

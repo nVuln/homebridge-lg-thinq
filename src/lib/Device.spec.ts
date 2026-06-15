@@ -90,6 +90,26 @@ describe('Device', () => {
     expect(isValidDeviceId(undefined)).toBe(false);
   });
 
+  test('accepts Cloud Gateway sub-device ids with a :subAddress suffix', () => {
+    expect(isValidDeviceId('593316ef-9f92-1acb-b1d8-a0cdf3f46a7a:00')).toBe(true);
+    expect(isValidDeviceId('593316ef-9f92-1acb-b1d8-a0cdf3f46a7a:06')).toBe(true);
+    // suffix must be non-empty and alphanumeric only
+    expect(isValidDeviceId('593316ef-9f92-1acb-b1d8-a0cdf3f46a7a:')).toBe(false);
+    expect(isValidDeviceId('593316ef-9f92-1acb-b1d8-a0cdf3f46a7a:0/0')).toBe(false);
+  });
+
+  test('keeps Cloud Gateway sub-devices when building from API lists', () => {
+    const devices = devicesFromList([
+      { ...mockDeviceData, deviceId: '593316ef-9f92-1acb-b1d8-a0cdf3f46a7a:00' },
+      { ...mockDeviceData, deviceId: '593316ef-9f92-1acb-b1d8-a0cdf3f46a7a:06' },
+    ]);
+
+    expect(devices.map(device => device.id)).toEqual([
+      '593316ef-9f92-1acb-b1d8-a0cdf3f46a7a:00',
+      '593316ef-9f92-1acb-b1d8-a0cdf3f46a7a:06',
+    ]);
+  });
+
   test('creates devices from API lists and skips invalid ids', () => {
     const validId = '123e4567-e89b-12d3-a456-426614174000';
     const devices = devicesFromList([
