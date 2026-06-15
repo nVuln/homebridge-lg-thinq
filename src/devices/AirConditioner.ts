@@ -367,6 +367,26 @@ export function temperatureRangePropsFromRange(
   };
 }
 
+/**
+ * Clamps a target temperature into a threshold characteristic's prop range.
+ *
+ * HomeKit's HeatingThresholdTemperature/CoolingThresholdTemperature default to
+ * 0/10 respectively. Raising the props minValue (e.g. to 16) before seeding a
+ * real value makes HAP reject that stale default ("0 exceeded minimum of 16").
+ * Seeding a clamped, in-range value right after setProps avoids the warning.
+ */
+export function clampThresholdTemperature(
+  target: number | null | undefined,
+  props: AirConditionerTemperatureRangeProps,
+): number {
+  const value = normalizeNumber(target);
+  if (value === null || Number.isNaN(value)) {
+    return props.minValue;
+  }
+
+  return Math.min(props.maxValue, Math.max(props.minValue, value));
+}
+
 export function fanRotationSpeedProps(): AirConditionerFanRotationSpeedProps {
   return {
     minValue: 0,
@@ -1071,7 +1091,8 @@ export default class AirConditioner extends BaseDevice {
 
     if (heatingTemperatureProps) {
       this.service.getCharacteristic(Characteristic.HeatingThresholdTemperature)
-        .setProps(heatingTemperatureProps);
+        .setProps(heatingTemperatureProps)
+        .updateValue(clampThresholdTemperature(status.targetTemperature, heatingTemperatureProps));
     }
 
     const coolingTemperatureProps = temperatureRangePropsFromRange(
@@ -1081,7 +1102,8 @@ export default class AirConditioner extends BaseDevice {
 
     if (coolingTemperatureProps) {
       this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)
-        .setProps(coolingTemperatureProps);
+        .setProps(coolingTemperatureProps)
+        .updateValue(clampThresholdTemperature(status.targetTemperature, coolingTemperatureProps));
     }
 
     this.service.getCharacteristic(Characteristic.CoolingThresholdTemperature)

@@ -8,6 +8,7 @@ import {
   markAccessorySeen,
   pendingAccessoryIds,
   removeStaleAccessories,
+  resolveAccessoryUuid,
   staleAccessories,
   updateAccessoryDisplayName,
 } from './platformAccessories.js';
@@ -51,6 +52,20 @@ function fakeApi() {
   } as any;
 }
 
+// Mimics homebridge's api.hap.uuid: clean UUIDs are valid, anything else
+// (e.g. Cloud Gateway sub-device ids) must be hashed into a stable UUID.
+function fakeApiWithHap() {
+  const api = fakeApi();
+  api.hap = {
+    uuid: {
+      isValid: (value: string) =>
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(value),
+      generate: (value: string) => `generated:${value}`,
+    },
+  };
+  return api;
+}
+
 function fakeLog() {
   return {
     info: jest.fn(),
@@ -75,6 +90,58 @@ describe('platform accessory reconciliation', () => {
 
     expect(findAccessoryForDevice([accessory], fakeDevice('one'))).toBe(accessory);
     expect(findAccessoryForDevice([accessory], fakeDevice('missing'))).toBeUndefined();
+  });
+
+  test('resolves accessory uuids, hashing only invalid (sub-device) ids', () => {
+    const cleanId = '593316ef-9f92-1acb-b1d8-a0cdf3f46a7a';
+    const subId = `${cleanId}:06`;
+    const api = fakeApiWithHap();
+
+    // valid uuid kept verbatim so existing accessories stay stable
+    expect(resolveAccessoryUuid(fakeDevice(cleanId), api)).toBe(cleanId);
+    // sub-device id hashed into a valid, stable uuid
+    expect(resolveAccessoryUuid(fakeDevice(subId), api)).toBe(`generated:${subId}`);
+    // without a hap helper the id is returned unchanged (backwards compatible)
+    expect(resolveAccessoryUuid(fakeDevice(subId))).toBe(subId);
+  });
+
+  test('registers Cloud Gateway sub-devices under a derived uuid', () => {
+    const api = fakeApiWithHap();
+    const log = fakeLog();
+    const subId = '593316ef-9f92-1acb-b1d8-a0cdf3f46a7a:06';
+    const device = fakeDevice(subId, 'Master bedroom');
+    const accessories: PlatformAccessory<AccessoryContext>[] = [];
+
+    const handler = createOrRestoreDeviceAccessory({
+      platform: {} as any,
+      api,
+      log,
+      accessories,
+      pendingIds: pendingAccessoryIds(accessories),
+      device,
+      accessoryType: FakeDeviceHandler as any,
+      category: 1,
+    }) as unknown as FakeDeviceHandler;
+
+    expect(handler.accessory.UUID).toBe(`generated:${subId}`);
+    expect(accessories).toHaveLength(1);
+
+    // a second discovery pass restores the same accessory rather than duplicating it
+    const pendingIds = pendingAccessoryIds(accessories);
+    createOrRestoreDeviceAccessory({
+      platform: {} as any,
+      api,
+      log,
+      accessories,
+      pendingIds,
+      device,
+      accessoryType: FakeDeviceHandler as any,
+      category: 1,
+    });
+
+    expect(accessories).toHaveLength(1);
+    expect(pendingIds.has(`generated:${subId}`)).toBe(false);
+    expect(api.registerPlatformAccessories).toHaveBeenCalledTimes(1);
   });
 
   test('restores existing accessories without registering a new one', () => {

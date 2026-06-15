@@ -4,6 +4,7 @@ import type { Device } from '../lib/Device.js';
 import {
   ACModelType,
   ACStatus,
+  clampThresholdTemperature,
   Config,
   FAN_SPEED_AUTO,
   airQualityCharacteristicUpdateFromState,
@@ -574,5 +575,21 @@ describe('AirConditioner command mapping', () => {
 
     expect(thresholdTemperatureUpdateFromState(24, 0, currentHeaterCoolerState)).toBeNull();
     expect(thresholdTemperatureUpdateFromState(24, 1, currentHeaterCoolerState)).toBeNull();
+  });
+
+  test('clamps threshold seed values into the configured prop range', () => {
+    const props = { minValue: 16, maxValue: 30, minStep: 1 };
+
+    // in-range target preserved
+    expect(clampThresholdTemperature(25, props)).toBe(25);
+    // HAP defaults (0 heating, 10 cooling) clamped up to the minimum
+    expect(clampThresholdTemperature(0, props)).toBe(16);
+    expect(clampThresholdTemperature(10, props)).toBe(16);
+    // above range clamped down
+    expect(clampThresholdTemperature(35, props)).toBe(30);
+    // missing/invalid falls back to the minimum
+    expect(clampThresholdTemperature(null, props)).toBe(16);
+    expect(clampThresholdTemperature(undefined, props)).toBe(16);
+    expect(clampThresholdTemperature(NaN, props)).toBe(16);
   });
 });
