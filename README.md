@@ -18,7 +18,7 @@ This plugin is not an official LG API client. It works with LG ThinQ account dat
 ## Requirements
 
 * Homebridge `^1.11.2` or Homebridge `^2.0.0`
-* Node.js `^22.13.0` or `^24.0.0`
+* Node.js `^22.13.0`, `^24.0.0`, or `^26.0.0`
 
 ## Installation
 
