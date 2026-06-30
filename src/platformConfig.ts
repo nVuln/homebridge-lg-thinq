@@ -19,9 +19,15 @@ export function isThinQ1Enabled(config: PlatformConfig): boolean {
   return config.thinq1 === true;
 }
 
+// Matches the `refresh_interval` default declared in config.schema.json. ThinQ2
+// devices receive real-time updates over MQTT, so polling is only a fallback and
+// must not run aggressively or LG's API returns HTTP 429 (too many requests).
+export const DEFAULT_REFRESH_INTERVAL_SECONDS = 60;
+
 export function refreshIntervalMs(config: PlatformConfig): number {
-  const seconds = Number(config.refresh_interval ?? 5);
-  return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 5000;
+  const seconds = Number(config.refresh_interval ?? DEFAULT_REFRESH_INTERVAL_SECONDS);
+  const safeSeconds = Number.isFinite(seconds) && seconds > 0 ? seconds : DEFAULT_REFRESH_INTERVAL_SECONDS;
+  return safeSeconds * 1000;
 }
 
 export function isDeviceEnabled(config: PlatformConfig, device: Pick<Device, 'id'>): boolean {
