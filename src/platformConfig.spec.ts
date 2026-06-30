@@ -50,8 +50,12 @@ describe('platform config helpers', () => {
   test('normalizes refresh intervals to milliseconds', () => {
     expect(refreshIntervalMs(config({ refresh_interval: 10 }))).toBe(10000);
     expect(refreshIntervalMs(config({ refresh_interval: '15' }))).toBe(15000);
-    expect(refreshIntervalMs(config({ refresh_interval: 0 }))).toBe(5000);
-    expect(refreshIntervalMs(config({ refresh_interval: 'bad' }))).toBe(5000);
+    expect(refreshIntervalMs(config({ refresh_interval: 0 }))).toBe(60000);
+    expect(refreshIntervalMs(config({ refresh_interval: 'bad' }))).toBe(60000);
+  });
+
+  test('defaults to 60 seconds when refresh_interval is unset', () => {
+    expect(refreshIntervalMs(config({}))).toBe(60000);
   });
 
   test('filters devices when configured ids are present', () => {
