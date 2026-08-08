@@ -169,4 +169,29 @@ describe('BaseDevice', () => {
 
     expect(accessory.context.device.data.online).toBe(false);
   });
+
+  it('should deep-merge partial snapshot updates without dropping nested fields', () => {
+    baseDevice = new BaseDevice(platform, accessory, logger);
+    accessory.context.device.data = {
+      online: true,
+      snapshot: {
+        washerDryer: { state: 'RINSING', doorLock: 'DOOR_LOCK_ON' },
+        online: true,
+      },
+    } as unknown as DeviceData;
+    Object.defineProperty(accessory.context.device, 'snapshot', {
+      configurable: true,
+      get: () => accessory.context.device.data.snapshot,
+    });
+
+    // A partial ThinQ2 MQTT delta that only carries the field that changed.
+    baseDevice.update({ washerDryer: { remainTimeMinute: 39 } });
+
+    // The previously known nested fields (e.g. doorLock) must be preserved.
+    expect((accessory.context.device.data.snapshot as any).washerDryer).toEqual({
+      state: 'RINSING',
+      doorLock: 'DOOR_LOCK_ON',
+      remainTimeMinute: 39,
+    });
+  });
 });
