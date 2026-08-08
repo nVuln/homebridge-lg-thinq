@@ -15,6 +15,29 @@ export function isDeviceOnlineForHomeKit(device: Pick<Device, 'online'>): boolea
   return device.online !== false;
 }
 
+function isPlainObject(value: unknown): value is Record<string, any> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+// Recursively merges `source` into `target`. LG's ThinQ2 MQTT pushes are partial
+// deltas that only carry the fields that changed. A shallow merge replaces nested
+// objects (e.g. `washerDryer`) wholesale, dropping fields the delta omits (such as
+// `doorLock`) and making the derived characteristics flap. Deep-merging keeps the
+// previously known nested values that the delta does not include.
+function deepMergeSnapshot(target: any, source: any): any {
+  if (!isPlainObject(source)) {
+    return source;
+  }
+  const result: Record<string, any> = isPlainObject(target) ? { ...target } : {};
+  for (const key of Object.keys(source)) {
+    const sourceValue = source[key];
+    result[key] = isPlainObject(sourceValue) && isPlainObject(result[key])
+      ? deepMergeSnapshot(result[key], sourceValue)
+      : sourceValue;
+  }
+  return result;
+}
+
 export class BaseDevice extends EventEmitter {
   constructor(
     public readonly platform: LGThinQHomebridgePlatform,
@@ -40,7 +63,7 @@ export class BaseDevice extends EventEmitter {
 
   public update(snapshot: any) {
     this.platform.log.debug('[' + this.accessory.context.device.name + '] Received snapshot: ', JSON.stringify(snapshot));
-    this.accessory.context.device.data.snapshot = { ...this.accessory.context.device.snapshot, ...snapshot };
+    this.accessory.context.device.data.snapshot = deepMergeSnapshot(this.accessory.context.device.snapshot, snapshot);
     if (typeof snapshot?.online === 'boolean') {
       this.accessory.context.device.data.online = snapshot.online;
     }
