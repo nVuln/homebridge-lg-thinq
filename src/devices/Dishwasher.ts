@@ -163,7 +163,7 @@ export default class Dishwasher extends BaseDevice {
 
     const device = accessory.context.device;
 
-    this.tvService = this.accessory.getService(this.config.name) ||
+    this.tvService = this.accessory.getServiceById(this.platform.Service.Television, 'CataNicoGaTa-70') ||
       this.accessory.addService(this.platform.Service.Television, this.config.name, 'CataNicoGaTa-70');
     this.tvService.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'LG Dishwasher');
     this.tvService.setPrimaryService(true);
