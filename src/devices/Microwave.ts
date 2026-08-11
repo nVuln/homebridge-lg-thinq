@@ -217,7 +217,7 @@ export default class Microwave extends BaseDevice {
       });
 
     /////////////
-    this.ovenService = this.accessory.getService(this.config.name) ||
+    this.ovenService = this.accessory.getServiceById(this.platform.Service.Television, 'NicoCataGaTa-OvenOven7') ||
       this.accessory.addService(this.platform.Service.Television, this.config.name, 'NicoCataGaTa-OvenOven7');
     this.ovenService.setCharacteristic(this.platform.Characteristic.ConfiguredName, 'LG Microwave Oven');
     this.ovenService.setPrimaryService(true);
