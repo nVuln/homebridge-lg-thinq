@@ -35,7 +35,11 @@ function errorWithCause<T extends Error>(error: T, cause: unknown): T {
   return error;
 }
 
-const client = axios.create();
+const client = axios.create({
+  headers: {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36 Edg/93.0.961.44',
+  },
+});
 client.defaults.timeout = 60000; // 60s timeout
 
 client.interceptors.request.use((config) => {
