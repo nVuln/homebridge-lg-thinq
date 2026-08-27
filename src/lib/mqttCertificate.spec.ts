@@ -134,6 +134,17 @@ describe('MQTT certificate helpers', () => {
     expect(api.postRequest).toHaveBeenNthCalledWith(2, MQTT_CERTIFICATE_PATH, { csr: 'abc' });
   });
 
+  test('throws a clear error when the certificate response is missing', async () => {
+    const api = {
+      getRequest: jest.fn(async () => undefined),
+      // `API.request` resolves to `{}` when ThinQ returns an error, so `result`
+      // is undefined here.
+      postRequest: jest.fn(async () => ({})),
+    };
+
+    await expect(requestMqttCertificate(api, 'csr')).rejects.toThrow('did not return an MQTT certificate');
+  });
+
   test('loads MQTT connection setup without opening an MQTT connection', async () => {
     const api = {
       getRequest: jest.fn(async (uri: string) => {
