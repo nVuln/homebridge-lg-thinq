@@ -63,19 +63,22 @@
   "dependencies": {
     "@homebridge/plugin-ui-utils": "^2.2.3",
     "aws-iot-device-sdk": "^2.2.16",
-    "axios": "^1.16.0",
+    "axios": "^1.20.0",
     "axios-retry": "^4.5.0",
     "commander": "^14.0.3",
     "luxon": "^3.7.2",
     "node-forge": "^1.4.0",
     "node-persist": "^4.0.4",
-    "qs": "^6.15.1"
+    "qs": "^6.15.3"
   },
   "overrides": {
     "glob": "^13.0.6",
     "help-me": {
       "glob": "^13.0.6"
     },
-    "node-persist": "^4.0.4"
+    "node-persist": "^4.0.4",
+    "form-data": "^4.0.6",
+    "ws": "^8.17.1",
+    "brace-expansion": "^5.0.9"
   }
 }

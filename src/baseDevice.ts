@@ -31,7 +31,13 @@ export class BaseDevice extends EventEmitter {
     serviceAccessoryInformation
       .setCharacteristic(this.platform.Characteristic.Manufacturer, 'LG')
       .setCharacteristic(this.platform.Characteristic.Model, device.salesModel || device.model || 'Unknown')
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, this.config.serial_number || device.serialNumber || 'Unknown');
+      .setCharacteristic(this.platform.Characteristic.SerialNumber, this.config.serial_number || device.serialNumber || 'Unknown')
+      // Keep the accessory-information name in sync with the device name. This
+      // characteristic is what controllers show as the accessory's identity, and
+      // it is restored from the accessory cache - so without this a device that
+      // was renamed in the ThinQ app keeps displaying its old name indefinitely,
+      // even though the accessory's displayName and its other services update.
+      .setCharacteristic(this.platform.Characteristic.Name, device.name);
   }
 
   public updateAccessoryCharacteristic(device: Device) {

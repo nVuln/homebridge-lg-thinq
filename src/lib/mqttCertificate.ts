@@ -110,9 +110,21 @@ export function createMqttCsr(keys: MqttKeyPair): string {
 
 export async function requestMqttCertificate(api: MqttSetupApi, csr: string): Promise<MqttCertificate> {
   await api.postRequest(MQTT_CLIENT_PATH, {});
-  return await api.postRequest(MQTT_CERTIFICATE_PATH, {
+  const response = await api.postRequest(MQTT_CERTIFICATE_PATH, {
     csr: certificateRequestBody(csr),
-  }).then(data => data.result);
+  });
+
+  const certificate = response?.result;
+  // `API.request` resolves to `{}` when the ThinQ API returns an error, so
+  // `result` (and therefore the certificate) can be missing. Fail with an
+  // actionable message instead of letting a downstream read of
+  // `certificate.certificatePem` throw a cryptic TypeError, which previously
+  // surfaced as an unhandled rejection on MQTT reconnect. (#391)
+  if (!certificate || typeof certificate.certificatePem !== 'string') {
+    throw new Error('ThinQ did not return an MQTT certificate; skipping this connection attempt.');
+  }
+
+  return certificate;
 }
 
 export async function loadMqttConnectionSetup(options: {

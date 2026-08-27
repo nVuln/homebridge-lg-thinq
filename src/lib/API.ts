@@ -13,6 +13,16 @@ import axios, { Method } from 'axios';
 import { Logger } from 'homebridge';
 import { createNoopLogger } from './noopLogger.js';
 
+/**
+ * ThinQ result codes returned for commands a device simply does not support
+ * (for example the AC temperature keep-alive on models that reject it). The
+ * calling code already treats these as a non-fatal "not supported", so they are
+ * logged at debug level instead of error to avoid flooding the log. (#391)
+ */
+const BENIGN_REQUEST_RESULT_CODES = new Set<string>([
+  '0101', // command not supported by device
+  '9006', // device rejected the (optional) command
+]);
 
 /**
  * The `API` class provides methods to interact with the LG ThinQ API, enabling
@@ -146,8 +156,17 @@ export class API {
         }
 
         if (axios.isAxiosError(err)) {
-          this.logger.error('axios request error: ', err.response?.data, data);
-          this.logger.error(err.stack || 'No stack error');
+          const resultCode = err.response?.data?.resultCode;
+          // Some device models reject optional commands - e.g. the AC
+          // temperature keep-alive (`allEventEnable` / `airState.mon.timeout`) -
+          // with a benign result code. These failures are already handled by the
+          // caller, so logging them at error level only floods the log. (#391)
+          if (resultCode !== undefined && BENIGN_REQUEST_RESULT_CODES.has(resultCode)) {
+            this.logger.debug('request rejected by device (resultCode ' + resultCode + '): ', err.response?.data, data);
+          } else {
+            this.logger.error('axios request error: ', err.response?.data, data);
+            this.logger.error(err.stack || 'No stack error');
+          }
         } else {
           this.logger.error('request error: ', err);
         }

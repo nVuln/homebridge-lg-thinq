@@ -24,10 +24,22 @@ export enum FanSpeed {
   HIGH = 6
 }
 
-const HOMEKIT_FAN_SPEED_DEFAULT = 50;
-const HOMEKIT_FAN_SPEED_MAX = 100;
-const LG_FAN_SPEED_MIN = FanSpeed.LOW;
-const LG_FAN_SPEED_MAX = FanSpeed.HIGH;
+// The LG fan has a small number of discrete steps (LOW..HIGH), so RotationSpeed
+// is exposed as a step count rather than a 0-100 percentage: HomeKit speed N maps
+// to the Nth LG step. A percentage scale collapses many slider positions onto the
+// same windStrength, which makes the control send the speed the unit is already
+// at and then snap back to the quantised readback.
+const LG_FAN_SPEEDS: readonly number[] = [
+  FanSpeed.LOW,
+  FanSpeed.LOW_MEDIUM,
+  FanSpeed.MEDIUM,
+  FanSpeed.MEDIUM_HIGH,
+  FanSpeed.HIGH,
+];
+const HOMEKIT_FAN_SPEED_MAX = LG_FAN_SPEEDS.length;
+// Automatic (or unrecognised) fan speed has no step of its own; report the top of
+// the range, matching the behaviour this plugin has always had.
+const HOMEKIT_FAN_SPEED_DEFAULT = HOMEKIT_FAN_SPEED_MAX;
 
 enum OpMode {
   AUTO = 6,
@@ -258,8 +270,9 @@ function readWindStrength(data: any): number {
     if (num === FAN_SPEED_AUTO) {
       return HOMEKIT_FAN_SPEED_DEFAULT;
     }
-    if (num >= LG_FAN_SPEED_MIN && num <= LG_FAN_SPEED_MAX) {
-      return Math.round(((num - LG_FAN_SPEED_MIN) / (LG_FAN_SPEED_MAX - LG_FAN_SPEED_MIN)) * HOMEKIT_FAN_SPEED_MAX) || 1;
+    const step = LG_FAN_SPEEDS.indexOf(num);
+    if (step !== -1) {
+      return step + 1;
     }
   }
   return HOMEKIT_FAN_SPEED_DEFAULT;
@@ -536,8 +549,10 @@ export function windStrengthFromRotationSpeed(value: CharacteristicValue): numbe
     return null;
   }
 
-  const speedPercent = Math.max(0, Math.min(HOMEKIT_FAN_SPEED_MAX, vNum));
-  return Math.round(LG_FAN_SPEED_MIN + (speedPercent / HOMEKIT_FAN_SPEED_MAX) * (LG_FAN_SPEED_MAX - LG_FAN_SPEED_MIN));
+  // Speed 0 means "off" in HomeKit, but the AC has no off fan step - treat it as
+  // the slowest speed, as turning the unit off is a separate characteristic.
+  const step = Math.min(HOMEKIT_FAN_SPEED_MAX, Math.max(1, Math.round(vNum)));
+  return LG_FAN_SPEEDS[step - 1];
 }
 
 export function swingCommandsForMode(value: CharacteristicValue, swingMode: string): AirConditionerSwingCommand[] {
