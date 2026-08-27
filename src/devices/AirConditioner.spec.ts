@@ -89,7 +89,7 @@ describe('readAirConditionerState', () => {
       PM2: 8,
       PM10: 12,
     });
-    expect(status.windStrength).toBe(50);
+    expect(status.windStrength).toBe(3);
     expect(status.isWindStrengthAuto).toBe(false);
     expect(status.isSwingOn).toBe(true);
     expect(status.isLightOn).toBe(true);
@@ -106,7 +106,7 @@ describe('readAirConditionerState', () => {
     expect(status.currentTemperature).toBe(0);
     expect(status.targetTemperature).toBe(0);
     expect(status.airQuality).toBeNull();
-    expect(status.windStrength).toBe(50);
+    expect(status.windStrength).toBe(5);
     expect(status.isWindStrengthAuto).toBe(false);
     expect(status.isSwingOn).toBe(false);
     expect(status.isLightOn).toBe(false);
@@ -118,7 +118,7 @@ describe('readAirConditionerState', () => {
       'airState.windStrength': FAN_SPEED_AUTO,
     }, createDevice(), baseConfig, logger);
 
-    expect(status.windStrength).toBe(50);
+    expect(status.windStrength).toBe(5);
     expect(status.isWindStrengthAuto).toBe(true);
   });
 
@@ -152,7 +152,7 @@ describe('readAirConditionerState', () => {
     expect(status.currentRelativeHumidity).toBe(55);
     expect(status.currentTemperature).toBe(23);
     expect(status.targetTemperature).toBe(22);
-    expect(status.windStrength).toBe(100);
+    expect(status.windStrength).toBe(5);
     expect(status.isSwingOn).toBe(true);
     expect(status.isLightOn).toBe(false);
     expect(status.currentConsumption).toBe(5);
@@ -239,7 +239,7 @@ describe('AirConditioner command mapping', () => {
     expect(temperatureRangePropsFromRange(null, temperature => temperature)).toBeNull();
     expect(fanRotationSpeedProps()).toEqual({
       minValue: 0,
-      maxValue: 100,
+      maxValue: 5,
       minStep: 1,
     });
   });
@@ -353,12 +353,14 @@ describe('AirConditioner command mapping', () => {
   });
 
   test('maps HomeKit rotation speed to LG wind strength', () => {
+    // each HomeKit step maps 1:1 onto an LG fan speed
     expect(windStrengthFromRotationSpeed(1)).toBe(2);
-    expect(windStrengthFromRotationSpeed(25)).toBe(3);
-    expect(windStrengthFromRotationSpeed(50)).toBe(4);
-    expect(windStrengthFromRotationSpeed(75)).toBe(5);
-    expect(windStrengthFromRotationSpeed(100)).toBe(6);
-    expect(windStrengthFromRotationSpeed(125)).toBe(6);
+    expect(windStrengthFromRotationSpeed(2)).toBe(3);
+    expect(windStrengthFromRotationSpeed(3)).toBe(4);
+    expect(windStrengthFromRotationSpeed(4)).toBe(5);
+    expect(windStrengthFromRotationSpeed(5)).toBe(6);
+    // out-of-range values clamp to the nearest valid speed
+    expect(windStrengthFromRotationSpeed(9)).toBe(6);
     expect(windStrengthFromRotationSpeed(0)).toBe(2);
     expect(windStrengthFromRotationSpeed('not-a-number')).toBeNull();
   });
