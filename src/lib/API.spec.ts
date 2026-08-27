@@ -65,6 +65,49 @@ describe('API', () => {
     await expect(api.getRequest('service/homes')).rejects.toThrow(NotConnectedError);
   });
 
+  test('logs benign device command rejections at debug, not error', async () => {
+    api['_gateway'] = {
+      thinq1_url: '',
+      thinq2_url: 'https://example.com/',
+    } as any;
+    jest.spyOn(api.httpClient, 'request').mockRejectedValueOnce({
+      isAxiosError: true,
+      response: { status: 400, data: { resultCode: '0101', result: '' } },
+      stack: 'stack',
+    });
+
+    const result = await api.getRequest('service/devices/x/control-sync');
+
+    expect(result).toEqual({});
+    expect(mockLogger.error).not.toHaveBeenCalled();
+    expect(mockLogger.debug).toHaveBeenCalledWith(
+      expect.stringContaining('resultCode 0101'),
+      expect.objectContaining({ resultCode: '0101' }),
+      undefined,
+    );
+  });
+
+  test('logs unexpected axios errors at error level', async () => {
+    api['_gateway'] = {
+      thinq1_url: '',
+      thinq2_url: 'https://example.com/',
+    } as any;
+    jest.spyOn(api.httpClient, 'request').mockRejectedValueOnce({
+      isAxiosError: true,
+      response: { status: 500, data: { resultCode: '9999', result: '' } },
+      stack: 'stack',
+    });
+
+    const result = await api.getRequest('service/devices/x/control-sync');
+
+    expect(result).toEqual({});
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      'axios request error: ',
+      expect.objectContaining({ resultCode: '9999' }),
+      undefined,
+    );
+  });
+
   test('should send command to device', async () => {
     const mockRequest = jest.spyOn(api.httpClient, 'request').mockResolvedValueOnce({ data: { success: true } });
 
