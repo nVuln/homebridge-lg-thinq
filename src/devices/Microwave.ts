@@ -32,6 +32,19 @@ import {
   visibilityCharacteristicUpdate,
 } from './helpers.js';
 
+/**
+ * State machine for the combined vent+lamp command (see sendLightVentCommand
+ * below). Idle -> Pending debounces rapid onSet calls into one request;
+ * Sending -> Cooldown enforces a rest after each request and replays once
+ * via the dirty flag if another change arrived while busy.
+ */
+export enum VentLampState {
+  Idle = 'Idle',
+  Pending = 'Pending',
+  Sending = 'Sending',
+  Cooldown = 'Cooldown',
+}
+
 export default class Microwave extends BaseDevice {
   protected inputNameStatus = 'Microwave Status';
   protected inputNameMode = 'Microwave Mode';
@@ -58,6 +71,11 @@ export default class Microwave extends BaseDevice {
   protected localHumidity = 50;
   protected defaultTemp = 0;
   protected waitingForCommand = false;
+  protected ventLampState: VentLampState = VentLampState.Idle;
+  protected ventLampTimer: ReturnType<typeof setTimeout> | null = null;
+  protected ventLampDirty = false;
+  protected static readonly VENT_LAMP_DEBOUNCE_MS = 250;
+  protected static readonly VENT_LAMP_COOLDOWN_MS = 1000;
   protected ovenCommandList = {
     ovenMode: 'WARM',
     ovenSetTemperature: 0,
@@ -120,15 +138,23 @@ export default class Microwave extends BaseDevice {
     this.serviceHood.getCharacteristic(Characteristic.Active)
       .onGet(this.onlineGet(() => hasNonZeroSnapshotNumber(this.Status.data, 'mwoVentSpeedLevel') ? 1 : 0))
       .onSet((value) => {
-        this.ventSpeed = value as number;
-        if (this.ventSpeed !== snapshotNumber(this.Status.data, 'mwoVentSpeedLevel')) {
+        this.platform.log.debug('onSet Active: ' + value);
+        // HomeKit normally pairs Active with a RotationSpeed write for a
+        // fan-speed gesture; that write carries the real target. Active's
+        // own value is just 0|1, so only act on it when turning the fan
+        // off -- inferring a speed from "on" would send a wrong level.
+        if (!value) {
+          this.ventSpeed = 0;
           this.sendLightVentCommand();
         }
       });
-    this.serviceHood.getCharacteristic(Characteristic.RotationSpeed).onGet(this.onlineGet(() => {
-      this.ventSpeed = snapshotNumber(this.Status.data, 'mwoVentSpeedLevel');
-      return this.ventSpeed;
-    })).onSet((value) => {
+    this.serviceHood.getCharacteristic(Characteristic.RotationSpeed).onGet(this.onlineGet(() =>
+      // Report the live value without overwriting this.ventSpeed: a confirm
+      // read landing between a set and its (debounced) dispatch would
+      // otherwise clobber the pending target back to the device's old value.
+      snapshotNumber(this.Status.data, 'mwoVentSpeedLevel'),
+    )).onSet((value) => {
+      this.platform.log.debug('onSet RotationSpeed: ' + value);
       this.ventSpeed = value as number;
       this.sendLightVentCommand();
     });
@@ -153,10 +179,11 @@ export default class Microwave extends BaseDevice {
         this.sendLightVentCommand();
       }
     }).onGet(this.onlineGet(() => hasNonZeroSnapshotNumber(this.Status.data, 'mwoLampLevel')));
-    this.serviceLight.getCharacteristic(Characteristic.Brightness).onGet(this.onlineGet(() => {
-      this.lampLevel = snapshotNumber(this.Status.data, 'mwoLampLevel');
-      return this.lampLevel;
-    })).onSet((value) => {
+    this.serviceLight.getCharacteristic(Characteristic.Brightness).onGet(this.onlineGet(() =>
+      // See the RotationSpeed onGet above: don't overwrite this.lampLevel
+      // from a read, or a confirm read can clobber a pending target.
+      snapshotNumber(this.Status.data, 'mwoLampLevel'),
+    )).onSet((value) => {
       this.lampLevel = value as number;
       if (this.lampLevel !== snapshotNumber(this.Status.data, 'mwoLampLevel')) {
         this.sendLightVentCommand();
@@ -946,15 +973,78 @@ export default class Microwave extends BaseDevice {
     }, 'Set', ctrlKey);
   }
 
+  /**
+   * HomeKit writes the Fanv2 `Active` and `RotationSpeed` characteristics as
+   * separate onSet calls for a single user gesture. Since the vent and lamp
+   * share one combined device command (setVentLampLevel), firing a request
+   * per onSet sends two near-simultaneous commands for the same device; LG's
+   * API accepts only one of the two and rejects the other (HTTP 400,
+   * resultCode 0103), so the applied result is effectively a race.
+   *
+   * Routed through the VentLampState machine so at most one timer and one
+   * request are ever live: Idle/Pending collapse rapid onSet calls into a
+   * single debounced send; Sending/Cooldown mark any change that arrives
+   * while busy as dirty and replay it exactly once, instead of a retry loop
+   * that could re-arm its own timer and dispatch twice.
+   */
   async sendLightVentCommand() {
     if (!this.isOnlineForHomeKit) {
       return;
     }
 
+    switch (this.ventLampState) {
+    case VentLampState.Idle:
+    case VentLampState.Pending:
+      this.enterVentLampPending();
+      break;
+    case VentLampState.Sending:
+    case VentLampState.Cooldown:
+      this.ventLampDirty = true;
+      break;
+    }
+  }
+
+  protected enterVentLampPending() {
+    this.ventLampState = VentLampState.Pending;
+    if (this.ventLampTimer) {
+      clearTimeout(this.ventLampTimer);
+    }
+    this.ventLampTimer = setTimeout(() => this.enterVentLampSending(), Microwave.VENT_LAMP_DEBOUNCE_MS);
+  }
+
+  protected async enterVentLampSending() {
+    this.ventLampState = VentLampState.Sending;
+    this.ventLampTimer = null;
+    this.ventLampDirty = false;
+
     this.platform.log.debug('Fan Speed: ' + this.ventSpeed + ' Light: ' + this.lampLevel);
     const device = this.accessory.context.device;
     const ventLampCommand = microwaveVentLampCommand(this.ventSpeed, this.lampLevel);
-    await this.platform.ThinQ?.deviceControl(device, ventLampCommand.payload, ventLampCommand.command, ventLampCommand.ctrlKey);
+    try {
+      await this.platform.ThinQ?.deviceControl(device, ventLampCommand.payload, ventLampCommand.command, ventLampCommand.ctrlKey);
+    } finally {
+      this.enterVentLampCooldown();
+    }
+  }
+
+  protected enterVentLampCooldown() {
+    this.ventLampState = VentLampState.Cooldown;
+    this.ventLampTimer = setTimeout(() => this.exitVentLampCooldown(), Microwave.VENT_LAMP_COOLDOWN_MS);
+  }
+
+  protected exitVentLampCooldown() {
+    this.ventLampTimer = null;
+    if (this.ventLampDirty) {
+      // By now any burst of onSet calls that arrived while busy has already
+      // settled into this.ventSpeed/this.lampLevel (each one just updates
+      // the field directly), so there's nothing left to coalesce. Send the
+      // latest values immediately instead of re-arming the debounce used
+      // for a fresh Idle->Pending transition, which only exists to coalesce
+      // HomeKit's Active+RotationSpeed writes for a brand new gesture.
+      this.enterVentLampSending();
+    } else {
+      this.ventLampState = VentLampState.Idle;
+    }
   }
 
   async sendTimerCommand(time: number) {
@@ -1681,24 +1771,35 @@ export default class Microwave extends BaseDevice {
         this.microwavePower.updateCharacteristic(this.platform.Characteristic.Brightness, microwavePowerLevel);
       }
 
-      const lampLevel = snapshotNumber(this.Status.data, 'mwoLampLevel');
-      const lampOn = lampLevel > 0;
-      if (this.serviceLight.getCharacteristic(this.platform.Characteristic.On).value !== lampOn) {
-        this.serviceLight.updateCharacteristic(this.platform.Characteristic.On, lampOn);
-      }
+      // Only touch vent/lamp characteristics (push to Home, and resync our
+      // own command mirror) while nothing of ours is pending or in flight.
+      // Otherwise a snapshot that hasn't caught up to our own just-sent
+      // change forces the display back to the stale pre-change value until
+      // a later snapshot corrects it, and the mirror sync could clobber a
+      // pending/in-flight target the way the old destructive onGet used to.
+      if (this.ventLampState === VentLampState.Idle) {
+        const lampLevel = snapshotNumber(this.Status.data, 'mwoLampLevel');
+        const lampOn = lampLevel > 0;
+        if (this.serviceLight.getCharacteristic(this.platform.Characteristic.On).value !== lampOn) {
+          this.serviceLight.updateCharacteristic(this.platform.Characteristic.On, lampOn);
+        }
 
-      if (this.serviceLight.getCharacteristic(this.platform.Characteristic.Brightness).value !== lampLevel) {
-        this.serviceLight.updateCharacteristic(this.platform.Characteristic.Brightness, lampLevel);
-      }
+        if (this.serviceLight.getCharacteristic(this.platform.Characteristic.Brightness).value !== lampLevel) {
+          this.serviceLight.updateCharacteristic(this.platform.Characteristic.Brightness, lampLevel);
+        }
 
-      const ventSpeedLevel = snapshotNumber(this.Status.data, 'mwoVentSpeedLevel');
-      const hoodActive = ventSpeedLevel > 0 ? 1 : 0;
-      if (this.serviceHood.getCharacteristic(this.platform.Characteristic.Active).value !== hoodActive) {
-        this.serviceHood.updateCharacteristic(this.platform.Characteristic.Active, hoodActive);
-      }
+        const ventSpeedLevel = snapshotNumber(this.Status.data, 'mwoVentSpeedLevel');
+        const hoodActive = ventSpeedLevel > 0 ? 1 : 0;
+        if (this.serviceHood.getCharacteristic(this.platform.Characteristic.Active).value !== hoodActive) {
+          this.serviceHood.updateCharacteristic(this.platform.Characteristic.Active, hoodActive);
+        }
 
-      if (this.serviceHood.getCharacteristic(this.platform.Characteristic.RotationSpeed).value !== ventSpeedLevel) {
-        this.serviceHood.updateCharacteristic(this.platform.Characteristic.RotationSpeed, ventSpeedLevel);
+        if (this.serviceHood.getCharacteristic(this.platform.Characteristic.RotationSpeed).value !== ventSpeedLevel) {
+          this.serviceHood.updateCharacteristic(this.platform.Characteristic.RotationSpeed, ventSpeedLevel);
+        }
+
+        this.ventSpeed = ventSpeedLevel;
+        this.lampLevel = lampLevel;
       }
 
 
