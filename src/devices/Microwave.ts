@@ -28,9 +28,11 @@ import {
 import {
   snapshotNumber,
   snapshotString,
+  startAtLeast,
   updateCharacteristicIfChanged,
   visibilityCharacteristicUpdate,
 } from './helpers.js';
+import { MICROWAVE_SERVICES } from './microwaveServices.js';
 
 export default class Microwave extends BaseDevice {
   protected inputNameStatus = 'Microwave Status';
@@ -110,6 +112,7 @@ export default class Microwave extends BaseDevice {
     logger: Logger,
   ) {
     super(platform, accessory, logger);
+    const servicesBeforeSetup = new Set(this.accessory.services);
     const { Characteristic } = this.platform;
     //const device = accessory.context.device;
 
@@ -887,6 +890,11 @@ export default class Microwave extends BaseDevice {
           this.pauseUpdate = true;
         }
       });
+    // A thermostat built just now starts both temperatures below the ranges set
+    // here, and HAP logs an error for each at every start (the service is
+    // rebuilt each time when it is hidden with microwave_services).
+    startAtLeast(this.ovenTempControl.getCharacteristic(this.platform.Characteristic.CurrentTemperature), 10);
+    startAtLeast(this.ovenTempControl.getCharacteristic(this.platform.Characteristic.TargetTemperature), 38);
     this.ovenTempControl.getCharacteristic(this.platform.Characteristic.CurrentTemperature)
       .setProps({
         minValue: 10,
@@ -912,7 +920,50 @@ export default class Microwave extends BaseDevice {
         }
       });
 
+    this.applyServiceSelection(servicesBeforeSetup);
+  }
 
+  /**
+   * Hides the services the owner left out of `microwave_services`. Without that
+   * setting every service is published, as it always was.
+   *
+   * Everything is still built first, so the rest of this class can keep using
+   * its services; the ones not chosen are then taken off the accessory, which
+   * is what Home sees. That also removes copies Homebridge restored from the
+   * cache of an earlier run, and the cache is saved again so the removal
+   * survives a restart. Nothing is saved when nothing that was already
+   * published had to go.
+   */
+  private applyServiceSelection(servicesBeforeSetup: Set<Service>) {
+    const selection = this.config.microwave_services;
+    if (selection === undefined) {
+      return;
+    }
+
+    const name = '[' + this.accessory.context.device.name + ']';
+    if (!Array.isArray(selection)) {
+      this.platform.log.warn(name + ' microwave_services must be a list; showing every service.');
+      return;
+    }
+
+    const known = Object.keys(MICROWAVE_SERVICES);
+    const unknown = selection.filter(key => typeof key !== 'string' || !known.includes(key));
+    if (unknown.length > 0) {
+      this.platform.log.warn(name + ' microwave_services has names this plugin does not know and ignores: '
+        + unknown.join(', ') + '. Known names: ' + known.join(', ') + '.');
+    }
+
+    const chosen = new Set<unknown>(selection);
+    const hiddenSubtypes = new Set(known.filter(key => !chosen.has(key)).flatMap(key => MICROWAVE_SERVICES[key]));
+    const hidden = this.accessory.services.filter(service => service.subtype !== undefined && hiddenSubtypes.has(service.subtype));
+    hidden.forEach(service => this.accessory.removeService(service));
+
+    const wasPublished = hidden.filter(service => servicesBeforeSetup.has(service));
+    if (wasPublished.length > 0) {
+      this.platform.log.info(name + ' microwave_services: removed ' + wasPublished.length
+        + ' services Home already had.');
+      this.platform.api.updatePlatformAccessories([this.accessory]);
+    }
   }
   //////////////////
 

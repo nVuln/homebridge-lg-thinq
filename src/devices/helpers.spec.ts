@@ -6,6 +6,7 @@ import {
   snapshotBoolean,
   snapshotNumber,
   snapshotString,
+  startAtLeast,
   updateCharacteristicIfChanged,
   updateCharacteristicIfDefined,
   visibilityCharacteristicUpdate,
@@ -102,5 +103,31 @@ describe('device helpers', () => {
     expect(snapshotBoolean({ value: 'ENA' }, 'value')).toBe(true);
     expect(snapshotBoolean({ value: 'DIS' }, 'value')).toBe(false);
     expect(snapshotBoolean(null, 'value', true)).toBe(true);
+  });
+});
+
+describe('startAtLeast', () => {
+  test('moves a value below the minimum up to it', () => {
+    const characteristic = { value: 0 as unknown };
+
+    startAtLeast(characteristic, 10);
+
+    expect(characteristic.value).toBe(10);
+  });
+
+  test('leaves a value that is already in range alone', () => {
+    const characteristic = { value: 21.5 as unknown };
+
+    startAtLeast(characteristic, 10);
+
+    expect(characteristic.value).toBe(21.5);
+  });
+
+  test('leaves a value that is not a number alone', () => {
+    const characteristic = { value: undefined as unknown };
+
+    startAtLeast(characteristic, 10);
+
+    expect(characteristic.value).toBeUndefined();
   });
 });

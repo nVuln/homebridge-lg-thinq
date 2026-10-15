@@ -240,6 +240,38 @@
           "air_fast_mode": {
             "title": "Air Fast Mode",
             "type": "boolean"
+          },
+          "microwave_services": {
+            "title": "Microwave services to show",
+            "description": "Choose which of the microwave's services appear in Home. Leave it unset to show all of them. The Television makes the microwave look like an Apple TV; leave it out to avoid that.",
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "fan",
+                "light",
+                "power_level",
+                "turn_off",
+                "television",
+                "cook_time",
+                "timer",
+                "temperature_control",
+                "start",
+                "stop",
+                "mode_microwave",
+                "mode_combination_bake",
+                "mode_dehydrate",
+                "mode_oven",
+                "mode_convection_bake",
+                "mode_combination_roast",
+                "mode_time_defrost",
+                "mode_defrost",
+                "mode_air_fry",
+                "mode_proof",
+                "mode_warm"
+              ]
+            }
           }
         }
       }
@@ -354,6 +386,45 @@
               ],
               "condition": {
                 "functionBody": "return model.devices && model.devices[arrayIndices] && ['REFRIGERATOR'].includes(model.devices[arrayIndices].type);"
+              }
+            },
+            {
+              "type": "fieldset",
+              "title": "Microwave specific settings",
+              "description": "Configure microwave device settings.",
+              "expandable": true,
+              "expanded": false,
+              "items": [
+                {
+                  "key": "devices[].microwave_services",
+                  "type": "checkboxes",
+                  "titleMap": [
+                    {"value": "fan", "name": "Fan"},
+                    {"value": "light", "name": "Light"},
+                    {"value": "power_level", "name": "Power level dimmer"},
+                    {"value": "turn_off", "name": "Turn Off Microwave switch"},
+                    {"value": "television", "name": "Oven Television (with its input sources)"},
+                    {"value": "cook_time", "name": "Cook time valve"},
+                    {"value": "timer", "name": "Timer valve"},
+                    {"value": "temperature_control", "name": "Oven temperature control (thermostat)"},
+                    {"value": "start", "name": "Start switch"},
+                    {"value": "stop", "name": "Stop switch"},
+                    {"value": "mode_microwave", "name": "Microwave mode switch"},
+                    {"value": "mode_combination_bake", "name": "Combination bake mode switch"},
+                    {"value": "mode_dehydrate", "name": "Dehydrate mode switch"},
+                    {"value": "mode_oven", "name": "Oven mode switch"},
+                    {"value": "mode_convection_bake", "name": "Convection bake mode switch"},
+                    {"value": "mode_combination_roast", "name": "Combination roast mode switch"},
+                    {"value": "mode_time_defrost", "name": "Time defrost mode switch"},
+                    {"value": "mode_defrost", "name": "Defrost mode switch"},
+                    {"value": "mode_air_fry", "name": "Air fry mode switch"},
+                    {"value": "mode_proof", "name": "Proof mode switch"},
+                    {"value": "mode_warm", "name": "Warm mode (high) switch"}
+                  ]
+                }
+              ],
+              "condition": {
+                "functionBody": "return model.devices && model.devices[arrayIndices] && ['MICROWAVE'].includes(model.devices[arrayIndices].type);"
               }
             },
             {

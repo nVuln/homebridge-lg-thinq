@@ -18,6 +18,19 @@ export type VisibilityCharacteristicUpdate = {
   currentVisibilityState: number;
 };
 
+/**
+ * A characteristic that was just created starts at 0 (or at its default), and
+ * HAP logs an error for that value when the code then gives it a range that
+ * does not include it. Moving the value into the range first keeps those
+ * errors out of the log; a value already inside the range, such as one
+ * restored from the cache, is left alone.
+ */
+export function startAtLeast(characteristic: { value: unknown }, minimum: number): void {
+  if (typeof characteristic.value === 'number' && characteristic.value < minimum) {
+    characteristic.value = minimum;
+  }
+}
+
 export function hasSnapshotKey(snapshot: Snapshot, key: string): boolean {
   return snapshot !== null && snapshot !== undefined && key in snapshot;
 }

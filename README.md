@@ -90,6 +90,34 @@ To enable or configure only specific devices, list them by device id:
 
 Device type is detected from LG discovery data. Device-specific settings appear in the Homebridge UI after devices have been discovered.
 
+### Microwave: choose which services to show
+
+By default the microwave publishes thirty-one services: a fan, a light, a power dimmer, a Television with nine input sources, fourteen switches, two timer valves and a thermostat. Home shows the Television as an Apple TV and lists it in the iPhone remote. To show only some of them, list their names in `microwave_services` on the microwave's entry in `devices`:
+
+```json
+"devices": [
+  {
+    "id": "device-id",
+    "microwave_services": ["fan", "light"]
+  }
+]
+```
+
+Leave `microwave_services` out to show everything. An empty list shows none of them. The names are:
+
+| Name | Service |
+| --- | --- |
+| `fan`, `light` | The vent fan and the light |
+| `power_level` | The power level dimmer |
+| `turn_off` | The "Turn Off Microwave" switch |
+| `television` | The oven Television and its nine input sources (shown as an Apple TV) |
+| `cook_time`, `timer` | The two timer valves |
+| `temperature_control` | The oven temperature thermostat |
+| `start`, `stop` | The Start and Stop switches |
+| `mode_microwave`, `mode_combination_bake`, `mode_dehydrate`, `mode_oven`, `mode_convection_bake`, `mode_combination_roast`, `mode_time_defrost`, `mode_defrost`, `mode_air_fry`, `mode_proof`, `mode_warm` | One switch per cooking mode |
+
+Names the plugin doesn't know are ignored with a warning in the log. Services Homebridge already cached are removed at the next start, and choosing one again publishes it again. Listing a device in `devices` makes the plugin set up only the listed devices, so list every device you want. Restart Homebridge after changing `config.json`.
+
 ## Supported Devices
 
 Support depends on the model data returned by LG. If a device appears in the LG ThinQ app but not in Homebridge, open an issue with the device type, model, country, and debug logs.
