@@ -1,7 +1,7 @@
 import { describe, test, expect, afterEach, jest } from '@jest/globals';
 import type { AxiosAdapter, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { MonitorError, NotConnectedError } from '../errors/index.js';
-import { requestClient } from './request.js';
+import { DEFAULT_USER_AGENT, requestClient } from './request.js';
 
 const originalAdapter = requestClient.defaults.adapter;
 
@@ -74,6 +74,23 @@ describe('request client throttling', () => {
     await expect(requestClient.get('/network-error')).rejects.toThrow(NotConnectedError);
     await expect(withTimeout(requestClient.get('/after-network-error'))).resolves.toMatchObject({ data: { ok: true } });
     expect(adapter).toHaveBeenCalledTimes(2);
+  });
+
+  test('sends a non-axios User-Agent by default and lets a request override it', async () => {
+    const seen: string[] = [];
+    const adapter = jest.fn(async (config: InternalAxiosRequestConfig) => {
+      seen.push(String(config.headers.get('User-Agent')));
+      return responseFor(config);
+    });
+
+    requestClient.defaults.adapter = adapter as AxiosAdapter;
+
+    await requestClient.get('/default-user-agent');
+    await requestClient.get('/custom-user-agent', { headers: { 'user-agent': 'okhttp/3.14.9' } });
+
+    expect(seen[0]).toBe(DEFAULT_USER_AGENT);
+    expect(seen[0]).not.toMatch(/axios/i);
+    expect(seen[1]).toBe('okhttp/3.14.9');
   });
 
   test('preserves unknown ThinQ1 monitor error codes without undefined text', async () => {
