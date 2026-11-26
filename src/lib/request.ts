@@ -35,7 +35,16 @@ function errorWithCause<T extends Error>(error: T, cause: unknown): T {
   return error;
 }
 
-const client = axios.create();
+// LG's account servers (AWS ELB in front of lgaccount.com) answer HTTP 403 to requests that identify as
+// axios (the default "axios/<version>" User-Agent). Send a browser User-Agent unless a request sets its own
+// (the ThinQ API calls in API.ts set an okhttp User-Agent explicitly, which still takes precedence).
+// See nVuln/homebridge-lg-thinq#402 and #400.
+export const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 '
+  + '(KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36 Edg/93.0.961.44';
+
+const client = axios.create({
+  headers: { 'User-Agent': DEFAULT_USER_AGENT },
+});
 client.defaults.timeout = 60000; // 60s timeout
 
 client.interceptors.request.use((config) => {
